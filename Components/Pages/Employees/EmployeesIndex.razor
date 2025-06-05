@@ -1,0 +1,94 @@
+﻿@page "/employees"
+@using RH.Models
+@using RH.Services
+@inject IEmployeeService EmployeeService
+@inject IJobTitleService JobTitleService
+@inject NavigationManager NavigationManager
+
+<h1 class="text-2xl font-bold mb-4">Employees</h1>
+
+<button class="btn btn-primary mb-4" @onclick="AddEmployee">Add New</button>
+
+<table class="table table-striped">
+    <thead>
+        <tr><th>Name</th><th>Email</th><th>Status</th><th></th></tr>
+    </thead>
+    <tbody>
+        @if (Employees != null && Employees.Any())
+        {
+            @foreach (var emp in Employees)
+            {
+                <tr>
+                    <td>@emp.FullName</td>
+                    <td>@emp.Email</td>
+                    <td>@emp.Status</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => Edit(emp.Id)">Edit</button>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr><td colspan="4">No employees available</td></tr>
+        }
+    </tbody>
+</table>
+
+<!-- Employee Form Modal -->
+<EmployeeForm Employee="SelectedEmployee" IsOpen="IsModalOpen" IsOpenChanged="HandleModalClose" OnSave="HandleEmployeeSave" />
+
+@code {
+    private List<Employee> Employees;
+    private Employee SelectedEmployee = new();
+    private bool IsModalOpen = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Ensure that employee loading happens first and properly awaited
+        await LoadEmployeesAsync();
+    }
+
+    private async Task LoadEmployeesAsync()
+    {
+        Employees = await EmployeeService.GetAllAsync(); // Get employees
+    }
+
+    private void AddEmployee()
+    {
+        Console.WriteLine("clicked");
+        SelectedEmployee = new Employee();
+        IsModalOpen = true;
+        StateHasChanged();
+    }
+
+
+    private async Task Edit(int id)
+    {
+        // Load the selected employee to edit
+        SelectedEmployee = await EmployeeService.GetByIdAsync(id);
+        IsModalOpen = true;  // Open the modal
+    }
+
+    private async Task HandleEmployeeSave(Employee employee)
+    {
+        if (employee.Id == 0)  // New employee
+        {
+            await EmployeeService.AddAsync(employee);
+        }
+        else  // Update existing employee
+        {
+            await EmployeeService.UpdateAsync(employee);
+        }
+
+        // After save, refresh the employee list
+        await LoadEmployeesAsync(); // Refresh employees list after saving
+
+        IsModalOpen = false;  // Close the modal
+    }
+
+    private void HandleModalClose(bool isOpen)
+    {
+        IsModalOpen = isOpen;
+    }
+}

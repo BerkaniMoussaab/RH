@@ -1,0 +1,82 @@
+﻿@page "/attendance-summary"
+@using RH.Models
+@using RH.Services
+@inject AttendanceService AttendanceService
+@inject IEmployeeService EmployeeService
+
+<h3>Monthly Attendance Summary</h3>
+
+<div class="form-group">
+    <label>Employee:</label>
+    <select @bind="summary.EmployeeId" class="form-control" >
+        <option value="">-- Select --</option>
+        @foreach (var emp in Employees)
+        {
+            <option value="@emp.Id">@emp.FullName</option>
+        }
+    </select>
+</div>
+
+<div class="form-group">
+    <label>Year:</label>
+    <input type="number" class="form-control" @bind="summary.Year" />
+</div>
+
+<div class="form-group">
+    <label>Month:</label>
+    <input type="number" class="form-control" @bind="summary.Month" min="1" max="12" />
+</div>
+
+<div class="form-group">
+    <label>Days Absent:</label>
+    <input type="number" class="form-control" @bind="summary.DaysAbsent" />
+</div>
+
+<div class="form-group">
+    <label>Late Arrivals:</label>
+    <input type="number" class="form-control" @bind="summary.LateArrivals" />
+</div>
+
+<button class="btn btn-primary" @onclick="Save">Save</button>
+
+@if (!string.IsNullOrWhiteSpace(statusMessage))
+{
+    <div class="alert alert-info mt-2">@statusMessage</div>
+}
+
+@code {
+    private MonthlyAttendanceSummary summary = new();
+    private List<Employee> Employees = new();
+    private string? statusMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Employees = await EmployeeService.GetAllAsync();
+        summary.Year = DateTime.Now.Year;
+        summary.Month = DateTime.Now.Month;
+    }
+
+    private async Task OnEmployeeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int id))
+        {
+            var employee = Employees.FirstOrDefault(emp => emp.Id == id);
+            summary.EmployeeId = id;
+            summary.Employee = employee;
+        }
+    }
+
+    private async Task Save()
+    {
+        if (summary.EmployeeId == 0)
+        {
+            statusMessage = "Please select an employee.";
+            return;
+        }
+
+        // Smart deduction: only pass summary, no need for rates
+        await AttendanceService.AddOrUpdateSummaryAsync(summary);
+
+        statusMessage = $"Attendance summary saved. Deduction: {summary.TotalDeduction:C}";
+    }
+}

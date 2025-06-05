@@ -1,0 +1,76 @@
+﻿@page "/job-titles"
+@using RH.Models
+@using RH.Services
+@inject IJobTitleService JobTitleService
+@inject NavigationManager Navigation
+
+<h3 class="text-xl font-semibold mb-4">Job Titles</h3>
+
+<button class="btn btn-primary mb-3" @onclick="CreateJobTitle">Create New</button>
+
+@if (jobTitles == null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (!jobTitles.Any())
+{
+    <p>No job titles found.</p>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Employees</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var job in jobTitles)
+            {
+                <tr>
+                    <td>@job.Title</td>
+                    <td>@job.Description</td>
+                    <td>@job.Employees?.Count()</td>
+                    <td>
+                        <button class="btn btn-sm btn-info me-2" @onclick="@(() => ViewJobTitle(job.Id))">View</button>
+                        <button class="btn btn-sm btn-warning me-2" @onclick="@(() => EditJobTitle(job.Id))">Edit</button>
+                        <button class="btn btn-sm btn-danger" @onclick="@(() => DeleteJobTitle(job.Id))">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<JobTitle>? jobTitles;
+
+    protected override async Task OnInitializedAsync()
+    {
+        jobTitles = await JobTitleService.GetAllAsync();
+    }
+
+    private void CreateJobTitle() =>
+        Navigation.NavigateTo("/jobtitles/create");
+
+    private void ViewJobTitle(int id) =>
+        Navigation.NavigateTo($"/jobtitles/details/{id}");
+
+    private void EditJobTitle(int id) =>
+        Navigation.NavigateTo($"/jobtitles/edit/{id}");
+
+    private async Task DeleteJobTitle(int id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this job title?");
+        if (confirmed)
+        {
+            await JobTitleService.DeleteAsync(id);
+            jobTitles = await JobTitleService.GetAllAsync(); // Refresh list
+        }
+    }
+
+    [Inject] IJSRuntime JS { get; set; } = default!;
+}

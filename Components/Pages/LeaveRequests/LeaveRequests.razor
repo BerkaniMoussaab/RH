@@ -1,0 +1,86 @@
+﻿@page "/leaves"
+@using RH.Models
+@using RH.Services
+@inject ILeaveRequestService LeaveRequestService
+
+<h2 class="mb-4">Leave Requests</h2>
+<button class="btn btn-primary mb-3" @onclick="CreateNew">New Request</button>
+
+<table class="table table-bordered table-striped">
+    <thead>
+        <tr>
+            <th>Employee</th>
+            <th>Dates</th>
+            <th>Status</th>
+            <th>Reason</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Requests.Any())
+        {
+            @foreach (var request in Requests)
+            {
+                <tr>
+                    <td>@request.Employee?.FullName</td>
+                    <td>@request.StartDate:dd MMM yyyy - @request.EndDate:dd MMM yyyy</td>
+                    <td>@request.Status</td>
+                    <td>@request.Reason</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => Edit(request.Id)">Edit</button>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr><td colspan="5">No leave requests found.</td></tr>
+        }
+    </tbody>
+</table>
+
+<LeaveRequestForm LeaveRequest="Selected" IsOpen="ShowForm" IsOpenChanged="HandleClose" OnSave="Save" />
+
+@code {
+    private List<LeaveRequest> Requests = new();
+    private LeaveRequest Selected = new();
+    private bool ShowForm = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        Requests = await LeaveRequestService.GetAllAsync();
+    }
+
+    private void CreateNew()
+    {
+        Selected = new LeaveRequest();
+        ShowForm = true;
+    }
+
+    private async Task Edit(int id)
+    {
+        Selected = await LeaveRequestService.GetByIdAsync(id);
+        ShowForm = true;
+    }
+
+    private async Task Save(LeaveRequest req)
+    {
+        if (req.Id == 0)
+            await LeaveRequestService.CreateAsync(req);
+        else
+            await LeaveRequestService.UpdateAsync(req);
+
+        await LoadAsync();
+        ShowForm = false;
+    }
+
+    private void HandleClose(bool isOpen)
+    {
+        ShowForm = isOpen;
+    }
+}

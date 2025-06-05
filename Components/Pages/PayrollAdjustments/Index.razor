@@ -1,0 +1,63 @@
+﻿@page "/payroll-adjustments"
+@inject IPayrollAdjustmentRuleService RuleService
+@inject NavigationManager Navigation
+
+<h3>Payroll Adjustment Rules</h3>
+<button class="btn btn-primary mb-3" @onclick="AddRule">Add Rule</button>
+
+@if (rules == null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (!rules.Any())
+{
+    <p>No rules found.</p>
+}
+else
+{
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Job Title</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Is %</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var rule in rules)
+            {
+                <tr>
+                    <td>@rule.JobTitle?.Title</td>
+                    <td>@rule.Name</td>
+                    <td>@rule.Type</td>
+                    <td>@rule.Amount</td>
+                    <td>@(rule.IsPercentage ? "Yes" : "No")</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning me-2" @onclick="() => Edit(rule.Id)">Edit</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => Delete(rule.Id)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<PayrollAdjustmentRule>? rules;
+
+    protected override async Task OnInitializedAsync()
+    {
+        rules = await RuleService.GetAllAsync();
+    }
+
+    private void AddRule() => Navigation.NavigateTo("/payroll-adjustments/create");
+    private void Edit(int id) => Navigation.NavigateTo($"/payroll-adjustments/edit/{id}");
+    private async Task Delete(int id)
+    {
+        await RuleService.DeleteAsync(id);
+        rules = await RuleService.GetAllAsync();
+    }
+}

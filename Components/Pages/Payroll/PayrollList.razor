@@ -1,0 +1,154 @@
+﻿@page "/payrolls"
+@using RH.Models
+@using RH.Services
+@inject IPayrollService PayrollService
+@inject IEmployeeService EmployeeService
+
+<h2 class="text-2xl font-bold mb-4">Payrolls</h2>
+
+<button class="btn btn-primary mb-3" @onclick="AddPayroll">Add Payroll</button>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>Employee</th>
+            <th>Pay Date</th>
+            <th>Base Salary</th>
+            <th>Bonus</th>
+            <th>Deductions</th>
+            <th>Net Pay</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (Payrolls.Any())
+        {
+            @foreach (var payroll in Payrolls)
+            {
+                <tr>
+                    <td>@payroll.Employee?.FullName</td>
+                    <td>@payroll.PayDate.ToShortDateString()</td>
+                    <td>@payroll.BaseSalary:C</td>
+                    <td>@payroll.Bonus:C</td>
+                    <td>@payroll.Deductions:C</td>
+                    <td>@payroll.NetPay:C</td>
+                    <td>
+                        <button class="btn btn-sm btn-secondary" @onclick="() => EditPayroll(payroll)">Edit</button>
+                    </td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr><td colspan="7">No payroll records available.</td></tr>
+        }
+    </tbody>
+</table>
+
+<!-- Modal -->
+@if (IsModalOpen)
+{
+    <EditForm Model="CurrentPayroll" OnValidSubmit="SavePayroll">
+        <DataAnnotationsValidator />
+        <div class="modal show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@((CurrentPayroll.Id == 0) ? "Add Payroll" : "Edit Payroll")</h5>
+                        <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label>Employee</label>
+                            <InputSelect class="form-select" @bind-Value="CurrentPayroll.EmployeeId">
+                                <option value="">-- Select Employee --</option>
+                                @foreach (var emp in Employees)
+                                {
+                                    <option value="@emp.Id">@emp.FullName</option>
+                                }
+                            </InputSelect>
+                        </div>
+                        <div class="mb-3">
+                            <label>Pay Date</label>
+                            <InputDate class="form-control" @bind-Value="CurrentPayroll.PayDate" />
+                        </div>
+                        <div class="mb-3">
+                            <label>Base Salary</label>
+                            <InputNumber class="form-control" @bind-Value="CurrentPayroll.BaseSalary" />
+                        </div>
+                        <div class="mb-3">
+                            <label>Bonus</label>
+                            <InputNumber class="form-control" @bind-Value="CurrentPayroll.Bonus" />
+                        </div>
+                        <div class="mb-3">
+                            <label>Deductions</label>
+                            <InputNumber class="form-control" @bind-Value="CurrentPayroll.Deductions" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </EditForm>
+}
+
+@code {
+    private List<Payroll> Payrolls = new();
+    private List<Employee> Employees = new();
+    private Payroll CurrentPayroll = new();
+    private bool IsModalOpen = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Employees = await EmployeeService.GetAllAsync();
+        await LoadPayrolls();
+    }
+
+    private async Task LoadPayrolls()
+    {
+        Payrolls = await PayrollService.GetAllAsync();
+    }
+
+    private void AddPayroll()
+    {
+        CurrentPayroll = new Payroll { PayDate = DateTime.Today };
+        IsModalOpen = true;
+    }
+
+    private void EditPayroll(Payroll payroll)
+    {
+        CurrentPayroll = new Payroll
+            {
+                Id = payroll.Id,
+                EmployeeId = payroll.EmployeeId,
+                PayDate = payroll.PayDate,
+                BaseSalary = payroll.BaseSalary,
+                Bonus = payroll.Bonus,
+                Deductions = payroll.Deductions
+            };
+        IsModalOpen = true;
+    }
+
+    private async Task SavePayroll()
+    {
+        if (CurrentPayroll.Id == 0)
+        {
+            await PayrollService.CreateAsync(CurrentPayroll);
+        }
+        else
+        {
+            await PayrollService.UpdateAsync(CurrentPayroll);
+        }
+
+        IsModalOpen = false;
+        await LoadPayrolls();
+    }
+
+    private void CloseModal()
+    {
+        IsModalOpen = false;
+    }
+}

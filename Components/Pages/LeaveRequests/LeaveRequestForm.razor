@@ -1,0 +1,81 @@
+﻿@using RH.Models
+@using RH.Services
+@inject IEmployeeService EmployeeService
+
+<EditForm Model="LeaveRequest" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="modal @(IsOpen ? "show d-block" : "fade")" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@((LeaveRequest.Id == 0) ? "New Leave Request" : "Edit Leave Request")</h5>
+                    <button type="button" class="btn-close" @onclick="Close" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Employee</label>
+                        <InputSelect class="form-select" @bind-Value="LeaveRequest.EmployeeId">
+                            <option value="">-- Select Employee --</option>
+                            @foreach (var emp in Employees)
+                            {
+                                <option value="@emp.Id">@emp.FullName</option>
+                            }
+                        </InputSelect>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Start Date</label>
+                        <InputDate class="form-control" @bind-Value="LeaveRequest.StartDate" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">End Date</label>
+                        <InputDate class="form-control" @bind-Value="LeaveRequest.EndDate" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reason</label>
+                        <InputTextArea class="form-control" @bind-Value="LeaveRequest.Reason" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <InputSelect class="form-select" @bind-Value="LeaveRequest.Status">
+                            @foreach (var status in Enum.GetValues<LeaveStatus>())
+                            {
+                                <option value="@status">@status</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary" @onclick="Close">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter] public LeaveRequest LeaveRequest { get; set; } = new();
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public EventCallback<LeaveRequest> OnSave { get; set; }
+
+    private List<Employee> Employees = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Employees = await EmployeeService.GetAllAsync();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        await OnSave.InvokeAsync(LeaveRequest);
+        await Close();
+    }
+
+    private async Task Close()
+    {
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}

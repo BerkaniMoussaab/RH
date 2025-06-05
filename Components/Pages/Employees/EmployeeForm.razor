@@ -1,0 +1,149 @@
+﻿@using RH.Models
+@using RH.Services
+@inject IJobTitleService JobTitleService
+@rendermode InteractiveServer
+
+<EditForm Model="Employee" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="modal @(IsOpen ? "show d-block" : "fade")" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@((Employee.Id == 0) ? "Create Employee" : "Edit Employee")</h5>
+                    <button type="button" class="btn-close" @onclick="Close" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- First Name -->
+                    <div class="mb-3">
+                        <label class="form-label">First Name</label>
+                        <InputText class="form-control" @bind-Value="Employee.FullName" />
+                        <ValidationMessage For="@(() => Employee.FullName)" />
+                    </div>
+
+                  
+
+                    <!-- Email -->
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <InputText class="form-control" @bind-Value="Employee.Email" />
+                        <ValidationMessage For="@(() => Employee.Email)" />
+                    </div>
+
+                    <!-- Phone Number -->
+                    <div class="mb-3">
+                        <label class="form-label">Phone Number</label>
+                        <InputText class="form-control" @bind-Value="Employee.PhoneNumber" />
+                    </div>
+
+                    <!-- Hire Date -->
+                    <div class="mb-3">
+                        <label class="form-label">Hire Date</label>
+                        <InputDate class="form-control" @bind-Value="Employee.HireDate" />
+                    </div>
+
+                    <!-- Job Title -->
+                    <div class="mb-3">
+                        <label class="form-label">Job Title</label>
+                        <div class="d-flex">
+                            <InputSelect class="form-select me-2" @bind-Value="Employee.JobTitleId">
+                                <option value="">-- Select Job Title --</option>
+                                @foreach (var jt in JobTitles)
+                                {
+                                    <option value="@jt.Id">@jt.Title</option>
+                                }
+                            </InputSelect>
+                            <button type="button" class="btn btn-outline-secondary" @onclick="() => ShowAddJobTitle = true">+</button>
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <InputSelect class="form-select" @bind-Value="Employee.Status">
+                            @foreach (var status in Enum.GetValues<EmployeeStatus>())
+                            {
+                                <option value="@status">@status</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                    <button type="button" class="btn btn-secondary" @onclick="Close">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+<!-- Job Title Add Modal -->
+@if (ShowAddJobTitle)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <EditForm Model="NewJobTitle" OnValidSubmit="AddJobTitle">
+                    <DataAnnotationsValidator />
+                    <div class="modal-header">
+                        <h5 class="modal-title">Add New Job Title</h5>
+                        <button type="button" class="btn-close" @onclick="() => ShowAddJobTitle = false" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Title</label>
+                            <InputText class="form-control" @bind-Value="NewJobTitle.Title" />
+                            <ValidationMessage For="@(() => NewJobTitle.Title)" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <InputText class="form-control" @bind-Value="NewJobTitle.Description" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">Add</button>
+                        <button type="button" class="btn btn-secondary" @onclick="() => ShowAddJobTitle = false">Cancel</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Employee Employee { get; set; } = new();
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public EventCallback<Employee> OnSave { get; set; }
+
+    private List<JobTitle> JobTitles = new();
+    private JobTitle NewJobTitle = new();
+    private bool ShowAddJobTitle = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        JobTitles = (await JobTitleService.GetAllAsync()).ToList();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        await OnSave.InvokeAsync(Employee);
+        await Close();
+    }
+
+    private async Task AddJobTitle()
+    {
+        var added = await JobTitleService.AddAsync(NewJobTitle);
+        JobTitles.Add(added);
+        Employee.JobTitleId = added.Id;
+        NewJobTitle = new JobTitle();
+        ShowAddJobTitle = false;
+    }
+
+    private async Task Close()
+    {
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}
