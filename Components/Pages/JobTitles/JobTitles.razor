@@ -2,28 +2,27 @@
 @using RH.Models
 @using RH.Services
 @inject IJobTitleService JobTitleService
-@inject NavigationManager Navigation
+@inject IJSRuntime JS
 
-<h3 class="text-xl font-semibold mb-4">Job Titles</h3>
+<h3 class="mb-4">Postes</h3>
 
-<button class="btn btn-primary mb-3" @onclick="CreateJobTitle">Create New</button>
+<button class="btn btn-primary mb-3" @onclick="OpenCreateModal">Ajouter un poste</button>
 
 @if (jobTitles == null)
 {
-    <p><em>Loading...</em></p>
+    <p><em>Chargement...</em></p>
 }
 else if (!jobTitles.Any())
 {
-    <p>No job titles found.</p>
+    <p>Aucun poste trouvé.</p>
 }
 else
 {
-    <table class="table table-striped">
-        <thead>
+    <table class="table table-bordered">
+        <thead class="table-light">
             <tr>
-                <th>Title</th>
+                <th>Titre</th>
                 <th>Description</th>
-                <th>Employees</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -33,11 +32,9 @@ else
                 <tr>
                     <td>@job.Title</td>
                     <td>@job.Description</td>
-                    <td>@job.Employees?.Count()</td>
                     <td>
-                        <button class="btn btn-sm btn-info me-2" @onclick="@(() => ViewJobTitle(job.Id))">View</button>
-                        <button class="btn btn-sm btn-warning me-2" @onclick="@(() => EditJobTitle(job.Id))">Edit</button>
-                        <button class="btn btn-sm btn-danger" @onclick="@(() => DeleteJobTitle(job.Id))">Delete</button>
+                        <button class="btn btn-sm btn-warning me-1" @onclick="@(() => OpenEditModal(job))">Modifier</button>
+                        <button class="btn btn-sm btn-danger" @onclick="@(() => DeleteJobTitle(job.Id))">Supprimer</button>
                     </td>
                 </tr>
             }
@@ -45,32 +42,100 @@ else
     </table>
 }
 
+<!-- Modal -->
+@if (showModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <EditForm Model="@currentJobTitle" OnValidSubmit="SaveJobTitle">
+                    <DataAnnotationsValidator />
+                    <div class="modal-header">
+                        <h5 class="modal-title">@((isEditing ? "Modifier" : "Ajouter") + " un poste")</h5>
+                        <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Titre</label>
+                            <InputText class="form-control" @bind-Value="currentJobTitle.Title" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <InputTextArea class="form-control" @bind-Value="currentJobTitle.Description" />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseModal">Annuler</button>
+                        <button type="submit" class="btn btn-success">Enregistrer</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<JobTitle>? jobTitles;
+    private JobTitle currentJobTitle = new();
+    private bool showModal = false;
+    private bool isEditing = false;
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadJobTitles();
+    }
+
+    private async Task LoadJobTitles()
     {
         jobTitles = await JobTitleService.GetAllAsync();
     }
 
-    private void CreateJobTitle() =>
-        Navigation.NavigateTo("/jobtitles/create");
+    private void OpenCreateModal()
+    {
+        currentJobTitle = new JobTitle();
+        isEditing = false;
+        showModal = true;
+    }
 
-    private void ViewJobTitle(int id) =>
-        Navigation.NavigateTo($"/jobtitles/details/{id}");
+    private void OpenEditModal(JobTitle job)
+    {
+        currentJobTitle = new JobTitle
+        {
+            Id = job.Id,
+            Title = job.Title,
+            Description = job.Description
+        };
+        isEditing = true;
+        showModal = true;
+    }
 
-    private void EditJobTitle(int id) =>
-        Navigation.NavigateTo($"/jobtitles/edit/{id}");
+    private async Task SaveJobTitle()
+    {
+        if (isEditing)
+        {
+            await JobTitleService.UpdateAsync(currentJobTitle);
+        }
+        else
+        {
+            await JobTitleService.AddAsync(currentJobTitle);
+        }
+
+        showModal = false;
+        await LoadJobTitles();
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+    }
 
     private async Task DeleteJobTitle(int id)
     {
-        var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this job title?");
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Êtes-vous sûr de vouloir supprimer ce poste ?");
         if (confirmed)
         {
             await JobTitleService.DeleteAsync(id);
-            jobTitles = await JobTitleService.GetAllAsync(); // Refresh list
+            await LoadJobTitles();
         }
     }
-
-    [Inject] IJSRuntime JS { get; set; } = default!;
 }

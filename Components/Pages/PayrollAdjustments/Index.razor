@@ -1,63 +1,222 @@
-﻿@page "/payroll-adjustments"
-@inject IPayrollAdjustmentRuleService RuleService
-@inject NavigationManager Navigation
+﻿@page "/payrollRules"
+@using RH.Models
+@using RH.Services
+@inject PayrollAdjustmentRuleService AdjustmentService
+@inject JobTitleService JobTitleService
+@inject IJSRuntime JS
 
-<h3>Payroll Adjustment Rules</h3>
-<button class="btn btn-primary mb-3" @onclick="AddRule">Add Rule</button>
+<h3 class="mb-4">Règles d'ajustement de paie</h3>
 
-@if (rules == null)
+<button class="btn btn-primary mb-3" @onclick="() => ShowModal = true">+ Nouvelle règle</button>
+
+@if (isLoading)
 {
-    <p><em>Loading...</em></p>
-}
-else if (!rules.Any())
-{
-    <p>No rules found.</p>
+    <div class="mt-4">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+    </div>
 }
 else
 {
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Job Title</th>
-                <th>Name</th>
-                <th>Type</th>
-                <th>Amount</th>
-                <th>Is %</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var rule in rules)
+    <div class="row">
+        <div class="col-md-6">
+            <h5>Bonus</h5>
+            @foreach (var adj in Adjustments.Where(a => a.Type == AdjustmentType.Bonus))
             {
-                <tr>
-                    <td>@rule.JobTitle?.Title</td>
-                    <td>@rule.Name</td>
-                    <td>@rule.Type</td>
-                    <td>@rule.Amount</td>
-                    <td>@(rule.IsPercentage ? "Yes" : "No")</td>
-                    <td>
-                        <button class="btn btn-sm btn-warning me-2" @onclick="() => Edit(rule.Id)">Edit</button>
-                        <button class="btn btn-sm btn-danger" @onclick="() => Delete(rule.Id)">Delete</button>
-                    </td>
-                </tr>
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">@adj.Name</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">
+                            Montant : <strong>@(adj.IsPercentage ? $"{adj.Amount}%" : $"{adj.Amount:C}")</strong>
+                        </h6>
+                        <p class="card-text">
+                            <i class="bi bi-people-fill me-1"></i>
+                            @foreach (var title in adj.JobTitles)
+                            {
+                                <span class="badge bg-secondary me-1">@title.Title</span>
+                            }
+                        </p>
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenEditModal(adj)">
+                            <i class="bi bi-pencil"></i> Modifier
+                        </button>
+                    </div>
+                </div>
             }
-        </tbody>
-    </table>
+        </div>
+        <div class="col-md-6">
+            <h5>Déductions</h5>
+            @foreach (var adj in Adjustments.Where(a => a.Type == AdjustmentType.Deduction))
+            {
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">@adj.Name</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">
+                            Montant : <strong>@(adj.IsPercentage ? $"{adj.Amount}%" : $"{adj.Amount:C}")</strong>
+                        </h6>
+                        <p class="card-text">
+                            <i class="bi bi-people-fill me-1"></i>
+                            @foreach (var title in adj.JobTitles)
+                            {
+                                <span class="badge bg-secondary me-1">@title.Title</span>
+                            }
+                        </p>
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenEditModal(adj)">
+                            <i class="bi bi-pencil"></i> Modifier
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@if (ShowModal)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@((IsEditMode ? "Modifier" : "Ajouter") + " une règle")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+
+                <EditForm Model="@NewAdjustment" OnValidSubmit="SaveAdjustment">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Nom</label>
+                            <InputText class="form-control" @bind-Value="NewAdjustment.Name" />
+                            <ValidationMessage For="@(() => NewAdjustment.Name)" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Montant</label>
+                            <InputNumber class="form-control" @bind-Value="NewAdjustment.Amount" />
+                            <ValidationMessage For="@(() => NewAdjustment.Amount)" />
+                        </div>
+
+                        <div class="form-check mb-3">
+                            <InputCheckbox class="form-check-input" @bind-Value="NewAdjustment.IsPercentage" />
+                            <label class="form-check-label">%</label>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Type</label>
+                            <InputSelect class="form-select" @bind-Value="NewAdjustment.Type">
+                                <option disabled value="">-- Type --</option>
+                                <option value="@AdjustmentType.Bonus">Bonus</option>
+                                <option value="@AdjustmentType.Deduction">Déduction</option>
+                            </InputSelect>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Postes</label>
+                            <select class="form-select" multiple @ref="jobTitleSelectRef" @onchange="OnSelectedJobTitlesChanged">
+                                @foreach (var jt in AllJobTitles)
+                                {
+                                    <option value="@jt.Id" selected="@SelectedJobTitleIds.Contains(jt.Id)">@jt.Title</option>
+                                }
+                            </select>
+                            @if (ShowJobTitleValidation)
+                            {
+                                <div class="text-danger mt-1">Sélectionnez au moins un poste.</div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-success">
+                            @(IsEditMode ? "Enregistrer les modifications" : "Ajouter")
+                        </button>
+                        <button type="button" class="btn btn-secondary" @onclick="CloseModal">Annuler</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
 }
 
 @code {
-    private List<PayrollAdjustmentRule>? rules;
+    private PayrollAdjustmentRule NewAdjustment = new() { Type = AdjustmentType.Bonus };
+    private PayrollAdjustmentRule? EditingAdjustment;
+    private List<JobTitle> AllJobTitles = new();
+    private List<int> SelectedJobTitleIds = new();
+    private List<PayrollAdjustmentRule> Adjustments = new();
+    private bool isLoading = true;
+    private bool ShowJobTitleValidation = false;
+    private ElementReference jobTitleSelectRef;
+    private bool ShowModal = false;
+    private bool IsEditMode = false;
 
     protected override async Task OnInitializedAsync()
     {
-        rules = await RuleService.GetAllAsync();
+        isLoading = true;
+        AllJobTitles = await JobTitleService.GetAllAsync();
+        await LoadAdjustments();
+        isLoading = false;
     }
 
-    private void AddRule() => Navigation.NavigateTo("/payroll-adjustments/create");
-    private void Edit(int id) => Navigation.NavigateTo($"/payroll-adjustments/edit/{id}");
-    private async Task Delete(int id)
+    private async Task LoadAdjustments()
     {
-        await RuleService.DeleteAsync(id);
-        rules = await RuleService.GetAllAsync();
+        Adjustments = await AdjustmentService.GetAllAsync();
+    }
+
+    private async Task OnSelectedJobTitlesChanged(ChangeEventArgs _)
+    {
+        var selected = await JS.InvokeAsync<int[]>("getSelectedValues", jobTitleSelectRef);
+        SelectedJobTitleIds = selected.ToList();
+    }
+
+    private void OpenEditModal(PayrollAdjustmentRule adjustment)
+    {
+        IsEditMode = true;
+        EditingAdjustment = adjustment;
+        NewAdjustment = new PayrollAdjustmentRule
+        {
+            Id = adjustment.Id,
+            Name = adjustment.Name,
+            Amount = adjustment.Amount,
+            IsPercentage = adjustment.IsPercentage,
+            Type = adjustment.Type,
+            JobTitles = new List<JobTitle>(adjustment.JobTitles)
+        };
+        SelectedJobTitleIds = adjustment.JobTitles.Select(j => j.Id).ToList();
+        ShowModal = true;
+    }
+
+    private async Task SaveAdjustment()
+    {
+        ShowJobTitleValidation = SelectedJobTitleIds.Count == 0;
+        if (string.IsNullOrWhiteSpace(NewAdjustment.Name) || ShowJobTitleValidation)
+            return;
+
+        NewAdjustment.JobTitles = AllJobTitles
+            .Where(j => SelectedJobTitleIds.Contains(j.Id))
+            .ToList();
+
+        if (IsEditMode)
+        {
+            await AdjustmentService.UpdateAsync(NewAdjustment);
+        }
+        else
+        {
+            await AdjustmentService.AddAsync(NewAdjustment);
+        }
+
+        await LoadAdjustments();
+        CloseModal();
+    }
+
+    private void CloseModal()
+    {
+        ShowModal = false;
+        ShowJobTitleValidation = false;
+        SelectedJobTitleIds.Clear();
+        NewAdjustment = new PayrollAdjustmentRule { Type = AdjustmentType.Bonus };
+        EditingAdjustment = null;
+        IsEditMode = false;
     }
 }

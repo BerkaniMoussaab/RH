@@ -3,6 +3,7 @@ using RH.Data;
 using RH.Models;
 using RH.Services;
 using System;
+using static RH.Components.Pages.Payroll.PayrollList;
 
 public class PayrollService : IPayrollService
 {
@@ -18,7 +19,10 @@ public class PayrollService : IPayrollService
         var employee = await _context.Employees.Include(e => e.JobTitle).FirstOrDefaultAsync(e => e.Id == employeeId);
         if (employee == null) throw new Exception("Employee not found");
 
-        var rules = await _context.PayrollAdjustmentRules.Where(r => r.JobTitleId == employee.JobTitleId).ToListAsync();
+        var rules = await _context.PayrollAdjustmentRules
+     .Where(r => r.JobTitles.Any(j => j.Id == employee.JobTitleId))
+     .ToListAsync();
+
 
         decimal bonus = 0, deduction = 0;
 
@@ -48,7 +52,12 @@ public class PayrollService : IPayrollService
 
     public async Task<List<Payroll>> GetAllAsync()
     {
-        return await _context.Payrolls.Include(p => p.Employee).ToListAsync();
+        return await _context.Payrolls
+     .Include(p => p.Employee)
+     .Include(p => p.AppliedRules)
+         .ThenInclude(pr => pr.Rule) // <-- THIS IS ESSENTIAL
+     .ToListAsync();
+
     }
 
     public async Task<Payroll?> GetByIdAsync(int id)
@@ -56,17 +65,50 @@ public class PayrollService : IPayrollService
         return await _context.Payrolls.Include(p => p.Employee).FirstOrDefaultAsync(p => p.Id == id);
     }
 
-    public async Task<Payroll> CreateAsync(Payroll payroll)
+    public async Task<Payroll> CreateAsync(Payroll payroll, List<SelectableRule> bonuses, List<SelectableRule> deductions)
     {
+        payroll.AppliedRules = bonuses.Concat(deductions).Select(rule => new PayrollAppliedRule
+        {
+            RuleId = rule.RuleId
+        }).ToList();
+
         _context.Payrolls.Add(payroll);
         await _context.SaveChangesAsync();
         return payroll;
     }
 
-    public async Task UpdateAsync(Payroll payroll)
+    public async Task<Payroll> UpdateAsync(Payroll payroll, List<SelectableRule> bonuses, List<SelectableRule> deductions)
     {
-        _context.Payrolls.Update(payroll);
+        var existing = await _context.Payrolls
+            .Include(p => p.AppliedRules)
+            .FirstOrDefaultAsync(p => p.Id == payroll.Id);
+
+        if (existing == null) throw new Exception("Payroll not found");
+
+        // Update fields
+        existing.EmployeeId = payroll.EmployeeId;
+        existing.PayDate = payroll.PayDate;
+        existing.BaseSalary = payroll.BaseSalary;
+        existing.Bonus = payroll.Bonus;
+        existing.Deductions = payroll.Deductions;
+
+        // Update applied rules
+        _context.PayrollAppliedRules.RemoveRange(existing.AppliedRules);
+        existing.AppliedRules = bonuses.Concat(deductions).Select(r => new PayrollAppliedRule
+        {
+            RuleId = r.RuleId
+        }).ToList();
+
         await _context.SaveChangesAsync();
+        return existing;
+    }
+
+    public async Task<Payroll?> GetLastPayrollForEmployeeAsync(int employeeId)
+    {
+        return await _context.Payrolls
+            .Where(p => p.EmployeeId == employeeId)
+            .OrderByDescending(p => p.PayDate)
+            .FirstOrDefaultAsync();
     }
 
     public async Task DeleteAsync(int id)

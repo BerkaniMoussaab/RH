@@ -14,6 +14,9 @@ namespace RH.Data
         public DbSet<PerformanceReview> PerformanceReviews { get; set; }
         public DbSet<MonthlyAttendanceSummary> MonthlyAttendanceSummaries { get; set; }
         public DbSet<PayrollAdjustmentRule> PayrollAdjustmentRules { get; set; }
+        public DbSet<PayrollAppliedRule> PayrollAppliedRules { get; set; }
+        
+        public DbSet<AbsenceRecord> AbsenceRecords { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -46,6 +49,10 @@ namespace RH.Data
                 .WithMany(e => e.PerformanceReviews)
                 .HasForeignKey(r => r.EmployeeId)
                 .OnDelete(DeleteBehavior.Cascade);
+            modelBuilder.Entity<PayrollAdjustmentRule>()
+            .HasMany(r => r.JobTitles)
+            .WithMany(j => j.PayrollAdjustmentRules);
+
         }
     }
       }

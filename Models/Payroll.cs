@@ -22,6 +22,11 @@ namespace RH.Models
         public decimal Deductions { get; set; }
 
         public decimal NetPay => BaseSalary + Bonus - Deductions;
+        public ICollection<PayrollAppliedRule> AppliedRules { get; set; } = new List<PayrollAppliedRule>();
+        public int AbsenceDays { get; set; } // how many days the employee was absent
+        public decimal AbsenceDeduction { get; set; } // the amount deducted due to absences
+
+
     }
 
 }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RH.Data;
 
@@ -11,9 +12,11 @@ using RH.Data;
 namespace RH.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250610131707_payrollrules")]
+    partial class payrollrules
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,21 +24,6 @@ namespace RH.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("JobTitlePayrollAdjustmentRule", b =>
-                {
-                    b.Property<int>("JobTitlesId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PayrollAdjustmentRulesId")
-                        .HasColumnType("int");
-
-                    b.HasKey("JobTitlesId", "PayrollAdjustmentRulesId");
-
-                    b.HasIndex("PayrollAdjustmentRulesId");
-
-                    b.ToTable("JobTitlePayrollAdjustmentRule");
-                });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
@@ -184,6 +172,9 @@ namespace RH.Migrations
                     b.Property<bool>("IsPercentage")
                         .HasColumnType("bit");
 
+                    b.Property<int>("JobTitleId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -192,6 +183,8 @@ namespace RH.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("JobTitleId");
 
                     b.ToTable("PayrollAdjustmentRules");
                 });
@@ -261,25 +254,6 @@ namespace RH.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("RH.Models.AbsenceRecord", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("EmployeeId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("AbsenceRecords");
-                });
-
             modelBuilder.Entity("RH.Models.Employee", b =>
                 {
                     b.Property<int>("Id")
@@ -328,9 +302,6 @@ namespace RH.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("BaseSalary")
-                        .HasColumnType("int");
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
@@ -415,12 +386,6 @@ namespace RH.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("AbsenceDays")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("AbsenceDeduction")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<decimal>("BaseSalary")
                         .HasColumnType("decimal(18,2)");
 
@@ -441,29 +406,6 @@ namespace RH.Migrations
                     b.HasIndex("EmployeeId");
 
                     b.ToTable("Payrolls");
-                });
-
-            modelBuilder.Entity("RH.Models.PayrollAppliedRule", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("PayrollId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("RuleId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PayrollId");
-
-                    b.HasIndex("RuleId");
-
-                    b.ToTable("PayrollAppliedRules");
                 });
 
             modelBuilder.Entity("RH.Models.PerformanceReview", b =>
@@ -494,21 +436,6 @@ namespace RH.Migrations
                     b.HasIndex("EmployeeId");
 
                     b.ToTable("PerformanceReviews");
-                });
-
-            modelBuilder.Entity("JobTitlePayrollAdjustmentRule", b =>
-                {
-                    b.HasOne("RH.Models.JobTitle", null)
-                        .WithMany()
-                        .HasForeignKey("JobTitlesId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PayrollAdjustmentRule", null)
-                        .WithMany()
-                        .HasForeignKey("PayrollAdjustmentRulesId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -562,6 +489,17 @@ namespace RH.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("PayrollAdjustmentRule", b =>
+                {
+                    b.HasOne("RH.Models.JobTitle", "JobTitle")
+                        .WithMany()
+                        .HasForeignKey("JobTitleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("JobTitle");
+                });
+
             modelBuilder.Entity("RH.Models.Employee", b =>
                 {
                     b.HasOne("RH.Models.JobTitle", "JobTitle")
@@ -605,25 +543,6 @@ namespace RH.Migrations
                     b.Navigation("Employee");
                 });
 
-            modelBuilder.Entity("RH.Models.PayrollAppliedRule", b =>
-                {
-                    b.HasOne("RH.Models.Payroll", "Payroll")
-                        .WithMany("AppliedRules")
-                        .HasForeignKey("PayrollId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PayrollAdjustmentRule", "Rule")
-                        .WithMany()
-                        .HasForeignKey("RuleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Payroll");
-
-                    b.Navigation("Rule");
-                });
-
             modelBuilder.Entity("RH.Models.PerformanceReview", b =>
                 {
                     b.HasOne("RH.Models.Employee", "Employee")
@@ -647,11 +566,6 @@ namespace RH.Migrations
             modelBuilder.Entity("RH.Models.JobTitle", b =>
                 {
                     b.Navigation("Employees");
-                });
-
-            modelBuilder.Entity("RH.Models.Payroll", b =>
-                {
-                    b.Navigation("AppliedRules");
                 });
 #pragma warning restore 612, 618
         }

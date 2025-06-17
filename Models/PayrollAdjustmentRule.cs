@@ -6,10 +6,6 @@ public class PayrollAdjustmentRule
     public int Id { get; set; }
 
     [Required]
-    public int JobTitleId { get; set; }
-    public JobTitle? JobTitle { get; set; }
-
-    [Required]
     public string Name { get; set; } = string.Empty;
 
     public AdjustmentType Type { get; set; }
@@ -18,7 +14,10 @@ public class PayrollAdjustmentRule
     public decimal Amount { get; set; }
 
     public bool IsPercentage { get; set; }
+
+    public ICollection<JobTitle> JobTitles { get; set; } = new List<JobTitle>();
 }
+
 
 public enum AdjustmentType
 {

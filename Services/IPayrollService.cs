@@ -1,4 +1,5 @@
 ﻿using RH.Models;
+using static RH.Components.Pages.Payroll.PayrollList;
 
 namespace RH.Services
 {
@@ -6,9 +7,11 @@ namespace RH.Services
     {
         Task<List<Payroll>> GetAllAsync();
         Task<Payroll?> GetByIdAsync(int id);
-        Task<Payroll> CreateAsync(Payroll payroll);
-        Task UpdateAsync(Payroll payroll);
+        
         Task DeleteAsync(int id);
         Task<Payroll> GeneratePayrollForEmployee(int employeeId, DateTime payDate);
+        Task<Payroll> CreateAsync(Payroll payroll, List<SelectableRule> bonuses, List<SelectableRule> deductions);
+        Task<Payroll> UpdateAsync(Payroll payroll, List<SelectableRule> bonuses, List<SelectableRule> deductions);
+
     }
 }

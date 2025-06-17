@@ -123,3 +123,7 @@
         overflow-y: auto;
     }
 }
+.nav-link i {
+    line-height: 1;
+    vertical-align: middle;
+}

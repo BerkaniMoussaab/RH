@@ -35,8 +35,8 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
 
 // Register the EmployeeService
 
-builder.Services.AddDbContext<ApplicationDbContext>(
-    options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")),
+builder.Services.AddDbContextFactory<ApplicationDbContext>(
+    options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")).EnableSensitiveDataLogging(),
     ServiceLifetime.Transient
 );
 
@@ -45,8 +45,11 @@ builder.Services.AddScoped<IJobTitleService, JobTitleService>();
 
 builder.Services.AddScoped<ILeaveRequestService, LeaveRequestService>();
 builder.Services.AddScoped<AttendanceService>();
+builder.Services.AddScoped<PayrollAdjustmentRuleService>();
+builder.Services.AddScoped<JobTitleService>();
 builder.Services.AddScoped<IPayrollAdjustmentRuleService, PayrollAdjustmentRuleService>();
-builder.Services.AddScoped<IPayrollService, PayrollService>();
+builder.Services.AddScoped<PayrollService>();
+builder.Services.AddScoped<AbsenceService>();
 
 
 
@@ -54,6 +57,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 // Register the email sender
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
+builder.Services.AddSingleton<ModalService>();
 
 // Configure HttpClient
 
