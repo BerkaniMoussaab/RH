@@ -1,0 +1,69 @@
+﻿@using RH.Models
+@inject AbsenceService AbsenceService
+
+<EditForm Model="NewAbsence" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <div class="modal show d-block fade" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-md modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-secondary text-white">
+                    <h5 class="modal-title"><i class="bi bi-calendar-x me-2"></i>Ajouter une absence</h5>
+                    <button type="button" class="btn-close" @onclick="OnClose" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Employé</label>
+                        <InputSelect class="form-select" @bind-Value="NewAbsence.EmployeeId">
+                            <option value="">-- Choisir un employé --</option>
+                            @foreach (var emp in Employees)
+                            {
+                                <option value="@emp.Id">@emp.FullName</option>
+                            }
+                        </InputSelect>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Date</label>
+                        <InputDate class="form-control" @bind-Value="NewAbsence.Date" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Motif de l'absence</label>
+                        <InputText class="form-control" @bind-Value="NewAbsence.Reason" />
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <InputCheckbox class="form-check-input" @bind-Value="NewAbsence.Counted" />
+                        <label class="form-check-label">Absence comptabilisée</label>
+                    </div>
+
+                    <ValidationSummary />
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Enregistrer</button>
+                    <button type="button" class="btn btn-secondary" @onclick="OnClose">Annuler</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter] public List<Employee> Employees { get; set; } = new();
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSaved { get; set; }
+
+    private AbsenceRecord NewAbsence = new()
+        {
+            Date = DateTime.Today,
+            Counted = true // Default value (optional)
+        };
+
+    private async Task HandleValidSubmit()
+    {
+        await AbsenceService.CreateAsync(NewAbsence);
+        await OnSaved.InvokeAsync();
+        await OnClose.InvokeAsync();
+    }
+}

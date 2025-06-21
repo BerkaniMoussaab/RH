@@ -12,6 +12,6 @@ namespace RH.Services
         Task<Payroll> GeneratePayrollForEmployee(int employeeId, DateTime payDate);
         Task<Payroll> CreateAsync(Payroll payroll, List<SelectableRule> bonuses, List<SelectableRule> deductions);
         Task<Payroll> UpdateAsync(Payroll payroll, List<SelectableRule> bonuses, List<SelectableRule> deductions);
-
+        Task<int> GetPayrollCountAsync();
     }
 }

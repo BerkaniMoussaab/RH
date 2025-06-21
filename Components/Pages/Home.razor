@@ -1,7 +1,87 @@
 ﻿@page "/"
+@using RH.Components.Pages.AbsenceRecords
+@using RH.Models
+@using RH.Services
+@inject IEmployeeService EmployeeService
+@inject AbsenceService AbsenceService
+@inject IPayrollService PayrollService
+@inject NavigationManager Navigation
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Dashboard</PageTitle>
 
-<h1>Hello, world!</h1>
+<h3 class="mb-4">Tableau de Bord</h3>
 
-Welcome to your new app.
+<div class="row g-4">
+    <div class="col-md-3" @onclick="@(() => NavigateTo("/employees"))">
+        <div class="card shadow-sm border-0 text-white bg-primary h-100 cursor-pointer">
+            <div class="card-body">
+                <h5 class="card-title">Employés</h5>
+                <p class="card-text fs-4">@Employees.Count</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3" @onclick="@(() => NavigateTo("/job-titles"))">
+        <div class="card shadow-sm border-0 text-white bg-info h-100 cursor-pointer">
+            <div class="card-body">
+                <h5 class="card-title">Postes</h5>
+                <p class="card-text fs-4">@JobTitlesCount</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3" @onclick="@(() => NavigateTo("/payrolls"))">
+        <div class="card shadow-sm border-0 text-white bg-success h-100 cursor-pointer">
+            <div class="card-body">
+                <h5 class="card-title">Salaires</h5>
+                <p class="card-text fs-4">@PayrollsCount</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3" @onclick="@(() => NavigateTo("/absences"))">
+        <div class="card shadow-sm border-0 text-white bg-danger h-100 cursor-pointer">
+            <div class="card-body">
+                <h5 class="card-title">Absences</h5>
+                <p class="card-text fs-4">@AbsencesCount</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-5 d-flex justify-content-between align-items-center">
+    <h5 class="mb-0">Actions rapides</h5>
+    <button class="btn btn-outline-primary" @onclick="() => ShowAddAbsenceModal = true">
+        <i class="bi bi-plus-circle me-1"></i>Ajouter une absence
+    </button>
+</div>
+
+@if (ShowAddAbsenceModal)
+{
+    <AddAbsenceModal Employees="Employees"
+                     OnClose="() => ShowAddAbsenceModal = false"
+                     OnSaved="ReloadAbsenceCount" />
+}
+
+@code {
+    private List<Employee> Employees = new();
+    private int JobTitlesCount;
+    private int PayrollsCount;
+    private int AbsencesCount;
+    private bool ShowAddAbsenceModal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Employees = await EmployeeService.GetAllAsync();
+        JobTitlesCount = await EmployeeService.GetJobTitleCountAsync();
+        PayrollsCount = await PayrollService.GetPayrollCountAsync();
+        AbsencesCount = await AbsenceService.GetTotalAbsenceCountAsync();
+    }
+
+    private async Task ReloadAbsenceCount()
+    {
+        AbsencesCount = await AbsenceService.GetTotalAbsenceCountAsync();
+    }
+
+    private void NavigateTo(string url)
+    {
+        Navigation.NavigateTo(url);
+    }
+}

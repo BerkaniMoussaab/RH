@@ -17,7 +17,7 @@ namespace RH.Data
         public DbSet<PayrollAppliedRule> PayrollAppliedRules { get; set; }
         
         public DbSet<AbsenceRecord> AbsenceRecords { get; set; }
-
+        public DbSet<LeavePolicy> LeavePolicies { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -52,6 +52,10 @@ namespace RH.Data
             modelBuilder.Entity<PayrollAdjustmentRule>()
             .HasMany(r => r.JobTitles)
             .WithMany(j => j.PayrollAdjustmentRules);
+            modelBuilder.Entity<LeavePolicy>()
+             .HasMany(lp => lp.JobTitles)
+             .WithMany(jt => jt.LeavePolicies)
+             .UsingEntity(j => j.ToTable("LeavePolicyJobTitles"));
 
         }
     }

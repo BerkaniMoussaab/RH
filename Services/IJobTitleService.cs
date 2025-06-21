@@ -9,5 +9,6 @@ namespace RH.Services
         Task<JobTitle> AddAsync(JobTitle jobTitle);
         Task UpdateAsync(JobTitle jobTitle);
         Task DeleteAsync(int id);
+        Task<List<JobTitle>> GetAllWithLeavePoliciesAsync();
     }
 }

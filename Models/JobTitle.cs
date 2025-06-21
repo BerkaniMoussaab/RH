@@ -14,6 +14,7 @@ namespace RH.Models
 
         public ICollection<Employee> Employees { get; set; } = new List<Employee>();
         public ICollection<PayrollAdjustmentRule> PayrollAdjustmentRules { get; set; } = new List<PayrollAdjustmentRule>();
+        public ICollection<LeavePolicy> LeavePolicies { get; set; } = new List<LeavePolicy>();
 
     }
 

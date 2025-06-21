@@ -9,5 +9,6 @@ namespace RH.Services
         Task AddAsync(Employee employee);
         Task UpdateAsync(Employee employee);
         Task DeleteAsync(int id);
+        Task<int> GetJobTitleCountAsync();
     }
 }

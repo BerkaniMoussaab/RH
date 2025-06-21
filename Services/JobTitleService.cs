@@ -46,5 +46,9 @@ namespace RH.Services
                 await _context.SaveChangesAsync();
             }
         }
+        public async Task<List<JobTitle>> GetAllWithLeavePoliciesAsync()
+        {
+            return await _context.JobTitles.Include(jt => jt.LeavePolicies).ToListAsync();
+        }
     }
 }

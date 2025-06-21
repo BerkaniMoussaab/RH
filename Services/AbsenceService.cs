@@ -10,7 +10,24 @@ public class AbsenceService
     {
         _contextFactory = contextFactory;
     }
+    public async Task<int> GetTotalAbsenceCountAsync()
+    {
+        using var context = _contextFactory.CreateDbContext();
+        return await context.AbsenceRecords.CountAsync();
+    }
 
+    public async Task CreateAsync(AbsenceRecord absence)
+    {
+        using var context = _contextFactory.CreateDbContext();
+        context.AbsenceRecords.Add(absence);
+        await context.SaveChangesAsync();
+    }
+    public async Task UpdateAsync(AbsenceRecord absence)
+    {
+        using var context = _contextFactory.CreateDbContext();
+        context.AbsenceRecords.Update(absence);
+        await context.SaveChangesAsync();
+    }
     public async Task<List<AbsenceRecord>> GetByEmployeeAndMonthAsync(int employeeId, DateTime month)
     {
         var start = new DateTime(month.Year, month.Month, 1);

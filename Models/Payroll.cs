@@ -26,6 +26,7 @@ namespace RH.Models
         public int AbsenceDays { get; set; } // how many days the employee was absent
         public decimal AbsenceDeduction { get; set; } // the amount deducted due to absences
 
+        
 
     }
 

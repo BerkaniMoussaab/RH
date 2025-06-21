@@ -48,7 +48,9 @@ builder.Services.AddScoped<AttendanceService>();
 builder.Services.AddScoped<PayrollAdjustmentRuleService>();
 builder.Services.AddScoped<JobTitleService>();
 builder.Services.AddScoped<IPayrollAdjustmentRuleService, PayrollAdjustmentRuleService>();
+builder.Services.AddScoped<ILeavePolicyService, LeavePolicyService>();
 builder.Services.AddScoped<PayrollService>();
+builder.Services.AddScoped<IPayrollService , PayrollService>();
 builder.Services.AddScoped<AbsenceService>();
 
 

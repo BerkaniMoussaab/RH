@@ -120,4 +120,8 @@ public class PayrollService : IPayrollService
             await _context.SaveChangesAsync();
         }
     }
+    public async Task<int> GetPayrollCountAsync()
+    {
+        return await _context.Payrolls.CountAsync();
+    }
 }

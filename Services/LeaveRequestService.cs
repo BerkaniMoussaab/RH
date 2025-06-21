@@ -6,59 +6,83 @@ namespace RH.Services
 {
     public class LeaveRequestService : ILeaveRequestService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-        public LeaveRequestService(ApplicationDbContext context)
+        public LeaveRequestService(IDbContextFactory<ApplicationDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public async Task<List<LeaveRequest>> GetAllAsync()
         {
-            return await _context.LeaveRequests.Include(l => l.Employee).ToListAsync();
+            using var context = _contextFactory.CreateDbContext();
+            return await context.LeaveRequests
+                .Include(lr => lr.Employee)
+                .ToListAsync();
         }
 
         public async Task<LeaveRequest?> GetByIdAsync(int id)
         {
-            return await _context.LeaveRequests.Include(l => l.Employee).FirstOrDefaultAsync(l => l.Id == id);
+            using var context = _contextFactory.CreateDbContext();
+            return await context.LeaveRequests
+                .Include(lr => lr.Employee)
+                .FirstOrDefaultAsync(x => x.Id == id);
         }
 
-        public async Task<LeaveRequest> CreateAsync(LeaveRequest leaveRequest)
+        public async Task<LeaveRequest> CreateAsync(LeaveRequest request)
         {
-            _context.LeaveRequests.Add(leaveRequest);
-            await _context.SaveChangesAsync();
-            return leaveRequest;
+            using var context = _contextFactory.CreateDbContext();
+            context.LeaveRequests.Add(request);
+            await context.SaveChangesAsync();
+            return request;
         }
 
-        public async Task UpdateStatusAsync(int id, LeaveStatus status)
+        public async Task<LeaveRequest> UpdateAsync(LeaveRequest request)
         {
-            var leaveRequest = await _context.LeaveRequests.FindAsync(id);
-            if (leaveRequest != null)
+            using var context = _contextFactory.CreateDbContext();
+            context.LeaveRequests.Update(request);
+            await context.SaveChangesAsync();
+            return request;
+        }
+
+        public async Task<int> GetRemainingDaysAsync(int employeeId)
+        {
+            using var context = _contextFactory.CreateDbContext();
+
+            var employee = await context.Employees
+                .Include(e => e.JobTitle)
+                .FirstOrDefaultAsync(e => e.Id == employeeId);
+
+            if (employee?.JobTitle == null)
+                return 0;
+
+            var policy = await context.LeavePolicies
+                .Include(p => p.JobTitles)
+                .Where(p => p.JobTitles.Any(j => j.Id == employee.JobTitleId))
+                .FirstOrDefaultAsync();
+
+            var allowedDays = policy?.AnnualLeaveDays ?? 30;
+            var yearStart = new DateTime(DateTime.Today.Year, 1, 1);
+
+            var usedDays = await context.LeaveRequests
+                .Where(lr => lr.EmployeeId == employeeId
+                             && lr.IsPaid
+                             && lr.Status == LeaveStatus.Approved
+                             && lr.StartDate >= yearStart)
+                .SumAsync(lr => EF.Functions.DateDiffDay(lr.StartDate, lr.EndDate) + 1);
+
+            return Math.Max(allowedDays - usedDays, 0);
+        }
+
+        public async Task UpdateStatusAsync(int requestId, LeaveStatus newStatus)
+        {
+            using var context = _contextFactory.CreateDbContext();
+            var request = await context.LeaveRequests.FindAsync(requestId);
+            if (request != null)
             {
-                leaveRequest.Status = status;
-                await _context.SaveChangesAsync();
+                request.Status = newStatus;
+                await context.SaveChangesAsync();
             }
-        }
-        public async Task UpdateAsync(LeaveRequest leaveRequest)
-        {
-            _context.LeaveRequests.Update(leaveRequest);
-            await _context.SaveChangesAsync();
-        }
-
-
-        public async Task DeleteAsync(int id)
-        {
-            var leaveRequest = await _context.LeaveRequests.FindAsync(id);
-            if (leaveRequest != null)
-            {
-                _context.LeaveRequests.Remove(leaveRequest);
-                await _context.SaveChangesAsync();
-            }
-        }
-
-        public Task UpdateAsync(LeaveStatus status)
-        {
-            throw new NotImplementedException();
         }
     }
 }

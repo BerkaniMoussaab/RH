@@ -8,43 +8,55 @@
 
     public class EmployeeService : IEmployeeService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-        public EmployeeService(ApplicationDbContext context)
+        public EmployeeService(IDbContextFactory<ApplicationDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public async Task<List<Employee>> GetAllAsync()
         {
-            return await _context.Employees.ToListAsync();
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Employees.ToListAsync();
         }
 
         public async Task<Employee> GetByIdAsync(int id)
         {
-            return await _context.Employees.FindAsync(id);
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Employees.FindAsync(id);
         }
 
         public async Task AddAsync(Employee employee)
         {
-            _context.Employees.Add(employee);
-            await _context.SaveChangesAsync();
+            using var context = _contextFactory.CreateDbContext();
+            context.Employees.Add(employee);
+            await context.SaveChangesAsync();
         }
 
         public async Task UpdateAsync(Employee employee)
         {
-            _context.Employees.Update(employee);
-            await _context.SaveChangesAsync();
+            using var context = _contextFactory.CreateDbContext();
+            context.Employees.Update(employee);
+            await context.SaveChangesAsync();
         }
 
         public async Task DeleteAsync(int id)
         {
-            var employee = await _context.Employees.FindAsync(id);
+            using var context = _contextFactory.CreateDbContext();
+            var employee = await context.Employees.FindAsync(id);
             if (employee != null)
             {
-                _context.Employees.Remove(employee);
-                await _context.SaveChangesAsync();
+                context.Employees.Remove(employee);
+                await context.SaveChangesAsync();
             }
+        }
+       
+
+        public async Task<int> GetJobTitleCountAsync()
+        {
+            using var context = _contextFactory.CreateDbContext();
+            return await context.JobTitles.CountAsync();
         }
     }
 }

@@ -2,9 +2,10 @@
 @using RH.Models
 @using RH.Services
 @inject IJobTitleService JobTitleService
+@inject ILeavePolicyService LeavePolicyService
 @inject IJSRuntime JS
 
-<h3 class="mb-4">Postes</h3>
+<h3 class="mb-4">Postes & Politiques de congé</h3>
 
 <button class="btn btn-primary mb-3" @onclick="OpenCreateModal">Ajouter un poste</button>
 
@@ -23,6 +24,7 @@ else
             <tr>
                 <th>Titre</th>
                 <th>Description</th>
+                <th>Politique de congé</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -33,6 +35,16 @@ else
                     <td>@job.Title</td>
                     <td>@job.Description</td>
                     <td>
+                        @if (job.LeavePolicies?.Any() == true)
+                        {
+                            @string.Join(", ", job.LeavePolicies.Select(p => $"{p.AnnualLeaveDays} jours/an"))
+                        }
+                        else
+                        {
+                            <em>Non défini</em>
+                        }
+                    </td>
+                    <td>
                         <button class="btn btn-sm btn-warning me-1" @onclick="@(() => OpenEditModal(job))">Modifier</button>
                         <button class="btn btn-sm btn-danger" @onclick="@(() => DeleteJobTitle(job.Id))">Supprimer</button>
                     </td>
@@ -42,7 +54,6 @@ else
     </table>
 }
 
-<!-- Modal -->
 @if (showModal)
 {
     <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
@@ -63,6 +74,12 @@ else
                             <label class="form-label">Description</label>
                             <InputTextArea class="form-control" @bind-Value="currentJobTitle.Description" />
                         </div>
+
+                        <hr />
+                        <div class="mb-3">
+                            <label class="form-label">Politique de congé (jours/an)</label>
+                            <InputNumber class="form-control" @bind-Value="leaveDays" />
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" @onclick="CloseModal">Annuler</button>
@@ -77,6 +94,7 @@ else
 @code {
     private List<JobTitle>? jobTitles;
     private JobTitle currentJobTitle = new();
+    private int leaveDays = 30;
     private bool showModal = false;
     private bool isEditing = false;
 
@@ -87,12 +105,13 @@ else
 
     private async Task LoadJobTitles()
     {
-        jobTitles = await JobTitleService.GetAllAsync();
+        jobTitles = await JobTitleService.GetAllWithLeavePoliciesAsync();
     }
 
     private void OpenCreateModal()
     {
         currentJobTitle = new JobTitle();
+        leaveDays = 30;
         isEditing = false;
         showModal = true;
     }
@@ -100,17 +119,24 @@ else
     private void OpenEditModal(JobTitle job)
     {
         currentJobTitle = new JobTitle
-        {
-            Id = job.Id,
-            Title = job.Title,
-            Description = job.Description
-        };
+            {
+                Id = job.Id,
+                Title = job.Title,
+                Description = job.Description,
+            };
+
+        var firstPolicy = job.LeavePolicies?.FirstOrDefault();
+        leaveDays = firstPolicy?.AnnualLeaveDays ?? 30;
+
         isEditing = true;
         showModal = true;
     }
 
     private async Task SaveJobTitle()
     {
+        LeavePolicy policy = new() { AnnualLeaveDays = leaveDays };
+        await LeavePolicyService.CreateAsync(policy);
+
         if (isEditing)
         {
             await JobTitleService.UpdateAsync(currentJobTitle);
@@ -119,6 +145,9 @@ else
         {
             await JobTitleService.AddAsync(currentJobTitle);
         }
+
+        // Re-link job title and leave policy
+        await LeavePolicyService.AssignToJobTitleAsync(policy.Id, currentJobTitle.Id);
 
         showModal = false;
         await LoadJobTitles();

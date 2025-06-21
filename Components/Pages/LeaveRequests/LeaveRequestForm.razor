@@ -1,59 +1,99 @@
 ﻿@using RH.Models
 @using RH.Services
 @inject IEmployeeService EmployeeService
+@inject ILeaveRequestService LeaveRequestService
 
-<EditForm Model="LeaveRequest" OnValidSubmit="HandleValidSubmit">
-    <DataAnnotationsValidator />
-    <ValidationSummary />
+@if (editContext != null)
+{
+    <EditForm EditContext="editContext" OnValidSubmit="HandleValidSubmit">
+        <div class="modal @(IsOpen ? "show d-block fade" : "fade")" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg rounded-3">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title d-flex align-items-center">
+                            <i class="bi bi-calendar-check me-2 fs-4"></i>
+                            @((LeaveRequest.Id == 0) ? "Nouvelle demande de congé" : "Modifier la demande de congé")
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" @onclick="Close" aria-label="Close"></button>
+                    </div>
 
-    <div class="modal @(IsOpen ? "show d-block" : "fade")" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@((LeaveRequest.Id == 0) ? "New Leave Request" : "Edit Leave Request")</h5>
-                    <button type="button" class="btn-close" @onclick="Close" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Employee</label>
-                        <InputSelect class="form-select" @bind-Value="LeaveRequest.EmployeeId">
-                            <option value="">-- Select Employee --</option>
-                            @foreach (var emp in Employees)
-                            {
-                                <option value="@emp.Id">@emp.FullName</option>
-                            }
-                        </InputSelect>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Employé</label>
+                                <InputSelect class="form-select" @bind-Value="CurrentEmployeeId">
+                                    <option value="">-- Sélectionner un employé --</option>
+                                    @foreach (var emp in Employees)
+                                    {
+                                        <option value="@emp.Id">@emp.FullName</option>
+                                    }
+                                </InputSelect>
+                                <ValidationMessage For="@(() => LeaveRequest.EmployeeId)" />
+                                @if (RemainingDays != null)
+                                {
+                                    <span class="badge bg-success mt-2"><i class="bi bi-clock-history me-1"></i>Reste : @RemainingDays jour(s)</span>
+                                }
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Date de début</label>
+                                <InputDate class="form-control" @bind-Value="LeaveRequest.StartDate" @oninput="ValidateLeave" />
+                                <ValidationMessage For="@(() => LeaveRequest.StartDate)" />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Date de fin</label>
+                                <InputDate class="form-control" @bind-Value="LeaveRequest.EndDate" @oninput="ValidateLeave" />
+                                <ValidationMessage For="@(() => LeaveRequest.EndDate)" />
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Motif</label>
+                                <InputTextArea class="form-control" @bind-Value="LeaveRequest.Reason" rows="3" />
+                                <ValidationMessage For="@(() => LeaveRequest.Reason)" />
+                            </div>
+
+                            <div class="col-md-6 d-flex align-items-center mt-2">
+                                <InputCheckbox class="form-check-input me-2" @bind-Value="LeaveRequest.IsPaid" @onchange="ValidateLeave" />
+                                <label class="form-check-label fw-semibold">Congé payé</label>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Statut</label>
+                                <InputSelect class="form-select" @bind-Value="LeaveRequest.Status">
+                                    @foreach (var status in Enum.GetValues<LeaveStatus>())
+                                    {
+                                        <option value="@status">@status</option>
+                                    }
+                                </InputSelect>
+                                <ValidationMessage For="@(() => LeaveRequest.Status)" />
+                            </div>
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(ValidationMessage))
+                        {
+                            <div class="alert alert-danger mt-4">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>@ValidationMessage
+                            </div>
+                        }
+
+                        <DataAnnotationsValidator />
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Start Date</label>
-                        <InputDate class="form-control" @bind-Value="LeaveRequest.StartDate" />
+
+                    <div class="modal-footer bg-light border-top-0">
+                        <button type="submit" class="btn btn-success px-4">
+                            <i class="bi bi-save me-2"></i>Enregistrer
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary px-4" @onclick="Close">
+                            <i class="bi bi-x-circle me-2"></i>Annuler
+                        </button>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">End Date</label>
-                        <InputDate class="form-control" @bind-Value="LeaveRequest.EndDate" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Reason</label>
-                        <InputTextArea class="form-control" @bind-Value="LeaveRequest.Reason" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Status</label>
-                        <InputSelect class="form-select" @bind-Value="LeaveRequest.Status">
-                            @foreach (var status in Enum.GetValues<LeaveStatus>())
-                            {
-                                <option value="@status">@status</option>
-                            }
-                        </InputSelect>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Save</button>
-                    <button type="button" class="btn btn-secondary" @onclick="Close">Cancel</button>
                 </div>
             </div>
         </div>
-    </div>
-</EditForm>
+    </EditForm>
+}
+
 
 @code {
     [Parameter] public LeaveRequest LeaveRequest { get; set; } = new();
@@ -62,20 +102,92 @@
     [Parameter] public EventCallback<LeaveRequest> OnSave { get; set; }
 
     private List<Employee> Employees = new();
+    private int? RemainingDays;
+    private string? ValidationMessage;
+    private EditContext? editContext;
+
+    // 👇 This property handles EmployeeId changes
+    private int CurrentEmployeeId
+    {
+        get => LeaveRequest.EmployeeId;
+        set
+        {
+            if (LeaveRequest.EmployeeId != value)
+            {
+                LeaveRequest.EmployeeId = value;
+                InvokeAsync(async () => await OnEmployeeChanged(value));
+            }
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
         Employees = await EmployeeService.GetAllAsync();
     }
 
+    protected override async Task OnParametersSetAsync()
+    {
+        if (LeaveRequest is not null)
+        {
+            editContext = new EditContext(LeaveRequest);
+
+            if (LeaveRequest.EmployeeId > 0)
+            {
+                await UpdateRemainingDays();
+            }
+        }
+    }
+
+    private async Task OnEmployeeChanged(int employeeId)
+    {
+        if (employeeId > 0)
+        {
+            RemainingDays = await LeaveRequestService.GetRemainingDaysAsync(employeeId);
+            ValidateLeave();
+            StateHasChanged();
+        }
+    }
+
+    private void ValidateLeave(ChangeEventArgs? e = null)
+    {
+        ValidationMessage = null;
+
+        if (LeaveRequest.IsPaid && RemainingDays.HasValue
+            && LeaveRequest.StartDate != default && LeaveRequest.EndDate != default)
+        {
+            var requestedDays = (LeaveRequest.EndDate - LeaveRequest.StartDate).Days + 1;
+
+            if (requestedDays > RemainingDays.Value)
+            {
+                ValidationMessage = $"Requested paid leave ({requestedDays} days) exceeds remaining balance ({RemainingDays.Value} days).";
+            }
+        }
+    }
+
     private async Task HandleValidSubmit()
     {
+        ValidateLeave();
+
+        if (!string.IsNullOrWhiteSpace(ValidationMessage))
+        {
+            return;
+        }
+
         await OnSave.InvokeAsync(LeaveRequest);
         await Close();
     }
 
     private async Task Close()
     {
+        ValidationMessage = null;
         await IsOpenChanged.InvokeAsync(false);
+    }
+    private async Task UpdateRemainingDays()
+    {
+        if (LeaveRequest.EmployeeId > 0)
+        {
+            RemainingDays = await LeaveRequestService.GetRemainingDaysAsync(LeaveRequest.EmployeeId);
+        }
+        StateHasChanged();
     }
 }

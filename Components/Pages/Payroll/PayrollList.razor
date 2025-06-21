@@ -66,30 +66,22 @@
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Employee</label>
-                                <InputSelect class="form-select"
-                                @bind-Value="CurrentEmployeeId">
+                                <InputSelect class="form-select" @bind-Value="CurrentEmployeeId">
                                     <option value="">-- Select Employee --</option>
                                     @foreach (var emp in Employees)
                                     {
                                         <option value="@emp.Id">@emp.FullName</option>
                                     }
                                 </InputSelect>
-
-
-
-
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Pay Date</label>
                                 <InputDate class="form-control" @bind-Value="CurrentPayroll.PayDate" />
                             </div>
-
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Base Salary</label>
-
                                 <InputNumber @bind-Value="CurrentPayroll.BaseSalary" class="form-control" />
                                 <small class="text-muted">Automatically filled from last payroll</small>
-
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Absence Mode</label>
@@ -103,19 +95,34 @@
                             {
                                 <div class="col-md-6">
                                     <label class="form-label">Manual Absence Days</label>
-                                    <InputNumber class="form-control" @bind-Value="ManualAbsenceDays" @bind-Value:event="oninput" />
+                                    <InputNumber class="form-control" @bind-Value="ManualAbsenceDays" />
                                 </div>
                             }
-                            else if (EmployeeAbsenceDates.Any())
+                            else if (EmployeeAbsences.Any())
                             {
-                                <div class="col-md-6">
+                                <div class="col-md-12">
                                     <label class="form-label">Recorded Absences</label>
-                                    <ul class="list-group">
-                                        @foreach (var date in EmployeeAbsenceDates)
-                                        {
-                                            <li class="list-group-item py-1">@date.ToShortDateString()</li>
-                                        }
-                                    </ul>
+                                    <table class="table table-sm table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Date</th>
+                                                <th>Reason</th>
+                                                <th>Counted</th>
+                                                <th>Deduction</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var a in EmployeeAbsences)
+                                            {
+                                                <tr>
+                                                    <td>@a.Date.ToShortDateString()</td>
+                                                    <td><InputText class="form-control" @bind-Value="a.Reason" /></td>
+                                                    <td class="text-center"><InputCheckbox @bind-Value="a.Counted" /></td>
+                                                    <td><InputNumber class="form-control" @bind-Value="a.DeductionValue" /></td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
                                 </div>
                             }
 
@@ -133,7 +140,6 @@
                                     }
                                 </div>
                             </div>
-
                             <div class="col-md-6">
                                 <label class="form-label fw-bold">Deductions</label>
                                 <div class="card border-danger p-2">
@@ -182,41 +188,32 @@
     private List<PayrollAdjustmentRule> AllAdjustmentRules = new();
     private List<SelectableRule> SelectedBonusRules = new();
     private List<SelectableRule> SelectedDeductionRules = new();
-    private Payroll currentPayroll = new();
-    private Payroll CurrentPayroll
-    {
-        get => currentPayroll;
-        set => currentPayroll = value;
-    }
-
-
+    private Payroll CurrentPayroll = new();
 
     private bool IsModalOpen = false;
     private bool UseManualAbsences = false;
-    private int manualAbsenceDays;
-    private int ManualAbsenceDays
+    private int ManualAbsenceDays = 0;
+    
+
+    private async Task LoadAbsenceDates(int employeeId, DateTime payMonth)
     {
-        get => manualAbsenceDays;
-        set
-        {
-            if (manualAbsenceDays != value)
-            {
-                manualAbsenceDays = value;
-                RecalculateAbsenceDeduction();
-            }
-        }
+        EmployeeAbsences = await AbsenceService.GetByEmployeeAndMonthAsync(employeeId, payMonth);
+        
     }
-    private int _employeeId;
-    public int EmployeeId
+
+    private void RecalculateAbsenceDeduction()
     {
-        get => _employeeId;
-        set
+        if (UseManualAbsences)
         {
-            if (_employeeId != value)
-            {
-                _employeeId = value;
-                _ = OnEmployeeChanged(value); // fire and forget (async)
-            }
+            decimal dailyRate = CurrentPayroll.BaseSalary / 22m;
+            CurrentPayroll.AbsenceDays = ManualAbsenceDays;
+            CurrentPayroll.AbsenceDeduction = ManualAbsenceDays * dailyRate;
+        }
+        else
+        {
+            var countedAbsences = EmployeeAbsences.Where(a => a.Counted);
+            CurrentPayroll.AbsenceDays = countedAbsences.Count();
+            CurrentPayroll.AbsenceDeduction = countedAbsences.Sum(a => a.DeductionValue);
         }
     }
     private int CurrentEmployeeId
@@ -232,7 +229,7 @@
         }
     }
 
-    private List<DateTime> EmployeeAbsenceDates = new();
+    private List<AbsenceRecord> EmployeeAbsences = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -241,31 +238,19 @@
         await LoadPayrolls();
     }
 
-    private async Task LoadPayrolls()
-    {
-        Payrolls = await PayrollService.GetAllAsync();
-    }
+    private async Task LoadPayrolls() => Payrolls = await PayrollService.GetAllAsync();
 
     private async Task AddPayroll()
     {
         CurrentPayroll = new Payroll { PayDate = DateTime.Today };
         SelectedBonusRules.Clear();
         SelectedDeductionRules.Clear();
-
         if (Employees.Any())
         {
-
-            await OnEmployeeChanged(CurrentPayroll.EmployeeId); // ✅ Call directly
+            await OnEmployeeChanged(CurrentPayroll.EmployeeId);
             await LoadAbsenceDates(CurrentPayroll.EmployeeId, CurrentPayroll.PayDate);
         }
-
         IsModalOpen = true;
-    }
-
-    private async Task OnEmployeeChangedWrapper(int newEmployeeId)
-    {
-        CurrentPayroll.EmployeeId = newEmployeeId;
-        await OnEmployeeChanged(newEmployeeId);
     }
 
     private async void EditPayroll(Payroll payroll)
@@ -286,12 +271,9 @@
         var jobTitleId = Employees.FirstOrDefault(e => e.Id == payroll.EmployeeId)?.JobTitleId;
         if (jobTitleId != null)
         {
-            SelectedBonusRules = AllAdjustmentRules
-                .Where(r => r.Type == AdjustmentType.Bonus && r.JobTitles.Any(j => j.Id == jobTitleId))
+            SelectedBonusRules = AllAdjustmentRules.Where(r => r.Type == AdjustmentType.Bonus && r.JobTitles.Any(j => j.Id == jobTitleId))
                 .Select(r => new SelectableRule(r, appliedBonuses.Contains(r.Id))).ToList();
-
-            SelectedDeductionRules = AllAdjustmentRules
-                .Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId))
+            SelectedDeductionRules = AllAdjustmentRules.Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId))
                 .Select(r => new SelectableRule(r, appliedDeductions.Contains(r.Id))).ToList();
         }
 
@@ -303,12 +285,10 @@
     {
         RecalculateAbsenceDeduction();
 
-        CurrentPayroll.Bonus = SelectedBonusRules
-            .Where(r => r.IsApplied)
+        CurrentPayroll.Bonus = SelectedBonusRules.Where(r => r.IsApplied)
             .Sum(r => r.IsPercentage ? CurrentPayroll.BaseSalary * r.Amount / 100m : r.Amount);
 
-        CurrentPayroll.Deductions = SelectedDeductionRules
-            .Where(r => r.IsApplied)
+        CurrentPayroll.Deductions = SelectedDeductionRules.Where(r => r.IsApplied)
             .Sum(r => r.IsPercentage ? CurrentPayroll.BaseSalary * r.Amount / 100m : r.Amount);
 
         CurrentPayroll.Deductions += CurrentPayroll.AbsenceDeduction;
@@ -320,6 +300,14 @@
         else
         {
             await PayrollService.UpdateAsync(CurrentPayroll, SelectedBonusRules.Where(r => r.IsApplied).ToList(), SelectedDeductionRules.Where(r => r.IsApplied).ToList());
+        }
+
+        if (!UseManualAbsences)
+        {
+            foreach (var abs in EmployeeAbsences)
+            {
+                await AbsenceService.UpdateAsync(abs);
+            }
         }
 
         IsModalOpen = false;
@@ -337,34 +325,20 @@
 
     private void CloseModal() => IsModalOpen = false;
 
-    private async Task HandleEmployeeChanged(ChangeEventArgs e)
-    {
-        if (int.TryParse(e.Value?.ToString(), out var employeeId))
-        {
-            CurrentPayroll.EmployeeId = employeeId;
-            await OnEmployeeChanged(employeeId); // This expects int
-        }
-    }
-
     private async Task OnEmployeeChanged(int employeeId)
     {
         SelectedBonusRules.Clear();
         SelectedDeductionRules.Clear();
         CurrentPayroll.BaseSalary = 0;
-        var employee = Employees.FirstOrDefault(emp => emp.Id == employeeId);
+        var employee = Employees.FirstOrDefault(e => e.Id == employeeId);
         if (employee == null) return;
 
         if (employee.JobTitleId is int jobTitleId)
         {
-            SelectedBonusRules = AllAdjustmentRules
-                .Where(r => r.Type == AdjustmentType.Bonus && r.JobTitles.Any(j => j.Id == jobTitleId))
-                .Select(r => new SelectableRule(r))
-                .ToList();
-
-            SelectedDeductionRules = AllAdjustmentRules
-                .Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId))
-                .Select(r => new SelectableRule(r))
-                .ToList();
+            SelectedBonusRules = AllAdjustmentRules.Where(r => r.Type == AdjustmentType.Bonus && r.JobTitles.Any(j => j.Id == jobTitleId))
+                .Select(r => new SelectableRule(r)).ToList();
+            SelectedDeductionRules = AllAdjustmentRules.Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId))
+                .Select(r => new SelectableRule(r)).ToList();
         }
 
         var lastPayroll = await PayrollService.GetLastPayrollForEmployeeAsync(employeeId);
@@ -375,28 +349,17 @@
             await LoadAbsenceDates(employeeId, CurrentPayroll.PayDate);
         }
 
-        RecalculateAbsenceDeduction(); // ✅ Add this here if not already
+        RecalculateAbsenceDeduction();
         StateHasChanged();
     }
 
-
-
-
-
-    private async Task LoadAbsenceDates(int employeeId, DateTime payMonth)
+    private void OnAbsenceDeductionChanged()
     {
-        var allAbsences = await AbsenceService.GetByEmployeeAndMonthAsync(employeeId, payMonth);
-        EmployeeAbsenceDates = allAbsences.Select(a => a.Date).ToList();
+        RecalculateAbsenceDeduction();
     }
 
-    private void RecalculateAbsenceDeduction()
-    {
-        int absenceDays = UseManualAbsences ? ManualAbsenceDays : EmployeeAbsenceDates.Count;
-        decimal dailyRate = CurrentPayroll.BaseSalary / 22m;
-        CurrentPayroll.AbsenceDays = absenceDays;
-        CurrentPayroll.AbsenceDeduction = absenceDays * dailyRate;
-    }
 
+   
     public class SelectableRule
     {
         public int RuleId { get; set; }
