@@ -7,78 +7,81 @@
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+<input type="checkbox" title="Menu de navigation" class="navbar-toggler" />
 
 @inject NavigationManager NavigationManager
 
 <div class="d-flex flex-column bg-dark vh-100 text-white" style="width: 250px;">
-   
 
-    <!-- Sidebar Links -->
+    <!-- Liens de la barre latérale -->
     <div class="mt-3">
         <div class="nav-item px-3">
             <NavLink class="nav-link d-flex align-items-center px-3 py-2 text-white" href="/">
                 <i class="bi bi-house me-2 fs-5"></i>
-                <span>Dashboard</span>
+                <span>Tableau de bord</span>
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link d-flex align-items-center px-3 py-2 text-white" href="/employees">
                 <i class="bi bi-people me-2 fs-5"></i>
-                <span>Employees</span>
+                <span>Employés</span>
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link d-flex align-items-center px-3 py-2 text-white" href="/leaves">
                 <i class="bi bi-calendar-check me-2 fs-5"></i>
-                <span>Leave Requests</span>
+                <span>Demandes de congé</span>
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link d-flex align-items-center px-3 py-2 text-white" href="/payrolls">
                 <i class="bi bi-cash-stack me-2 fs-5"></i>
-                <span>Payroll</span>
+                <span>Bulletins de paie</span>
             </NavLink>
         </div>
 
-       
+        <div class="nav-item px-3">
+            <NavLink class="nav-link d-flex align-items-center px-3 py-2 text-white" href="/payrollRules">
+                <i class="bi bi-briefcase me-2 fs-5"></i>
+                <span>Règles de paie</span>
+            </NavLink>
+        </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link d-flex align-items-center px-3 py-2 text-white" href="/job-titles">
                 <i class="bi bi-briefcase me-2 fs-5"></i>
-                <span>Job Titles</span>
+                <span>Postes</span>
             </NavLink>
         </div>
 
         <hr class="text-secondary mx-3" />
 
-     
-
         <div class="nav-item px-3">
             <NavLink class="nav-link d-flex align-items-center px-3 py-2 text-white" href="/auth">
                 <i class="bi bi-shield-lock me-2 fs-5"></i>
-                <span>Auth Required</span>
+                <span>Authentification requise</span>
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link d-flex align-items-center px-3 py-2 text-white" href="/register">
                 <i class="bi bi-person-plus me-2 fs-5"></i>
-                <span>Register</span>
+                <span>Inscription</span>
             </NavLink>
         </div>
 
         <div class="nav-item px-3 mb-3">
             <NavLink class="nav-link d-flex align-items-center px-3 py-2 text-white" href="/login">
                 <i class="bi bi-box-arrow-in-right me-2 fs-5"></i>
-                <span>Login</span>
+                <span>Connexion</span>
             </NavLink>
         </div>
     </div>
 </div>
+
 
 
 @code {

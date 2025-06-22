@@ -2,17 +2,16 @@
 @using RH.Models
 @using RH.Services
 @inject ILeaveRequestService LeaveRequestService
-
-<h2 class="mb-4">Leave Requests</h2>
-<button class="btn btn-primary mb-3" @onclick="CreateNew">New Request</button>
+<h2 class="mb-4">Demandes de congé</h2>
+<button class="btn btn-primary mb-3" @onclick="CreateNew">Nouvelle demande</button>
 
 <table class="table table-bordered table-striped">
     <thead>
         <tr>
-            <th>Employee</th>
+            <th>Employé</th>
             <th>Dates</th>
-            <th>Status</th>
-            <th>Reason</th>
+            <th>Statut</th>
+            <th>Motif</th>
             <th></th>
         </tr>
     </thead>
@@ -27,17 +26,18 @@
                     <td>@request.Status</td>
                     <td>@request.Reason</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => Edit(request.Id)">Edit</button>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => Edit(request.Id)">Modifier</button>
                     </td>
                 </tr>
             }
         }
         else
         {
-            <tr><td colspan="5">No leave requests found.</td></tr>
+            <tr><td colspan="5">Aucune demande de congé trouvée.</td></tr>
         }
     </tbody>
 </table>
+
 
 <LeaveRequestForm LeaveRequest="Selected" IsOpen="ShowForm" IsOpenChanged="HandleClose" OnSave="Save" />
 

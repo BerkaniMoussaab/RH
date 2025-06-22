@@ -11,18 +11,16 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">@((Employee.Id == 0) ? "Create Employee" : "Edit Employee")</h5>
-                    <button type="button" class="btn-close" @onclick="Close" aria-label="Close"></button>
+                    <h5 class="modal-title">@((Employee.Id == 0) ? "Créer un employé" : "Modifier l'employé")</h5>
+                    <button type="button" class="btn-close" @onclick="Close" aria-label="Fermer"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- First Name -->
+                    <!-- Nom complet -->
                     <div class="mb-3">
-                        <label class="form-label">First Name</label>
+                        <label class="form-label">Nom complet</label>
                         <InputText class="form-control" @bind-Value="Employee.FullName" />
                         <ValidationMessage For="@(() => Employee.FullName)" />
                     </div>
-
-                  
 
                     <!-- Email -->
                     <div class="mb-3">
@@ -31,24 +29,24 @@
                         <ValidationMessage For="@(() => Employee.Email)" />
                     </div>
 
-                    <!-- Phone Number -->
+                    <!-- Numéro de téléphone -->
                     <div class="mb-3">
-                        <label class="form-label">Phone Number</label>
+                        <label class="form-label">Numéro de téléphone</label>
                         <InputText class="form-control" @bind-Value="Employee.PhoneNumber" />
                     </div>
 
-                    <!-- Hire Date -->
+                    <!-- Date d'embauche -->
                     <div class="mb-3">
-                        <label class="form-label">Hire Date</label>
+                        <label class="form-label">Date d'embauche</label>
                         <InputDate class="form-control" @bind-Value="Employee.HireDate" />
                     </div>
 
-                    <!-- Job Title -->
+                    <!-- Poste -->
                     <div class="mb-3">
-                        <label class="form-label">Job Title</label>
+                        <label class="form-label">Poste</label>
                         <div class="d-flex">
                             <InputSelect class="form-select me-2" @bind-Value="Employee.JobTitleId">
-                                <option value="">-- Select Job Title --</option>
+                                <option value="">-- Sélectionnez un poste --</option>
                                 @foreach (var jt in JobTitles)
                                 {
                                     <option value="@jt.Id">@jt.Title</option>
@@ -58,9 +56,9 @@
                         </div>
                     </div>
 
-                    <!-- Status -->
+                    <!-- Statut -->
                     <div class="mb-3">
-                        <label class="form-label">Status</label>
+                        <label class="form-label">Statut</label>
                         <InputSelect class="form-select" @bind-Value="Employee.Status">
                             @foreach (var status in Enum.GetValues<EmployeeStatus>())
                             {
@@ -71,15 +69,15 @@
                 </div>
 
                 <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Save</button>
-                    <button type="button" class="btn btn-secondary" @onclick="Close">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                    <button type="button" class="btn btn-secondary" @onclick="Close">Annuler</button>
                 </div>
             </div>
         </div>
     </div>
 </EditForm>
 
-<!-- Job Title Add Modal -->
+<!-- Modal d'ajout de poste -->
 @if (ShowAddJobTitle)
 {
     <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
@@ -88,12 +86,12 @@
                 <EditForm Model="NewJobTitle" OnValidSubmit="AddJobTitle">
                     <DataAnnotationsValidator />
                     <div class="modal-header">
-                        <h5 class="modal-title">Add New Job Title</h5>
-                        <button type="button" class="btn-close" @onclick="() => ShowAddJobTitle = false" aria-label="Close"></button>
+                        <h5 class="modal-title">Ajouter un nouveau poste</h5>
+                        <button type="button" class="btn-close" @onclick="() => ShowAddJobTitle = false" aria-label="Fermer"></button>
                     </div>
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">Title</label>
+                            <label class="form-label">Titre</label>
                             <InputText class="form-control" @bind-Value="NewJobTitle.Title" />
                             <ValidationMessage For="@(() => NewJobTitle.Title)" />
                         </div>
@@ -103,14 +101,15 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="submit" class="btn btn-success">Add</button>
-                        <button type="button" class="btn btn-secondary" @onclick="() => ShowAddJobTitle = false">Cancel</button>
+                        <button type="submit" class="btn btn-success">Ajouter</button>
+                        <button type="button" class="btn btn-secondary" @onclick="() => ShowAddJobTitle = false">Annuler</button>
                     </div>
                 </EditForm>
             </div>
         </div>
     </div>
 }
+
 
 @code {
     [Parameter] public Employee Employee { get; set; } = new();

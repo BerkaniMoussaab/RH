@@ -5,13 +5,18 @@
 @inject IJobTitleService JobTitleService
 @inject NavigationManager NavigationManager
 
-<h1 class="text-2xl font-bold mb-4">Employees</h1>
+<h1 class="text-2xl font-bold mb-4">Employés</h1>
 
-<button class="btn btn-primary mb-4" @onclick="AddEmployee">Add New</button>
+<button class="btn btn-primary mb-4" @onclick="AddEmployee">Ajouter un employé</button>
 
 <table class="table table-striped">
     <thead>
-        <tr><th>Name</th><th>Email</th><th>Status</th><th></th></tr>
+        <tr>
+            <th>Nom</th>
+            <th>Email</th>
+            <th>Statut</th>
+            <th></th>
+        </tr>
     </thead>
     <tbody>
         @if (Employees != null && Employees.Any())
@@ -23,17 +28,20 @@
                     <td>@emp.Email</td>
                     <td>@emp.Status</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => Edit(emp.Id)">Edit</button>
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => Edit(emp.Id)">Modifier</button>
                     </td>
                 </tr>
             }
         }
         else
         {
-            <tr><td colspan="4">No employees available</td></tr>
+            <tr>
+                <td colspan="4">Aucun employé disponible</td>
+            </tr>
         }
     </tbody>
 </table>
+
 
 <!-- Employee Form Modal -->
 <EmployeeForm Employee="SelectedEmployee" IsOpen="IsModalOpen" IsOpenChanged="HandleModalClose" OnSave="HandleEmployeeSave" />

@@ -14,11 +14,12 @@
                             <i class="bi bi-calendar-check me-2 fs-4"></i>
                             @((LeaveRequest.Id == 0) ? "Nouvelle demande de congé" : "Modifier la demande de congé")
                         </h5>
-                        <button type="button" class="btn-close btn-close-white" @onclick="Close" aria-label="Close"></button>
+                        <button type="button" class="btn-close btn-close-white" @onclick="Close" aria-label="Fermer"></button>
                     </div>
 
                     <div class="modal-body">
                         <div class="row g-3">
+                            <!-- Employé -->
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Employé</label>
                                 <InputSelect class="form-select" @bind-Value="CurrentEmployeeId">
@@ -31,33 +32,40 @@
                                 <ValidationMessage For="@(() => LeaveRequest.EmployeeId)" />
                                 @if (RemainingDays != null)
                                 {
-                                    <span class="badge bg-success mt-2"><i class="bi bi-clock-history me-1"></i>Reste : @RemainingDays jour(s)</span>
+                                    <span class="badge bg-success mt-2">
+                                        <i class="bi bi-clock-history me-1"></i>Reste : @RemainingDays jour(s)
+                                    </span>
                                 }
                             </div>
 
+                            <!-- Date de début -->
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Date de début</label>
                                 <InputDate class="form-control" @bind-Value="LeaveRequest.StartDate" @oninput="ValidateLeave" />
                                 <ValidationMessage For="@(() => LeaveRequest.StartDate)" />
                             </div>
 
+                            <!-- Date de fin -->
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Date de fin</label>
                                 <InputDate class="form-control" @bind-Value="LeaveRequest.EndDate" @oninput="ValidateLeave" />
                                 <ValidationMessage For="@(() => LeaveRequest.EndDate)" />
                             </div>
 
+                            <!-- Motif -->
                             <div class="col-md-12">
                                 <label class="form-label fw-semibold">Motif</label>
                                 <InputTextArea class="form-control" @bind-Value="LeaveRequest.Reason" rows="3" />
                                 <ValidationMessage For="@(() => LeaveRequest.Reason)" />
                             </div>
 
+                            <!-- Congé payé -->
                             <div class="col-md-6 d-flex align-items-center mt-2">
                                 <InputCheckbox class="form-check-input me-2" @bind-Value="LeaveRequest.IsPaid" @onchange="ValidateLeave" />
                                 <label class="form-check-label fw-semibold">Congé payé</label>
                             </div>
 
+                            <!-- Statut -->
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Statut</label>
                                 <InputSelect class="form-select" @bind-Value="LeaveRequest.Status">
@@ -70,6 +78,7 @@
                             </div>
                         </div>
 
+                        <!-- Message d'erreur -->
                         @if (!string.IsNullOrWhiteSpace(ValidationMessage))
                         {
                             <div class="alert alert-danger mt-4">

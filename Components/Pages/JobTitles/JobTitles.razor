@@ -57,39 +57,57 @@ else
 @if (showModal)
 {
     <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
-            <div class="modal-content">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
                 <EditForm Model="@currentJobTitle" OnValidSubmit="SaveJobTitle">
                     <DataAnnotationsValidator />
-                    <div class="modal-header">
-                        <h5 class="modal-title">@((isEditing ? "Modifier" : "Ajouter") + " un poste")</h5>
-                        <button type="button" class="btn-close" @onclick="CloseModal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Titre</label>
-                            <InputText class="form-control" @bind-Value="currentJobTitle.Title" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Description</label>
-                            <InputTextArea class="form-control" @bind-Value="currentJobTitle.Description" />
-                        </div>
 
-                        <hr />
-                        <div class="mb-3">
-                            <label class="form-label">Politique de congé (jours/an)</label>
-                            <InputNumber class="form-control" @bind-Value="leaveDays" />
+                    <!-- Header -->
+                    <div class="modal-header bg-primary text-white rounded-top-4">
+                        <h5 class="modal-title">
+                            <i class="bi bi-briefcase-fill me-2"></i>
+                            @((isEditing ? "Modifier" : "Ajouter") + " un poste")
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" @onclick="CloseModal"></button>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="modal-body">
+                        <div class="row g-3">
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Titre du poste</label>
+                                <InputText class="form-control" @bind-Value="currentJobTitle.Title" placeholder="Ex: Comptable, Infirmier..." />
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Description</label>
+                                <InputTextArea class="form-control" @bind-Value="currentJobTitle.Description" rows="3" placeholder="Description du poste..." />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Politique de congé (jours/an)</label>
+                                <InputNumber class="form-control" @bind-Value="leaveDays" />
+                            </div>
+
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="CloseModal">Annuler</button>
-                        <button type="submit" class="btn btn-success">Enregistrer</button>
+
+                    <!-- Footer -->
+                    <div class="modal-footer bg-light border-top-0 rounded-bottom-4">
+                        <button type="button" class="btn btn-outline-secondary px-4" @onclick="CloseModal">
+                            <i class="bi bi-x-circle me-2"></i>Annuler
+                        </button>
+                        <button type="submit" class="btn btn-success px-4">
+                            <i class="bi bi-save me-2"></i>Enregistrer
+                        </button>
                     </div>
                 </EditForm>
             </div>
         </div>
     </div>
 }
+
 
 @code {
     private List<JobTitle>? jobTitles;
