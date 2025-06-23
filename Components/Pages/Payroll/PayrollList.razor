@@ -1,56 +1,80 @@
 ﻿@page "/payrolls"
-@using Microsoft.AspNetCore.Authorization
+
 @using RH.Models
 @using RH.Services
 @inject PayrollService PayrollService
 @inject IEmployeeService EmployeeService
 @inject PayrollAdjustmentRuleService AdjustmentService
 @inject AbsenceService AbsenceService
+@using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
-<h2 class="text-2xl font-bold mb-4 text-primary">Fiches de paie</h2>
 
-<button class="btn btn-primary mb-3" @onclick="async () => await AddPayroll()">
-    <i class="bi bi-plus-circle me-1"></i> Ajouter une fiche de paie
-</button>
+<PageTitle>Fiches de paie</PageTitle>
 
-<table class="table table-bordered table-striped">
-    <thead class="table-primary">
-        <tr>
-            <th>Employé</th>
-            <th>Date de paiement</th>
-            <th>Salaire de base</th>
-            <th>Primes</th>
-            <th>Retenues</th>
-            <th>Net à payer</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (Payrolls.Any())
-        {
-            @foreach (var payroll in Payrolls)
-            {
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="text-primary fw-bold m-0">Fiches de paie</h2>
+    <button class="btn btn-primary" @onclick="async () => await AddPayroll()">
+        <i class="bi bi-plus-circle me-2"></i> Nouvelle fiche de paie
+    </button>
+</div>
+
+@if (Payrolls is null)
+{
+    <div class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+    </div>
+}
+else if (!Payrolls.Any())
+{
+    <div class="alert alert-info text-center">
+        Aucune fiche de paie disponible.
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-primary text-center">
                 <tr>
-                    <td>@payroll.Employee?.FullName</td>
-                    <td>@payroll.PayDate.ToShortDateString()</td>
-                    <td class="text-end">@payroll.BaseSalary.ToString("C")</td>
-                    <td class="text-end text-success">@payroll.Bonus.ToString("C")</td>
-                    <td class="text-end text-danger">@payroll.Deductions.ToString("C")</td>
-                    <td class="text-end fw-bold">@payroll.NetPay.ToString("C")</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => EditPayroll(payroll)">
-                            <i class="bi bi-pencil"></i> Modifier
-                        </button>
-                    </td>
+                    <th scope="col">Code</th>
+                    <th scope="col">Employé</th>
+                    <th scope="col">Date de paiement</th>
+                    <th scope="col">Salaire de base</th>
+                    <th scope="col">Primes</th>
+                    <th scope="col">Retenues</th>
+                    <th scope="col">Net à payer</th>
+                    <th scope="col">Actions</th>
                 </tr>
-            }
-        }
-        else
-        {
-            <tr><td colspan="7" class="text-center">Aucune fiche de paie disponible.</td></tr>
-        }
-    </tbody>
-</table>
+            </thead>
+            <tbody>
+                @foreach (var payroll in Payrolls)
+                {
+                    <tr>
+                        <td class="text-center fw-semibold">#@payroll.Id</td>
+                        <td>@payroll.Employee?.FullName</td>
+                        <td>@payroll.PayDate.ToString("dd/MM/yyyy")</td>
+                        <td class="text-end text-dark">@payroll.BaseSalary.ToString("C")</td>
+                        <td class="text-end text-success fw-semibold">+@payroll.Bonus.ToString("C")</td>
+                        <td class="text-end text-danger fw-semibold">-@payroll.Deductions.ToString("C")</td>
+                        <td class="text-end text-primary fw-bold">@payroll.NetPay.ToString("C")</td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => EditPayroll(payroll)">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <!-- Optional: Delete Button -->
+                            <!--<button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(payroll.Id)">
+                                <i class="bi bi-trash"></i>
+                            </button>-->
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
 
 @if (IsModalOpen)
 {
@@ -284,7 +308,7 @@
     private async Task LoadAbsenceDates(int employeeId, DateTime payMonth)
     {
         EmployeeAbsences = await AbsenceService.GetByEmployeeAndMonthAsync(employeeId, payMonth);
-
+        EmployeeAbsences = EmployeeAbsences.Where(a => a.PayrollId == null).ToList();
     }
 
     private decimal DeductionPerAbsenceDay;
@@ -409,11 +433,13 @@
 
         if (!UseManualAbsences)
         {
-            foreach (var abs in EmployeeAbsences)
+            foreach (var abs in EmployeeAbsences.Where(a => a.Counted))
             {
+                abs.PayrollId = CurrentPayroll.Id;
                 await AbsenceService.UpdateAsync(abs);
             }
         }
+
 
         IsModalOpen = false;
         await LoadPayrolls();

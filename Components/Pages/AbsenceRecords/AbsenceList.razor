@@ -1,0 +1,151 @@
+﻿@page "/absences"
+@using RH.Models
+@using RH.Services
+@inject EmployeeService EmployeeService
+@inject AbsenceService AbsenceService
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+<PageTitle>Liste des Absences</PageTitle>
+
+<h3 class="text-center my-4">Liste des Absences</h3>
+
+<!-- Filter Section -->
+<div class="card mb-4 shadow-sm">
+    <div class="card-body">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label">Employé</label>
+                <select class="form-select" @bind="SelectedEmployeeId">
+                    <option value="">-- Tous les employés --</option>
+                    @foreach (var emp in Employees)
+                    {
+                        <option value="@emp.Id">@emp.FullName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Date de début</label>
+                <InputDate class="form-control" @bind-Value="StartDate" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Date de fin</label>
+                <InputDate class="form-control" @bind-Value="EndDate" />
+            </div>
+            <div class="col-md-2 d-grid">
+                <button class="btn btn-primary" @onclick="LoadFilteredAbsences">Filtrer</button>
+                <button class="btn btn-outline-secondary mt-2" @onclick="ResetFilters">Réinitialiser</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Absence Cards -->
+@if (Absences == null)
+{
+    <p>Chargement...</p>
+}
+else if (!Absences.Any())
+{
+    <div class="alert alert-info text-center">Aucune absence trouvée.</div>
+}
+else
+{
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        @foreach (var absence in Absences)
+        {
+            <div class="col">
+                <div class="card h-100 shadow-sm border-0">
+                    <div class="card-body">
+                        <h5 class="card-title">@GetEmployeeName(absence.EmployeeId)</h5>
+                        <p class="card-text">
+                            <strong>Date :</strong> @absence.Date.ToString("dd/MM/yyyy")<br />
+                            <strong>Raison :</strong> @(!string.IsNullOrWhiteSpace(absence.Reason) ? absence.Reason : "Non spécifiée")<br />
+
+                            <strong>Comptabilisée :</strong>
+                            <div class="form-check form-switch">
+                                <InputCheckbox class="form-check-input"
+                                               id=@($"countedSwitch_{absence.Id}")
+                                               @bind-Value="absence.Counted"
+                                               @bind-Value:event="onchange"
+                                               ValueChanged="async (val) => await UpdateCounted(absence, val)"
+                                               disabled="@((absence.PayrollId != null))" />
+
+
+                                <label class="form-check-label" for=@($"countedSwitch_{absence.Id}")>
+                                    @(absence.Counted ? "Oui" : "Non")
+                                </label>
+                            </div>
+
+
+                            <strong>Inclus dans la paie :</strong>
+                            @if (absence.PayrollId is not null)
+                            {
+                                <span class="text-success">Paie n° @absence.PayrollId</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Non encore traité</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<AbsenceRecord>? Absences;
+    private List<Employee> Employees = new();
+    private Dictionary<int, string> EmployeeNames = new();
+
+    private int? SelectedEmployeeId;
+    private DateTime? StartDate;
+    private DateTime? EndDate;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Employees = await EmployeeService.GetAllAsync();
+        EmployeeNames = Employees.ToDictionary(e => e.Id, e => e.FullName);
+        await LoadFilteredAbsences();
+    }
+
+    private async Task LoadFilteredAbsences()
+    {
+        Absences = await AbsenceService.GetFilteredAsync(
+            SelectedEmployeeId,
+            StartDate,
+            EndDate
+        );
+    }
+
+    private void ResetFilters()
+    {
+        SelectedEmployeeId = null;
+        StartDate = null;
+        EndDate = null;
+        _ = LoadFilteredAbsences();
+    }
+
+    private string GetEmployeeName(int id)
+    {
+        return EmployeeNames.TryGetValue(id, out var name) ? name : $"Employé #{id}";
+    }
+    private async Task UpdateCounted(AbsenceRecord absence, bool newValue)
+    {
+        try
+        {
+            await AbsenceService.UpdateCountedStatus(absence.Id, newValue);
+            absence.Counted = newValue; // ensure sync with backend
+        }
+        catch
+        {
+            // If backend update failed, revert local value
+            absence.Counted = !newValue;
+            // You can also show a toast or alert here
+        }
+    }
+
+
+
+}

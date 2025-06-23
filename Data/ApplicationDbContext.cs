@@ -56,6 +56,12 @@ namespace RH.Data
              .HasMany(lp => lp.JobTitles)
              .WithMany(jt => jt.LeavePolicies)
              .UsingEntity(j => j.ToTable("LeavePolicyJobTitles"));
+            modelBuilder.Entity<AbsenceRecord>()
+    .HasOne<Payroll>() // si navigation inverse optionnelle
+    .WithMany()
+    .HasForeignKey(a => a.PayrollId)
+    .OnDelete(DeleteBehavior.SetNull); // ou .Restrict selon votre logique métier
+
 
         }
     }

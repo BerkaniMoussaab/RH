@@ -2,7 +2,8 @@
 @using RH.Services
 @inject IEmployeeService EmployeeService
 @inject ILeaveRequestService LeaveRequestService
-
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 @if (editContext != null)
 {
     <EditForm EditContext="editContext" OnValidSubmit="HandleValidSubmit">

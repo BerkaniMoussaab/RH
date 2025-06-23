@@ -10,6 +10,7 @@ namespace RH.Models
         [MaxLength(500, ErrorMessage = "La raison ne peut pas dépasser 500 caractères.")]
         public string? Reason { get; set; }
         public bool Counted { get; set; }
-        
+        public int? PayrollId { get; set; } // nullable pour les absences non encore traitées
+
     }
 }

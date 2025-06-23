@@ -1,18 +1,25 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
 
-<div class="page">
+@code {
+    private bool IsFullPage => NavigationManager.Uri.Contains("/Account/Login");
+}
+
+<div class="page d-flex">
+    <!-- Sidebar -->
     <div class="sidebar">
         <NavMenu />
     </div>
 
-    <main>
+    <!-- Main content -->
+    <main class="flex-grow-1">
         <div class="top-row px-4">
             <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
         </div>
 
-        <article class="content px-4">
+        <div class="@(IsFullPage ? "p-0 m-0" : "p-4")">
             @Body
-        </article>
+        </div>
     </main>
 </div>
 

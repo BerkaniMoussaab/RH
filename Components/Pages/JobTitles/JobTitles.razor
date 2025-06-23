@@ -4,7 +4,8 @@
 @inject IJobTitleService JobTitleService
 @inject ILeavePolicyService LeavePolicyService
 @inject IJSRuntime JS
-
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 <h3 class="mb-4">Postes & Politiques de congé</h3>
 
 <button class="btn btn-primary mb-3" @onclick="OpenCreateModal">Ajouter un poste</button>

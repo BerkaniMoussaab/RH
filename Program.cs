@@ -55,8 +55,13 @@ builder.Services.AddScoped<JobTitleService>();
 builder.Services.AddScoped<IPayrollAdjustmentRuleService, PayrollAdjustmentRuleService>();
 builder.Services.AddScoped<ILeavePolicyService, LeavePolicyService>();
 builder.Services.AddScoped<PayrollService>();
+builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<IPayrollService , PayrollService>();
 builder.Services.AddScoped<AbsenceService>();
+builder.Services.AddAntiforgery(options =>
+{
+    options.FormFieldName = "__RequestVerificationToken";
+});
 
 
 
@@ -86,6 +91,7 @@ else
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
+app.MapIdentityApi<ApplicationUser>();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();

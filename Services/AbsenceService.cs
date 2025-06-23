@@ -39,4 +39,55 @@ public class AbsenceService
             .Where(a => a.EmployeeId == employeeId && a.Date >= start && a.Date <= end)
             .ToListAsync();
     }
+    public async Task<List<AbsenceRecord>> GetAllAsync()
+    {
+        using var context = _contextFactory.CreateDbContext();
+        return await context.AbsenceRecords
+            .OrderByDescending(a => a.Date)
+            .ToListAsync();
+    }
+    public async Task<List<AbsenceRecord>> GetFilteredAsync(
+       int? employeeId = null,
+       DateTime? startDate = null,
+       DateTime? endDate = null)
+    {
+        using var context = _contextFactory.CreateDbContext();
+        var query = context.AbsenceRecords.AsQueryable();
+
+        if (employeeId.HasValue)
+        {
+            query = query.Where(a => a.EmployeeId == employeeId.Value);
+        }
+
+        if (startDate.HasValue)
+        {
+            query = query.Where(a => a.Date >= startDate.Value);
+        }
+
+        if (endDate.HasValue)
+        {
+            query = query.Where(a => a.Date <= endDate.Value);
+        }
+
+        return await query
+            .OrderByDescending(a => a.Date)
+            .ToListAsync();
+    }
+    public async Task UpdateCountedStatus(int absenceId, bool newValue)
+    {
+        using var context = _contextFactory.CreateDbContext();
+        var record = await context.AbsenceRecords.FindAsync(absenceId);
+
+        if (record != null)
+        {
+            record.Counted = newValue;
+            await context.SaveChangesAsync();
+        }
+    }
+
+
 }
+
+
+
+

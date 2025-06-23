@@ -4,7 +4,8 @@
 @inject PayrollAdjustmentRuleService AdjustmentService
 @inject JobTitleService JobTitleService
 @inject IJSRuntime JS
-
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 
 <h3 class="mb-4">Règles d'ajustement de paie</h3>
 

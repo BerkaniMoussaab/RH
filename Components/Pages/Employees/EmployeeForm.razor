@@ -2,7 +2,8 @@
 @using RH.Services
 @inject IJobTitleService JobTitleService
 @rendermode InteractiveServer
-
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 <EditForm Model="Employee" OnValidSubmit="HandleValidSubmit">
     <DataAnnotationsValidator />
     <ValidationSummary />

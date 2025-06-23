@@ -4,7 +4,8 @@
 @inject IEmployeeService EmployeeService
 @inject IJobTitleService JobTitleService
 @inject NavigationManager NavigationManager
-
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 <h1 class="text-2xl font-bold mb-4">Employés</h1>
 
 <button class="btn btn-primary mb-4" @onclick="AddEmployee">Ajouter un employé</button>

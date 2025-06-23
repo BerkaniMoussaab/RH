@@ -6,7 +6,8 @@
 @inject AbsenceService AbsenceService
 @inject IPayrollService PayrollService
 @inject NavigationManager Navigation
-
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 <PageTitle>Dashboard</PageTitle>
 
 <h3 class="mb-4">Tableau de Bord</h3>

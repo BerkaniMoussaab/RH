@@ -1,6 +1,7 @@
 ﻿@using RH.Models
 @inject AbsenceService AbsenceService
-
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 <EditForm Model="NewAbsence" OnValidSubmit="HandleValidSubmit">
     <DataAnnotationsValidator />
     <div class="modal show d-block fade" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
