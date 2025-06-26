@@ -50,29 +50,27 @@ namespace RH.Services
             using var context = _contextFactory.CreateDbContext();
 
             var employee = await context.Employees
-                .Include(e => e.JobTitle)
                 .FirstOrDefaultAsync(e => e.Id == employeeId);
 
-            if (employee?.JobTitle == null)
+            if (employee == null || employee.InscriptionDate == null || employee.InitialRemainingDays == null)
                 return 0;
 
-            var policy = await context.LeavePolicies
-                .Include(p => p.JobTitles)
-                .Where(p => p.JobTitles.Any(j => j.Id == employee.JobTitleId))
-                .FirstOrDefaultAsync();
-
-            var allowedDays = policy?.AnnualLeaveDays ?? 30;
-            var yearStart = new DateTime(DateTime.Today.Year, 1, 1);
+            var fromDate = employee.InscriptionDate.Value;
+            var initialBalance = employee.InitialRemainingDays.Value;
 
             var usedDays = await context.LeaveRequests
                 .Where(lr => lr.EmployeeId == employeeId
                              && lr.IsPaid
                              && lr.Status == LeaveStatus.Approved
-                             && lr.StartDate >= yearStart)
+                             && lr.StartDate >= fromDate)
                 .SumAsync(lr => EF.Functions.DateDiffDay(lr.StartDate, lr.EndDate) + 1);
 
-            return Math.Max(allowedDays - usedDays, 0);
+            return Math.Max((int)Math.Floor(initialBalance - usedDays), 0);
         }
+
+
+
+
 
         public async Task UpdateStatusAsync(int requestId, LeaveStatus newStatus)
         {

@@ -18,7 +18,7 @@ namespace RH.Models
 
         public string? PhoneNumber { get; set; }
 
-        public DateTime HireDate { get; set; }
+        public DateTime? HireDate { get; set; }
 
         public int? DepartmentId { get; set; }
 
@@ -29,6 +29,8 @@ namespace RH.Models
         public ICollection<LeaveRequest> LeaveRequests { get; set; } = new List<LeaveRequest>();
         public ICollection<Payroll> Payrolls { get; set; } = new List<Payroll>();
         public ICollection<PerformanceReview> PerformanceReviews { get; set; } = new List<PerformanceReview>();
+        public float? InitialRemainingDays { get; set; }
+        public DateTime? InscriptionDate { get; set; }   // date employee was added to system
 
     }
     public enum EmployeeStatus

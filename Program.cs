@@ -63,14 +63,17 @@ builder.Services.AddAntiforgery(options =>
     options.FormFieldName = "__RequestVerificationToken";
 });
 
-
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Listen(System.Net.IPAddress.Any, 70); 
+});
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 // Register the email sender
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 builder.Services.AddSingleton<ModalService>();
-
+builder.Host.UseWindowsService();
 // Configure HttpClient
 
 
@@ -95,8 +98,33 @@ app.MapIdentityApi<ApplicationUser>();
 
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+// Required for .NET Windows Services
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+using (var scope = app.Services.CreateScope())
+{
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
+   /* await dbContext.Database.MigrateAsync(); */// Optional but good for dev
+
+    if (!dbContext.Users.Any())
+    {
+        var adminUser = new ApplicationUser
+        {
+            UserName = "admin",
+            Email = "admin@example.com",
+            EmailConfirmed = true
+        };
+
+        var result = await userManager.CreateAsync(adminUser, "Admin1234@");
+
+        if (!result.Succeeded)
+        {
+            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+            throw new Exception($"Failed to create default admin user: {errors}");
+        }
+    }
+}
 app.Run();

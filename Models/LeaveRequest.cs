@@ -26,6 +26,8 @@ namespace RH.Models
         [MaxLength(500, ErrorMessage = "La raison ne peut pas dépasser 500 caractères.")]
         public string? Reason { get; set; }
         public bool IsPaid { get; set; } = true;
+       
+
     }
 
     public enum LeaveStatus

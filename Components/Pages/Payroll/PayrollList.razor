@@ -65,7 +65,7 @@ else
                             </button>
                             <!-- Optional: Delete Button -->
                             <!--<button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(payroll.Id)">
-                                <i class="bi bi-trash"></i>
+                            <i class="bi bi-trash"></i>
                             </button>-->
                         </td>
                     </tr>
@@ -120,8 +120,15 @@ else
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Mode de saisie des absences</label>
                                 <select class="form-select" @onchange="OnAbsenceModeChanged">
-                                    <option value="false">Utiliser les absences enregistrées</option>
-                                    <option value="true">Saisie manuelle</option>
+                                    @if (CurrentPayroll.ManualAbsenceDays != 0)
+                                {
+                                        <option value="true">Saisie manuelle</option>
+                                        <option value="false">Utiliser les absences enregistrées</option>   
+                                }else{
+                                        <option value="false">Utiliser les absences enregistrées</option>
+                                        <option value="true">Saisie manuelle</option>
+                                }
+                                   
                                 </select>
                             </div>
 
@@ -129,13 +136,13 @@ else
                                 <label class="form-label fw-semibold">
                                     Retenue par jour d'absence
                                     <i class="bi bi-info-circle ms-1 text-muted"
-                                       title="Montant appliqué pour chaque jour d'absence enregistré ou saisi manuellement."></i>
+                                    title="Montant appliqué pour chaque jour d'absence enregistré ou saisi manuellement."></i>
                                 </label>
                                 <InputNumber TValue="decimal"
-                                             class="form-control"
-                                             Value="DeductionPerAbsenceDay"
-                                             ValueChanged="OnDeductionChanged"
-                                             ValueExpression="@(() => DeductionPerAbsenceDay)" />
+                                class="form-control"
+                                Value="CurrentPayroll.DeductionPerAbsenceDay"
+                                ValueChanged="OnDeductionChanged"
+                                             ValueExpression="@(() => CurrentPayroll.DeductionPerAbsenceDay)" />
                                 <small class="text-muted">
                                     S'applique automatiquement sur les absences comptées.
                                 </small>
@@ -149,14 +156,14 @@ else
                                 <div class="card border-secondary p-3">
                                     <h6 class="card-title mb-2"><i class="bi bi-calendar-x me-2"></i> Absences</h6>
 
-                                    @if (UseManualAbsences)
+                                    @if (UseManualAbsences || CurrentPayroll.ManualAbsenceDays != 0)
                                     {
                                         <label class="form-label">Nombre de jours d'absence (manuel)</label>
                                         <InputNumber TValue="int"
-                                                     class="form-control"
-                                                     Value="ManualAbsenceDays"
-                                                     ValueChanged="OnManualAbsenceDaysChanged"
-                                                     ValueExpression="@(() => ManualAbsenceDays)" />
+                                        class="form-control"
+                                                     Value="CurrentPayroll.ManualAbsenceDays"
+                                        ValueChanged="OnManualAbsenceDaysChanged"
+                                                     ValueExpression="@(() =>CurrentPayroll.ManualAbsenceDays)" />
                                     }
                                     else if (EmployeeAbsences.Any())
                                     {
@@ -179,9 +186,9 @@ else
                                                             </td>
                                                             <td class="text-center">
                                                                 <InputCheckbox class="form-check-input mt-1"
-                                                                               Value="a.Counted"
-                                                                               ValueChanged="val => OnCountedChanged(a, val)"
-                                                                               ValueExpression="@(() => a.Counted)" />
+                                                                Value="a.Counted"
+                                                                ValueChanged="val => OnCountedChanged(a, val)"
+                                                                ValueExpression="@(() => a.Counted)" />
                                                             </td>
                                                         </tr>
                                                     }
@@ -204,9 +211,9 @@ else
                                     {
                                         <div class="form-check">
                                             <InputCheckbox class="form-check-input"
-                                                           Value="rule.IsApplied"
-                                                           ValueChanged="val => OnBonusRuleChanged(rule, val)"
-                                                           ValueExpression="@(() => rule.IsApplied)" />
+                                            Value="rule.IsApplied"
+                                            ValueChanged="val => OnBonusRuleChanged(rule, val)"
+                                            ValueExpression="@(() => rule.IsApplied)" />
                                             <label class="form-check-label">
                                                 @rule.Name (@(rule.IsPercentage ? $"{rule.Amount}%" : $"{rule.Amount:C}"))
                                             </label>
@@ -223,9 +230,9 @@ else
                                     {
                                         <div class="form-check">
                                             <InputCheckbox class="form-check-input"
-                                                           Value="rule.IsApplied"
-                                                           ValueChanged="val => OnDeductionRuleChanged(rule, val)"
-                                                           ValueExpression="@(() => rule.IsApplied)" />
+                                            Value="rule.IsApplied"
+                                            ValueChanged="val => OnDeductionRuleChanged(rule, val)"
+                                            ValueExpression="@(() => rule.IsApplied)" />
                                             <label class="form-check-label">
                                                 @rule.Name (@(rule.IsPercentage ? $"{rule.Amount}%" : $"{rule.Amount:C}"))
                                             </label>
@@ -278,11 +285,11 @@ else
 
     private bool IsModalOpen = false;
     private bool UseManualAbsences = false;
-    private int ManualAbsenceDays;
+ 
 
     private Task OnManualAbsenceDaysChanged(int value)
     {
-        ManualAbsenceDays = value;
+        CurrentPayroll.ManualAbsenceDays = value;
         RecalculateBonusesAndDeductions();
         return Task.CompletedTask;
     }
@@ -311,11 +318,11 @@ else
         EmployeeAbsences = EmployeeAbsences.Where(a => a.PayrollId == null).ToList();
     }
 
-    private decimal DeductionPerAbsenceDay;
+    
 
     private Task OnDeductionChanged(decimal val)
     {
-        DeductionPerAbsenceDay = val;
+        CurrentPayroll.DeductionPerAbsenceDay = val;
         RecalculateBonusesAndDeductions();
         return Task.CompletedTask;
     }
@@ -333,8 +340,8 @@ else
             .Where(r => r.IsApplied)
             .Sum(r => r.IsPercentage ? CurrentPayroll.BaseSalary * r.Amount / 100 : r.Amount);
 
-        int absenceDays = UseManualAbsences ? ManualAbsenceDays : EmployeeAbsences.Count(a => a.Counted);
-        var absenceDeduction = absenceDays * DeductionPerAbsenceDay;
+        int absenceDays = UseManualAbsences ? CurrentPayroll.ManualAbsenceDays : EmployeeAbsences.Count(a => a.Counted);
+        var absenceDeduction = absenceDays * CurrentPayroll.DeductionPerAbsenceDay;
 
         var ruleBasedDeductions = SelectedDeductionRules
             .Where(r => r.IsApplied)
@@ -343,7 +350,7 @@ else
         CurrentPayroll.Deductions = ruleBasedDeductions + absenceDeduction;
         StateHasChanged();
     }
-    
+
 
     private int CurrentEmployeeId
     {
@@ -364,6 +371,10 @@ else
     {
         Employees = await EmployeeService.GetAllAsync();
         AllAdjustmentRules = await AdjustmentService.GetAllAsync();
+        if (CurrentPayroll.ManualAbsenceDays != 0)
+        {
+            UseManualAbsences = true;
+        }
         await LoadPayrolls();
     }
 
@@ -391,7 +402,10 @@ else
                 PayDate = payroll.PayDate,
                 BaseSalary = payroll.BaseSalary,
                 Bonus = payroll.Bonus,
-                Deductions = payroll.Deductions
+                Deductions = payroll.Deductions,
+                DeductionPerAbsenceDay = payroll.DeductionPerAbsenceDay,
+                ManualAbsenceDays = payroll.ManualAbsenceDays
+                
             };
 
         var appliedBonuses = payroll.AppliedRules?.Where(r => r.Rule.Type == AdjustmentType.Bonus).Select(r => r.Rule.Id).ToList() ?? new();
@@ -420,8 +434,17 @@ else
         CurrentPayroll.Deductions = SelectedDeductionRules.Where(r => r.IsApplied)
             .Sum(r => r.IsPercentage ? CurrentPayroll.BaseSalary * r.Amount / 100m : r.Amount);
 
+        
+        if (UseManualAbsences)
+        {
+            CurrentPayroll.AbsenceDays = CurrentPayroll.ManualAbsenceDays;
+            CurrentPayroll.AbsenceDeduction = CurrentPayroll.ManualAbsenceDays * CurrentPayroll.DeductionPerAbsenceDay;
+        }
+        else{
+            CurrentPayroll.AbsenceDays = EmployeeAbsences.Count(a => a.Counted);
+            CurrentPayroll.AbsenceDeduction = EmployeeAbsences.Count(a => a.Counted) * CurrentPayroll.DeductionPerAbsenceDay;
+        }
         CurrentPayroll.Deductions += CurrentPayroll.AbsenceDeduction;
-
         if (CurrentPayroll.Id == 0)
         {
             await PayrollService.CreateAsync(CurrentPayroll, SelectedBonusRules.Where(r => r.IsApplied).ToList(), SelectedDeductionRules.Where(r => r.IsApplied).ToList());

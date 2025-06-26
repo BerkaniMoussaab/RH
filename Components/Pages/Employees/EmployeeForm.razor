@@ -4,74 +4,101 @@
 @rendermode InteractiveServer
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
+
 <EditForm Model="Employee" OnValidSubmit="HandleValidSubmit">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
     <div class="modal @(IsOpen ? "show d-block" : "fade")" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@((Employee.Id == 0) ? "Créer un employé" : "Modifier l'employé")</h5>
-                    <button type="button" class="btn-close" @onclick="Close" aria-label="Fermer"></button>
+            <div class="modal-content shadow rounded-3">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        @((Employee.Id == 0) ? "Créer un employé" : "Modifier l'employé")
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="Close" aria-label="Fermer"></button>
                 </div>
                 <div class="modal-body">
-                    <!-- Nom complet -->
-                    <div class="mb-3">
-                        <label class="form-label">Nom complet</label>
-                        <InputText class="form-control" @bind-Value="Employee.FullName" />
-                        <ValidationMessage For="@(() => Employee.FullName)" />
-                    </div>
+                    <div class="row g-3">
+                        <!-- Nom complet -->
+                        <div class="col-md-6">
+                            <label class="form-label">Nom complet</label>
+                            <InputText class="form-control" @bind-Value="Employee.FullName" />
+                            <ValidationMessage For="@(() => Employee.FullName)" />
+                        </div>
 
-                    <!-- Email -->
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <InputText class="form-control" @bind-Value="Employee.Email" />
-                        <ValidationMessage For="@(() => Employee.Email)" />
-                    </div>
+                        <!-- Email -->
+                        <div class="col-md-6">
+                            <label class="form-label">Email</label>
+                            <InputText class="form-control" @bind-Value="Employee.Email" />
+                            <ValidationMessage For="@(() => Employee.Email)" />
+                        </div>
 
-                    <!-- Numéro de téléphone -->
-                    <div class="mb-3">
-                        <label class="form-label">Numéro de téléphone</label>
-                        <InputText class="form-control" @bind-Value="Employee.PhoneNumber" />
-                    </div>
+                        <!-- Téléphone -->
+                        <div class="col-md-6">
+                            <label class="form-label">Numéro de téléphone</label>
+                            <InputText class="form-control" @bind-Value="Employee.PhoneNumber" />
+                        </div>
 
-                    <!-- Date d'embauche -->
-                    <div class="mb-3">
-                        <label class="form-label">Date d'embauche</label>
-                        <InputDate class="form-control" @bind-Value="Employee.HireDate" />
-                    </div>
+                        <!-- Date d'embauche -->
+                        <div class="col-md-6">
+                            <label class="form-label">Date d'embauche</label>
+                            <InputDate class="form-control" @bind-Value="Employee.HireDate" />
+                        </div>
 
-                    <!-- Poste -->
-                    <div class="mb-3">
-                        <label class="form-label">Poste</label>
-                        <div class="d-flex">
-                            <InputSelect class="form-select me-2" @bind-Value="Employee.JobTitleId">
-                                <option value="">-- Sélectionnez un poste --</option>
-                                @foreach (var jt in JobTitles)
+                        <!-- Date d'inscription -->
+                        <div class="col-md-6">
+                            <label class="form-label">Date d'inscription dans le système</label>
+                            <InputDate class="form-control" @bind-Value="Employee.InscriptionDate" />
+                            <small class="form-text text-muted">
+                                Tous les congés pris après cette date seront déduits du solde initial.
+                            </small>
+                        </div>
+
+                        <!-- Solde de congé à l'inscription -->
+                        <div class="col-md-6">
+                            <label class="form-label">Solde de congé à l'inscription</label>
+                            <InputNumber class="form-control" @bind-Value="Employee.InitialRemainingDays" />
+                            <ValidationMessage For="@(() => Employee.InitialRemainingDays)" />
+                            <small class="form-text text-muted">
+                                Le solde de congé au moment de l'ajout dans le système. Utilisé comme base pour les déductions.
+                            </small>
+                        </div>
+
+                        <!-- Poste -->
+                        <div class="col-md-6">
+                            <label class="form-label">Poste</label>
+                            <div class="d-flex">
+                                <InputSelect class="form-select me-2" @bind-Value="Employee.JobTitleId">
+                                    <option value="">-- Sélectionnez un poste --</option>
+                                    @foreach (var jt in JobTitles)
+                                    {
+                                        <option value="@jt.Id">@jt.Title</option>
+                                    }
+                                </InputSelect>
+                                <button type="button" class="btn btn-outline-secondary" @onclick="() => ShowAddJobTitle = true">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Statut -->
+                        <div class="col-md-6">
+                            <label class="form-label">Statut</label>
+                            <InputSelect class="form-select" @bind-Value="Employee.Status">
+                                @foreach (var status in Enum.GetValues<EmployeeStatus>())
                                 {
-                                    <option value="@jt.Id">@jt.Title</option>
+                                    <option value="@status">@status</option>
                                 }
                             </InputSelect>
-                            <button type="button" class="btn btn-outline-secondary" @onclick="() => ShowAddJobTitle = true">+</button>
                         </div>
                     </div>
-
-                    <!-- Statut -->
-                    <div class="mb-3">
-                        <label class="form-label">Statut</label>
-                        <InputSelect class="form-select" @bind-Value="Employee.Status">
-                            @foreach (var status in Enum.GetValues<EmployeeStatus>())
-                            {
-                                <option value="@status">@status</option>
-                            }
-                        </InputSelect>
-                    </div>
                 </div>
-
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-primary">Enregistrer</button>
-                    <button type="button" class="btn btn-secondary" @onclick="Close">Annuler</button>
+                <div class="modal-footer bg-light">
+                    <button type="submit" class="btn btn-success px-4">
+                        <i class="bi bi-save me-2"></i>Enregistrer
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary px-4" @onclick="Close">
+                        <i class="bi bi-x-circle me-2"></i>Annuler
+                    </button>
                 </div>
             </div>
         </div>
@@ -111,7 +138,6 @@
     </div>
 }
 
-
 @code {
     [Parameter] public Employee Employee { get; set; } = new();
     [Parameter] public bool IsOpen { get; set; }
@@ -129,6 +155,9 @@
 
     private async Task HandleValidSubmit()
     {
+        if (Employee.InscriptionDate == null)
+            Employee.InscriptionDate = DateTime.Today;
+
         await OnSave.InvokeAsync(Employee);
         await Close();
     }
@@ -147,3 +176,4 @@
         await IsOpenChanged.InvokeAsync(false);
     }
 }
+
