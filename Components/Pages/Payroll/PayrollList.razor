@@ -527,8 +527,9 @@ else
         bool confirmed = await JS.InvokeAsync<bool>("confirm", "Êtes-vous sûr de vouloir supprimer cette fiche de paie ?");
         if (confirmed)
         {
-            await DeletePayroll(id);
-        }
+            await PayrollService.DeleteAsync(id);
+        } 
+        await LoadPayrolls();
     }
 
     private async void EditPayroll(Payroll payroll)
