@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RH.Data;
 
@@ -11,9 +12,11 @@ using RH.Data;
 namespace RH.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250630083947_jobTitle_one_leave")]
+    partial class jobTitle_one_leave
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -180,12 +183,6 @@ namespace RH.Migrations
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<bool>("IsCountable")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("IsEditable")
-                        .HasColumnType("bit");
 
                     b.Property<bool>("IsPercentage")
                         .HasColumnType("bit");
@@ -506,16 +503,7 @@ namespace RH.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("PayrollId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("Quantity")
                         .HasColumnType("int");
 
                     b.Property<int>("RuleId")

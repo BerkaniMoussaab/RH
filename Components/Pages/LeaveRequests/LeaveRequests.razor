@@ -24,7 +24,8 @@
             {
                 <tr>
                     <td>@request.Employee?.FullName</td>
-                    <td>@request.StartDate:dd MMM yyyy - @request.EndDate:dd MMM yyyy</td>
+                    <td>@request.StartDate.ToString("dd MMM yyyy") - @request.EndDate.ToString("dd MMM yyyy")</td>
+
                     <td>@request.Status</td>
                     <td>@request.Reason</td>
                     <td>

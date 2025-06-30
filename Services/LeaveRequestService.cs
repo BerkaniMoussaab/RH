@@ -4,7 +4,7 @@ using RH.Models;
 
 namespace RH.Services
 {
-    public class LeaveRequestService : ILeaveRequestService
+    public class LeaveRequestService 
     {
         private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
@@ -45,7 +45,7 @@ namespace RH.Services
             return request;
         }
 
-        public async Task<int> GetRemainingDaysAsync(int employeeId)
+        public async Task<float> GetRemainingDaysAsync(int employeeId)
         {
             using var context = _contextFactory.CreateDbContext();
 
@@ -55,18 +55,37 @@ namespace RH.Services
             if (employee == null || employee.InscriptionDate == null || employee.InitialRemainingDays == null)
                 return 0;
 
-            var fromDate = employee.InscriptionDate.Value;
-            var initialBalance = employee.InitialRemainingDays.Value;
+            var inscriptionDate = employee.InscriptionDate.Value;
+            var today = DateTime.Today;
 
+            if (today < inscriptionDate)
+                return 0;
+
+            // 1. Mois complets depuis la date d’inscription
+            int monthsElapsed = ((today.Year - inscriptionDate.Year) * 12) + today.Month - inscriptionDate.Month;
+            if (today.Day < inscriptionDate.Day)
+                monthsElapsed--; // Mois en cours non terminé
+
+            monthsElapsed = Math.Max(monthsElapsed, 0);
+
+            // 2. Jours de congé acquis (2,5 jours/mois)
+            float earnedDays = monthsElapsed * 2.5f;
+
+            // 3. Congés payés déjà pris
             var usedDays = await context.LeaveRequests
                 .Where(lr => lr.EmployeeId == employeeId
                              && lr.IsPaid
                              && lr.Status == LeaveStatus.Approved
-                             && lr.StartDate >= fromDate)
-                .SumAsync(lr => EF.Functions.DateDiffDay(lr.StartDate, lr.EndDate) + 1);
+                             && lr.StartDate >= inscriptionDate)
+                .SumAsync(lr => Math.Max(0, EF.Functions.DateDiffDay(lr.StartDate, lr.EndDate) + 1));
 
-            return Math.Max((int)Math.Floor(initialBalance - usedDays), 0);
+            // 4. Solde total = initial + acquis - utilisés
+            float total = employee.InitialRemainingDays.Value + earnedDays - usedDays;
+
+            return Math.Max(total, 0);
         }
+
+
 
 
 

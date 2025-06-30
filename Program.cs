@@ -6,7 +6,11 @@ using RH.Components.Account;
 using RH.Data;
 using RH.Services;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    EnvironmentName = Environments.Development // or "Development" as a string
+});
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -36,9 +40,20 @@ builder.Services.AddIdentityCore<ApplicationUser>(options => options.SignIn.Requ
 // Register the EmployeeService
 
 builder.Services.AddDbContextFactory<ApplicationDbContext>(
-    options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")).EnableSensitiveDataLogging(),
+    options => options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        sqlServerOptions =>
+        {
+            sqlServerOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(30),
+                errorNumbersToAdd: null);
+            sqlServerOptions.CommandTimeout(60);  // 60 seconds timeout
+        })
+    .EnableSensitiveDataLogging(),
     ServiceLifetime.Transient
 );
+
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";
@@ -48,7 +63,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<IJobTitleService, JobTitleService>();
 
-builder.Services.AddScoped<ILeaveRequestService, LeaveRequestService>();
+
 builder.Services.AddScoped<AttendanceService>();
 builder.Services.AddScoped<PayrollAdjustmentRuleService>();
 builder.Services.AddScoped<JobTitleService>();

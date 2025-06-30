@@ -23,11 +23,12 @@ namespace RH.Data
             base.OnModelCreating(modelBuilder);
 
             // Employee-JobTitle (many-to-one)
-            modelBuilder.Entity<Employee>()
-                .HasOne(e => e.JobTitle)
-                .WithMany(j => j.Employees)
-                .HasForeignKey(e => e.JobTitleId)
-                .OnDelete(DeleteBehavior.SetNull);
+            modelBuilder.Entity<JobTitle>()
+     .HasOne(jt => jt.LeavePolicy)
+     .WithMany(lp => lp.JobTitles)
+     .HasForeignKey(jt => jt.LeavePolicyId)
+     .OnDelete(DeleteBehavior.SetNull); // or .Restrict / .Cascade as needed
+
 
             // LeaveRequest-Employee (many-to-one)
             modelBuilder.Entity<LeaveRequest>()
@@ -52,10 +53,7 @@ namespace RH.Data
             modelBuilder.Entity<PayrollAdjustmentRule>()
             .HasMany(r => r.JobTitles)
             .WithMany(j => j.PayrollAdjustmentRules);
-            modelBuilder.Entity<LeavePolicy>()
-             .HasMany(lp => lp.JobTitles)
-             .WithMany(jt => jt.LeavePolicies)
-             .UsingEntity(j => j.ToTable("LeavePolicyJobTitles"));
+         
             modelBuilder.Entity<AbsenceRecord>()
     .HasOne<Payroll>() // si navigation inverse optionnelle
     .WithMany()
