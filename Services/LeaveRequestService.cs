@@ -4,7 +4,7 @@ using RH.Models;
 
 namespace RH.Services
 {
-    public class LeaveRequestService 
+    public class LeaveRequestService : ILeaveRequestService
     {
         private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
@@ -61,30 +61,36 @@ namespace RH.Services
             if (today < inscriptionDate)
                 return 0;
 
-            // 1. Mois complets depuis la date d’inscription
+            // 1. Calculate full months since inscription
             int monthsElapsed = ((today.Year - inscriptionDate.Year) * 12) + today.Month - inscriptionDate.Month;
             if (today.Day < inscriptionDate.Day)
-                monthsElapsed--; // Mois en cours non terminé
+                monthsElapsed--; // Current month not completed
 
             monthsElapsed = Math.Max(monthsElapsed, 0);
 
-            // 2. Jours de congé acquis (2,5 jours/mois)
+            // 2. Calculate earned leave days (2.5 days/month)
             float earnedDays = monthsElapsed * 2.5f;
 
-            // 3. Congés payés déjà pris
-            var usedDays = await context.LeaveRequests
+            // 3. Calculate used paid leave days (fixed translation issue)
+            var approvedLeaves = await context.LeaveRequests
                 .Where(lr => lr.EmployeeId == employeeId
                              && lr.IsPaid
                              && lr.Status == LeaveStatus.Approved
                              && lr.StartDate >= inscriptionDate)
-                .SumAsync(lr => Math.Max(0, EF.Functions.DateDiffDay(lr.StartDate, lr.EndDate) + 1));
+                .Select(lr => new { lr.StartDate, lr.EndDate })
+                .ToListAsync();
 
-            // 4. Solde total = initial + acquis - utilisés
+            var usedDays = approvedLeaves.Sum(lr =>
+            {
+                var days = (lr.EndDate - lr.StartDate).Days + 1;
+                return days > 0 ? days : 0;
+            });
+
+            // 4. Calculate total remaining days = initial + earned - used
             float total = employee.InitialRemainingDays.Value + earnedDays - usedDays;
 
             return Math.Max(total, 0);
         }
-
 
 
 

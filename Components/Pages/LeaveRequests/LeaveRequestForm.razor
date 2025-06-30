@@ -4,6 +4,7 @@
 @inject ILeaveRequestService LeaveRequestService
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
+
 @if (editContext != null)
 {
     <EditForm EditContext="editContext" OnValidSubmit="HandleValidSubmit">
@@ -31,10 +32,16 @@
                                     }
                                 </InputSelect>
                                 <ValidationMessage For="@(() => LeaveRequest.EmployeeId)" />
-                                @if (RemainingDays != null)
+                                @if (isLoadingRemainingDays)
                                 {
-                                    <span class="badge bg-success mt-2">
-                                        <i class="bi bi-clock-history me-1"></i>Reste : @RemainingDays jour(s)
+                                    <span class="badge bg-info mt-2">
+                                        <i class="bi bi-hourglass-split me-1"></i>Chargement...
+                                    </span>
+                                }
+                                else if (RemainingDays != null)
+                                {
+                                    <span class="badge @GetRemainingDaysBadgeClass() mt-2">
+                                        <i class="bi bi-clock-history me-1"></i>Reste : @RemainingDays.Value.ToString("0.0") jour(s)
                                     </span>
                                 }
                             </div>
@@ -42,14 +49,14 @@
                             <!-- Date de début -->
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Date de début</label>
-                                <InputDate class="form-control" @bind-Value="LeaveRequest.StartDate" @oninput="ValidateLeave" />
+                                <InputDate class="form-control" @bind-Value="LeaveRequest.StartDate" />
                                 <ValidationMessage For="@(() => LeaveRequest.StartDate)" />
                             </div>
 
                             <!-- Date de fin -->
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Date de fin</label>
-                                <InputDate class="form-control" @bind-Value="LeaveRequest.EndDate" @oninput="ValidateLeave" />
+                                <InputDate class="form-control" @bind-Value="LeaveRequest.EndDate" />
                                 <ValidationMessage For="@(() => LeaveRequest.EndDate)" />
                             </div>
 
@@ -62,7 +69,7 @@
 
                             <!-- Congé payé -->
                             <div class="col-md-6 d-flex align-items-center mt-2">
-                                <InputCheckbox class="form-check-input me-2" @bind-Value="LeaveRequest.IsPaid" @onchange="ValidateLeave" />
+                                <InputCheckbox class="form-check-input me-2" @bind-Value="LeaveRequest.IsPaid" />
                                 <label class="form-check-label fw-semibold">Congé payé</label>
                             </div>
 
@@ -91,8 +98,8 @@
                     </div>
 
                     <div class="modal-footer bg-light border-top-0">
-                        <button type="submit" class="btn btn-success px-4">
-                            <i class="bi bi-save me-2"></i>Enregistrer
+                        <button type="submit" class="btn btn-success px-4" disabled="@isSubmitting">
+                            <i class="bi bi-save me-2"></i>@(isSubmitting ? "Enregistrement..." : "Enregistrer")
                         </button>
                         <button type="button" class="btn btn-outline-secondary px-4" @onclick="Close">
                             <i class="bi bi-x-circle me-2"></i>Annuler
@@ -104,7 +111,6 @@
     </EditForm>
 }
 
-
 @code {
     [Parameter] public LeaveRequest LeaveRequest { get; set; } = new();
     [Parameter] public bool IsOpen { get; set; }
@@ -112,11 +118,12 @@
     [Parameter] public EventCallback<LeaveRequest> OnSave { get; set; }
 
     private List<Employee> Employees = new();
-    private int? RemainingDays;
+    private float? RemainingDays;
     private string? ValidationMessage;
     private EditContext? editContext;
+    private bool isLoadingRemainingDays;
+    private bool isSubmitting;
 
-    // 👇 This property handles EmployeeId changes
     private int CurrentEmployeeId
     {
         get => LeaveRequest.EmployeeId;
@@ -132,59 +139,117 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Employees = await EmployeeService.GetAllAsync();
+        try
+        {
+            Employees = await EmployeeService.GetAllAsync() ?? new();
+        }
+        catch (Exception ex)
+        {
+            ValidationMessage = "Erreur lors du chargement des employés";
+            Console.Error.WriteLine(ex);
+        }
     }
 
-    protected override async Task OnParametersSetAsync()
+    protected override void OnParametersSet()
     {
-        if (LeaveRequest is not null)
-        {
-            editContext = new EditContext(LeaveRequest);
-
-            if (LeaveRequest.EmployeeId > 0)
-            {
-                await UpdateRemainingDays();
-            }
-        }
+        editContext = new EditContext(LeaveRequest);
     }
 
     private async Task OnEmployeeChanged(int employeeId)
     {
         if (employeeId > 0)
         {
-            RemainingDays = await LeaveRequestService.GetRemainingDaysAsync(employeeId);
-            ValidateLeave();
-            StateHasChanged();
-        }
-    }
-
-    private void ValidateLeave(ChangeEventArgs? e = null)
-    {
-        ValidationMessage = null;
-
-        if (LeaveRequest.IsPaid && RemainingDays.HasValue
-            && LeaveRequest.StartDate != default && LeaveRequest.EndDate != default)
-        {
-            var requestedDays = (LeaveRequest.EndDate - LeaveRequest.StartDate).Days + 1;
-
-            if (requestedDays > RemainingDays.Value)
+            try
             {
-                ValidationMessage = $"Requested paid leave ({requestedDays} days) exceeds remaining balance ({RemainingDays.Value} days).";
+                isLoadingRemainingDays = true;
+                StateHasChanged();
+
+                RemainingDays = await LeaveRequestService.GetRemainingDaysAsync(employeeId);
             }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex);
+                ValidationMessage = "Erreur lors du chargement des jours restants";
+                RemainingDays = null;
+            }
+            finally
+            {
+                isLoadingRemainingDays = false;
+                StateHasChanged();
+            }
+        }
+        else
+        {
+            RemainingDays = null;
         }
     }
 
     private async Task HandleValidSubmit()
     {
-        ValidateLeave();
+        isSubmitting = true;
+        StateHasChanged();
 
-        if (!string.IsNullOrWhiteSpace(ValidationMessage))
+        try
         {
-            return;
+            var validationResult = ValidateLeaveRequest();
+            if (!validationResult.isValid)
+            {
+                ValidationMessage = validationResult.message;
+                return;
+            }
+
+            await OnSave.InvokeAsync(LeaveRequest);
+            await Close();
+        }
+        catch (Exception ex)
+        {
+            ValidationMessage = "Erreur lors de l'enregistrement de la demande";
+            Console.Error.WriteLine(ex);
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private (bool isValid, string message) ValidateLeaveRequest()
+    {
+        if (LeaveRequest.EmployeeId <= 0)
+        {
+            return (false, "Veuillez sélectionner un employé");
         }
 
-        await OnSave.InvokeAsync(LeaveRequest);
-        await Close();
+        if (LeaveRequest.StartDate == default || LeaveRequest.EndDate == default)
+        {
+            return (false, "Veuillez spécifier les dates de début et de fin");
+        }
+
+        if (LeaveRequest.StartDate > LeaveRequest.EndDate)
+        {
+            return (false, "La date de fin ne peut pas être avant la date de début");
+        }
+
+        if (LeaveRequest.StartDate < DateTime.Today)
+        {
+            return (false, "La date de début ne peut pas être dans le passé");
+        }
+
+        if (string.IsNullOrWhiteSpace(LeaveRequest.Reason))
+        {
+            return (false, "Veuillez spécifier un motif");
+        }
+
+        if (LeaveRequest.IsPaid && RemainingDays.HasValue)
+        {
+            var requestedDays = (float)(LeaveRequest.EndDate - LeaveRequest.StartDate).TotalDays + 1;
+            if (requestedDays > RemainingDays.Value)
+            {
+                return (false, $"Congé payé demandé ({requestedDays:0.0} jours) dépasse le solde restant ({RemainingDays.Value:0.0} jours)");
+            }
+        }
+
+        return (true, null);
     }
 
     private async Task Close()
@@ -192,12 +257,15 @@
         ValidationMessage = null;
         await IsOpenChanged.InvokeAsync(false);
     }
-    private async Task UpdateRemainingDays()
+
+    private string GetRemainingDaysBadgeClass()
     {
-        if (LeaveRequest.EmployeeId > 0)
-        {
-            RemainingDays = await LeaveRequestService.GetRemainingDaysAsync(LeaveRequest.EmployeeId);
-        }
-        StateHasChanged();
+        if (!RemainingDays.HasValue) return "bg-secondary";
+
+        if (LeaveRequest.StartDate == default || LeaveRequest.EndDate == default)
+            return "bg-success";
+
+        var requestedDays = (LeaveRequest.EndDate - LeaveRequest.StartDate).TotalDays + 1;
+        return requestedDays > RemainingDays.Value ? "bg-danger" : "bg-success";
     }
 }

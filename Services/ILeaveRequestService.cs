@@ -8,7 +8,7 @@ namespace RH.Services
         Task<LeaveRequest?> GetByIdAsync(int id);
         Task<LeaveRequest> CreateAsync(LeaveRequest request);
         Task<LeaveRequest> UpdateAsync(LeaveRequest request);
-        Task<int> GetRemainingDaysAsync(int employeeId);
+        Task<float> GetRemainingDaysAsync(int employeeId);
         Task UpdateStatusAsync(int requestId, LeaveStatus newStatus);
 
     }

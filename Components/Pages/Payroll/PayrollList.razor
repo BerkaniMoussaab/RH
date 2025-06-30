@@ -8,6 +8,7 @@
 @inject AbsenceService AbsenceService
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
+@inject IJSRuntime JS
 
 <PageTitle>Fiches de paie</PageTitle>
 
@@ -63,6 +64,10 @@ else
                             <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => EditPayroll(payroll)">
                                 <i class="bi bi-pencil"></i>
                             </button>
+                            <button class="btn btn-danger btn-sm"
+                                    @onclick="() => DeletePayroll(payroll.Id)">
+                                Supprimer
+                            </button>
                             <!-- Optional: Delete Button -->
                             <!--<button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(payroll.Id)">
                             <i class="bi bi-trash"></i>
@@ -112,7 +117,11 @@ else
                             <!-- Salaire de base -->
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Salaire de base</label>
-                                <InputNumber class="form-control" @bind-Value="CurrentPayroll.BaseSalary" />
+                                <InputNumber TValue="decimal"
+                                             class="form-control"
+                                             Value="CurrentPayroll.BaseSalary"
+                                             ValueChanged="OnBaseSalaryChanged"
+                                             ValueExpression="@(() => CurrentPayroll.BaseSalary)" />
                                 <small class="text-muted">Récupéré depuis la dernière fiche de paie</small>
                             </div>
 
@@ -138,16 +147,14 @@ else
                                 <label class="form-label fw-semibold">
                                     Retenue par jour d'absence
                                     <i class="bi bi-info-circle ms-1 text-muted"
-                                    title="Montant appliqué pour chaque jour d'absence enregistré ou saisi manuellement."></i>
+                                       title="Montant appliqué automatiquement : salaire de base / 22."></i>
                                 </label>
                                 <InputNumber TValue="decimal"
-                                class="form-control"
-                                Value="CurrentPayroll.DeductionPerAbsenceDay"
-                                ValueChanged="OnDeductionChanged"
-                                ValueExpression="@(() => CurrentPayroll.DeductionPerAbsenceDay)" />
-                                <small class="text-muted">
-                                    S'applique automatiquement sur les absences comptées.
-                                </small>
+                                             class="form-control"
+                                             Value="CurrentPayroll.DeductionPerAbsenceDay"
+                                             ValueExpression="@(() => CurrentPayroll.DeductionPerAbsenceDay)"
+                                             Disabled="true" />
+                                <small class="text-muted">Calculé automatiquement</small>
                             </div>
 
                             <!-- Absences -->
@@ -376,6 +383,17 @@ else
     private bool IsModalOpen = false;
     private bool UseManualAbsences = false;
 
+    private void OnBaseSalaryChanged(decimal value)
+    {
+        if (CurrentPayroll == null) return;
+
+        CurrentPayroll.BaseSalary = value;
+        CurrentPayroll.DeductionPerAbsenceDay = Math.Round(value / 22, 2);
+      
+    }
+
+
+    
 
     private Task OnManualAbsenceDaysChanged(int value)
     {
@@ -481,10 +499,11 @@ else
     {
         Employees = await EmployeeService.GetAllAsync();
         AllAdjustmentRules = await AdjustmentService.GetAllAsync();
+      
         if (CurrentPayroll.ManualAbsenceDays != 0)
         {
             UseManualAbsences = true;
-        }
+           }
         await LoadPayrolls();
     }
 
@@ -501,6 +520,15 @@ else
             await LoadAbsenceDates(CurrentPayroll.EmployeeId, CurrentPayroll.PayDate);
         }
         IsModalOpen = true;
+    }
+   
+    private async Task DeletePayroll(int id)
+    {
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Êtes-vous sûr de vouloir supprimer cette fiche de paie ?");
+        if (confirmed)
+        {
+            await DeletePayroll(id);
+        }
     }
 
     private async void EditPayroll(Payroll payroll)
@@ -607,7 +635,11 @@ else
 
         var lastPayroll = await PayrollService.GetLastPayrollForEmployeeAsync(employeeId);
         CurrentPayroll.BaseSalary = lastPayroll?.BaseSalary ?? 0;
+        if (CurrentPayroll.BaseSalary != 0)
+        {
+            CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / 22, 2);
 
+        }
         if (CurrentPayroll?.PayDate != null)
         {
             await LoadAbsenceDates(employeeId, CurrentPayroll.PayDate);
