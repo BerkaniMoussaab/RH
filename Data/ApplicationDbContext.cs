@@ -53,12 +53,13 @@ namespace RH.Data
             modelBuilder.Entity<PayrollAdjustmentRule>()
             .HasMany(r => r.JobTitles)
             .WithMany(j => j.PayrollAdjustmentRules);
-         
+
             modelBuilder.Entity<AbsenceRecord>()
-    .HasOne<Payroll>() // si navigation inverse optionnelle
-    .WithMany()
-    .HasForeignKey(a => a.PayrollId)
-    .OnDelete(DeleteBehavior.SetNull); // ou .Restrict selon votre logique métier
+                .HasOne(a => a.Payroll)
+                .WithMany(p => p.Absences)
+                .HasForeignKey(a => a.PayrollId)
+                .OnDelete(DeleteBehavior.SetNull); // Or Restrict, depending on business logic
+
 
 
         }

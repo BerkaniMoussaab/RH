@@ -28,6 +28,7 @@ namespace RH.Models
 
         public decimal DeductionPerAbsenceDay { get; set; }
         public int ManualAbsenceDays { get; set; }
+        public ICollection<AbsenceRecord> Absences { get; set; } = new List<AbsenceRecord>();
 
     }
 

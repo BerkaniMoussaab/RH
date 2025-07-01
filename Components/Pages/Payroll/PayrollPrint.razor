@@ -1,0 +1,166 @@
+﻿@using RH.Models
+
+@code {
+    [Parameter] public Payroll CurrentPayroll { get; set; }
+    [Parameter] public Employee Employee { get; set; }
+    [Parameter] public List<PayrollList.SelectableRule> Bonuses { get; set; }
+    [Parameter] public List<PayrollList.SelectableRule> Deductions { get; set; }
+    [Parameter] public List<AbsenceRecord> Absences { get; set; }
+}
+
+<div id="printable-area" class="payroll-sheet">
+    <div class="header-section">
+        <div class="row align-items-center">
+            <div class="col-4">
+                <!-- Remplacez ceci par votre logo réel -->
+                <img src="https://via.placeholder.com/150x50?text=Votre+Logo" alt="Logo Entreprise" class="company-logo">
+            </div>
+            <div class="col-8 text-end">
+                <h2 class="title">FICHE DE PAIE</h2>
+                <p class="date-info">Période de paie : @CurrentPayroll?.PayDate.ToString("MMMM yyyy")</p>
+                <p class="date-info">Date d'émission : @DateTime.Now.ToString("dd/MM/yyyy")</p>
+            </div>
+        </div>
+        <hr class="header-divider" />
+    </div>
+
+    <div class="employee-info-section mb-3">
+        <h5 class="section-title">INFORMATIONS EMPLOYÉ</h5>
+        <div class="row">
+            <div class="col-6">
+                <p><strong>Nom complet :</strong> @Employee?.FullName</p>
+                <p><strong>Poste :</strong> @Employee?.JobTitle</p>
+            </div>
+            <div class="col-6">
+                <p><strong>ID Employé :</strong> @Employee?.Id</p>
+                <p><strong>Date d'embauche :</strong> @Employee?.HireDate</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="salary-summary-section mb-3">
+        <h5 class="section-title">RÉCAPITULATIF SALAIRE</h5>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="summary-item">
+                    <p class="label">Salaire de base</p>
+                    <p class="value">@CurrentPayroll.BaseSalary.ToString("N2") DA</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="summary-item">
+                    <p class="label">Total Primes</p>
+                    <p class="value text-success">@CurrentPayroll.Bonus.ToString("N2") DA</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="summary-item">
+                    <p class="label">Total Retenues</p>
+                    <p class="value text-danger">@CurrentPayroll.Deductions.ToString("N2") DA</p>
+                </div>
+            </div>
+        </div>
+        <div class="net-pay-box mt-2">
+            <p class="net-pay-label">NET À PAYER</p>
+            <p class="net-pay-value">@((CurrentPayroll.BaseSalary + CurrentPayroll.Bonus - CurrentPayroll.Deductions).ToString("N2")) DA</p>
+        </div>
+    </div>
+
+    @if (Bonuses?.Any(b => b.IsApplied) == true)
+    {
+        <div class="details-section mb-3">
+            <h5 class="section-title">DÉTAILS DES PRIMES</h5>
+            <div class="table-container">
+                <table class="table table-sm table-bordered details-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Description</th>
+                            <th class="text-end">Montant</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in Bonuses.Where(b => b.IsApplied))
+                        {
+                            <tr>
+                                <td class="description-cell">@b.Name</td>
+                                <td class="text-end text-success">@b.CalculatedAmount.ToString("N2") DA</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    @if (Deductions?.Any(d => d.IsApplied) == true)
+    {
+        <div class="details-section mb-3">
+            <h5 class="section-title">DÉTAILS DES RETENUES</h5>
+            <div class="table-container">
+                <table class="table table-sm table-bordered details-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Description</th>
+                            <th class="text-end">Montant</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var d in Deductions.Where(d => d.IsApplied))
+                        {
+                            <tr>
+                                <td class="description-cell">@d.Name</td>
+                                <td class="text-end text-danger">@d.CalculatedAmount.ToString("N2") DA</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    @if (Absences?.Any() == true)
+    {
+        <div class="details-section mb-3">
+            <h5 class="section-title">DÉTAILS DES ABSENCES</h5>
+            <div class="table-container">
+                <table class="table table-sm table-bordered details-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Motif</th>
+                            <th class="text-center">Comptée</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in Absences)
+                        {
+                            <tr>
+                                <td>@a.Date.ToShortDateString()</td>
+                                <td class="description-cell">@a.Reason</td>
+                                <td class="text-center">@(a.Counted ? "Oui" : "Non")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    <div class="footer-section">
+        <div class="row">
+            <div class="col-6">
+                <p class="text-muted small">
+                    Ce document est une fiche de paie générée automatiquement.
+                    Pour toute question, veuillez contacter le service RH.
+                </p>
+            </div>
+            <div class="col-6 text-end">
+                <p class="signature-label">Signature du responsable</p>
+                <div class="signature-line"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+

@@ -1,0 +1,226 @@
+﻿/* Styles généraux pour la feuille de paie - Optimisé A4 */
+.payroll-sheet {
+    width: 210mm; /* A4 width */
+    min-height: 297mm; /* A4 height */
+    max-height: 297mm; /* Limite la hauteur pour éviter le débordement */
+    padding: 20mm; /* Marges optimisées pour A4 */
+    background-color: #fff;
+    color: #333;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 10pt; /* Taille réduite pour plus de contenu */
+    line-height: 1.4; /* Line-height réduit pour économiser l'espace */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin: 20px auto;
+    overflow: hidden; /* Évite le débordement */
+}
+
+/* Styles pour l'impression - Optimisés */
+@media print {
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    .payroll-sheet {
+        box-shadow: none;
+        margin: 0;
+        width: 100%;
+        min-height: auto;
+        max-height: none;
+        padding: 10mm; /* Marges réduites pour l'impression */
+        font-size: 9pt; /* Encore plus petit pour l'impression */
+    }
+
+    .no-print {
+        display: none !important;
+    }
+    /* Contrôle des sauts de page */
+    .details-section {
+        page-break-inside: avoid;
+    }
+
+    .section-title {
+        page-break-after: avoid;
+    }
+
+    .footer-section {
+        page-break-before: auto;
+    }
+}
+
+/* En-tête - Optimisé */
+.header-section {
+    margin-bottom: 20px; /* Réduit de 30px à 20px */
+}
+
+.company-logo {
+    max-width: 120px; /* Réduit de 150px à 120px */
+    height: auto;
+}
+
+.title {
+    font-size: 1.8em; /* Réduit de 2.2em à 1.8em */
+    font-weight: 700;
+    color: #0056b3;
+    margin-bottom: 3px; /* Réduit de 5px à 3px */
+}
+
+.date-info {
+    font-size: 0.85em; /* Réduit de 0.9em à 0.85em */
+    color: #666;
+    margin-bottom: 1px; /* Réduit de 2px à 1px */
+}
+
+.header-divider {
+    border-top: 2px solid #0056b3;
+    margin-top: 10px; /* Réduit de 15px à 10px */
+    margin-bottom: 15px; /* Réduit de 20px à 15px */
+}
+
+/* Titres de section - Optimisés */
+.section-title {
+    font-size: 1.1em; /* Réduit de 1.2em à 1.1em */
+    font-weight: 600;
+    color: #0056b3;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 3px; /* Réduit de 5px à 3px */
+    margin-bottom: 10px; /* Réduit de 15px à 10px */
+}
+
+/* Sections - Marges réduites */
+.employee-info-section p,
+.details-section p {
+    margin-bottom: 3px; /* Réduit de 5px à 3px */
+}
+
+/* Récapitulatif salaire - Optimisé */
+.salary-summary-section .summary-item {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px; /* Réduit de 5px à 4px */
+    padding: 8px 12px; /* Réduit de 10px 15px à 8px 12px */
+    text-align: center;
+    margin-bottom: 8px; /* Réduit de 10px à 8px */
+}
+
+    .salary-summary-section .summary-item .label {
+        font-size: 0.85em; /* Réduit de 0.9em à 0.85em */
+        color: #555;
+        margin-bottom: 2px; /* Réduit de 3px à 2px */
+    }
+
+    .salary-summary-section .summary-item .value {
+        font-size: 1.2em; /* Réduit de 1.3em à 1.2em */
+        font-weight: 700;
+        color: #333;
+    }
+
+.net-pay-box {
+    background-color: #e0f7fa;
+    border: 2px solid #00bcd4;
+    border-radius: 6px; /* Réduit de 8px à 6px */
+    padding: 12px 15px; /* Réduit de 15px 20px à 12px 15px */
+    text-align: center;
+    margin-top: 15px; /* Réduit de 20px à 15px */
+}
+
+.net-pay-label {
+    font-size: 1em; /* Réduit de 1.1em à 1em */
+    font-weight: 600;
+    color: #007bff;
+    margin-bottom: 3px; /* Réduit de 5px à 3px */
+}
+
+.net-pay-value {
+    font-size: 2em; /* Réduit de 2.5em à 2em */
+    font-weight: 800;
+    color: #0056b3;
+}
+
+/* Tables de détails - Optimisées pour A4 */
+.table-container {
+    max-height: 120mm; /* Limite la hauteur des tableaux */
+    overflow: hidden; /* Cache le contenu qui dépasse */
+}
+
+.details-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 5px; /* Réduit de 10px à 5px */
+    font-size: 0.9em; /* Taille réduite pour les tableaux */
+}
+
+    .details-table th,
+    .details-table td {
+        padding: 6px 8px; /* Réduit de 8px 12px à 6px 8px */
+        border: 1px solid #dee2e6;
+        vertical-align: top;
+    }
+
+    .details-table th {
+        background-color: #f2f2f2;
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.85em; /* Plus petit pour les en-têtes */
+    }
+
+    .details-table tbody tr:nth-child(even) {
+        background-color: #fefefe;
+    }
+
+/* Gestion des textes longs dans les tableaux */
+.description-cell {
+    max-width: 120px; /* Limite la largeur des descriptions */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Pied de page - Optimisé */
+.footer-section {
+    margin-top: 30px; /* Réduit de 50px à 30px */
+    padding-top: 15px; /* Réduit de 20px à 15px */
+    border-top: 1px solid #eee;
+    font-size: 0.8em; /* Réduit de 0.85em à 0.8em */
+    color: #777;
+}
+
+.signature-label {
+    font-weight: 600;
+    margin-bottom: 8px; /* Réduit de 10px à 8px */
+}
+
+.signature-line {
+    border-bottom: 1px dashed #999;
+    width: 150px; /* Réduit de 200px à 150px */
+    height: 30px; /* Réduit de 40px à 30px */
+    margin-left: auto;
+}
+
+/* Couleurs pour les montants */
+.text-success {
+    color: #28a745 !important;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+/* Optimisations supplémentaires pour l'impression */
+@media print {
+    .title {
+        font-size: 1.6em;
+    }
+
+    .net-pay-value {
+        font-size: 1.8em;
+    }
+
+    .details-table {
+        font-size: 0.8em;
+    }
+
+    .table-container {
+        max-height: 100mm;
+    }
+}

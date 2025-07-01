@@ -7,6 +7,7 @@
 @inject PayrollAdjustmentRuleService AdjustmentService
 @inject AbsenceService AbsenceService
 @using Microsoft.AspNetCore.Authorization
+@using System.Text.Json
 @attribute [Authorize]
 @inject IJSRuntime JS
 
@@ -65,9 +66,11 @@ else
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <button class="btn btn-danger btn-sm"
-                            @onclick="() => DeletePayroll(payroll.Id)">
+                                    @onclick="() => DeletePayroll(payroll.Id)">
                                 Supprimer
                             </button>
+                          
+
                             <!-- Optional: Delete Button -->
                             <!--<button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(payroll.Id)">
                             <i class="bi bi-trash"></i>
@@ -84,293 +87,348 @@ else
 @if (IsModalOpen)
 {
     <EditForm Model="CurrentPayroll" OnValidSubmit="SavePayroll">
-        <DataAnnotationsValidator />
-        <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-            <div class="modal-dialog modal-xl modal-dialog-scrollable">
-                <div class="modal-content rounded-4 shadow border-primary">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title">
-                            <i class="bi bi-cash-coin me-2"></i>
-                            @((CurrentPayroll.Id == 0) ? "Ajouter une fiche de paie" : "Modifier la fiche de paie")
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" @onclick="CloseModal"></button>
-                    </div>
+    <DataAnnotationsValidator />
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content rounded-4 shadow border-primary">
+    <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+            <i class="bi bi-cash-coin me-2"></i>
+            @((CurrentPayroll.Id == 0)
+                ? "Ajouter une fiche de paie"
+                : $"Modifier la fiche de paie (ID: {CurrentPayroll.Id})")
+        </h5>
 
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <!-- Détails de l'employé -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Employé</label>
-                                <InputSelect class="form-select" @bind-Value="CurrentEmployeeId">
-                                    <option value="">-- Sélectionner un employé --</option>
-                                    @foreach (var emp in Employees)
+        <button type="button" class="btn-close btn-close-white" @onclick="CloseModal"></button>
+    </div>
+
+    <div class="modal-body">
+        <div class="row g-3">
+            <!-- Détails de l'employé -->
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Employé</label>
+                <InputSelect class="form-select" @bind-Value="CurrentEmployeeId">
+                    <option value="">-- Sélectionner un employé --</option>
+                    @foreach (var emp in Employees)
+                    {
+                        <option value="@emp.Id">@emp.FullName</option>
+                    }
+                </InputSelect>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Date de paiement</label>
+                <InputDate class="form-control" @bind-Value="CurrentPayroll.PayDate" />
+            </div>
+
+            <!-- Salaire de base -->
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Salaire de base</label>
+                <InputNumber TValue="decimal"
+                             class="form-control"
+                             Value="CurrentPayroll.BaseSalary"
+                             ValueChanged="OnBaseSalaryChanged"
+                             ValueExpression="@(() => CurrentPayroll.BaseSalary)" />
+                <small class="text-muted">Récupéré depuis la dernière fiche de paie</small>
+            </div>
+
+            <!-- Mode d'absence -->
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">Mode de saisie des absences</label>
+                <select class="form-select" @onchange="OnAbsenceModeChanged">
+                    @if (CurrentPayroll.ManualAbsenceDays != 0)
+                    {
+                        <option value="true">Saisie manuelle</option>
+                        <option value="false">Utiliser les absences enregistrées</option>
+                    }
+                    else
+                    {
+                        <option value="false">Utiliser les absences enregistrées</option>
+                        <option value="true">Saisie manuelle</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Retenue par jour d'absence -->
+            <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                    Retenue par jour d'absence
+                    <i class="bi bi-info-circle ms-1 text-muted"
+                       title="Montant appliqué automatiquement : salaire de base / 22."></i>
+                </label>
+                <InputNumber TValue="decimal"
+                             class="form-control"
+                             Value="CurrentPayroll.DeductionPerAbsenceDay"
+                             ValueExpression="@(() => CurrentPayroll.DeductionPerAbsenceDay)"
+                             Disabled="true" />
+                <small class="text-muted">Calculé automatiquement</small>
+            </div>
+
+            <!-- Absences -->
+            <div class="col-md-6">
+                <div class="card border-secondary p-3">
+                    <h6 class="card-title mb-2"><i class="bi bi-calendar-x me-2"></i> Absences</h6>
+
+                    @if (UseManualAbsences || CurrentPayroll.ManualAbsenceDays != 0)
+                    {
+                        <label class="form-label">Nombre de jours d'absence (manuel)</label>
+                        <InputNumber TValue="int"
+                                     class="form-control"
+                                     Value="CurrentPayroll.ManualAbsenceDays"
+                                     ValueChanged="OnManualAbsenceDaysChanged"
+                                     ValueExpression="@(() =>CurrentPayroll.ManualAbsenceDays)" />
+                    }
+                    else if (EmployeeAbsences.Any())
+                    {
+                        <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                            <table class="table table-bordered table-sm">
+                                <thead class="table-light">
+                                <tr>
+                                    <th style="width: 25%;">Date</th>
+                                    <th>Motif</th>
+                                    <th style="width: 100px;" class="text-center">Comptée</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                @foreach (var a in EmployeeAbsences)
+                                {
+                                    <tr>
+                                        <td>@a.Date.ToShortDateString()</td>
+                                        <td>
+                                            <InputText class="form-control form-control-sm" @bind-Value="a.Reason" Disabled />
+                                        </td>
+                                        <td class="text-center">
+                                            <InputCheckbox class="form-check-input mt-1"
+                                                           Value="a.Counted"
+                                                           ValueChanged="val => OnCountedChanged(a, val)"
+                                                           ValueExpression="@(() => a.Counted)" />
+                                        </td>
+                                    </tr>
+                                }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-muted">Aucune absence enregistrée.</div>
+                    }
+                </div>
+            </div>
+
+            <!-- PRIMES -->
+            <div class="col-md-6">
+                <div class="card border-success p-3 shadow-sm rounded-3">
+                    <h6 class="text-success mb-3"><i class="bi bi-plus-circle me-2"></i> Primes</h6>
+
+                    @foreach (var rule in SelectedBonusRules)
+                    {
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <!-- Checkbox and label -->
+                            <div class="d-flex align-items-center flex-grow-1 me-2">
+                                <InputCheckbox class="form-check-input me-2"
+                                               Value="rule.IsApplied"
+                                               ValueChanged="val => OnBonusRuleChanged(rule, val)"
+                                               ValueExpression="@(() => rule.IsApplied)" />
+                                <label class="form-check-label mb-0">
+                                    @rule.Name
+                                    @if (!rule.IsPercentage && rule.Amount > 0)
                                     {
-                                        <option value="@emp.Id">@emp.FullName</option>
+                                        <span class="text-muted ms-1">(@rule.Amount.ToString("C"))</span>
                                     }
-                                </InputSelect>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Date de paiement</label>
-                                <InputDate class="form-control" @bind-Value="CurrentPayroll.PayDate" />
-                            </div>
-
-                            <!-- Salaire de base -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Salaire de base</label>
-                                <InputNumber TValue="decimal"
-                                class="form-control"
-                                Value="CurrentPayroll.BaseSalary"
-                                ValueChanged="OnBaseSalaryChanged"
-                                ValueExpression="@(() => CurrentPayroll.BaseSalary)" />
-                                <small class="text-muted">Récupéré depuis la dernière fiche de paie</small>
-                            </div>
-
-                            <!-- Mode d'absence -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Mode de saisie des absences</label>
-                                <select class="form-select" @onchange="OnAbsenceModeChanged">
-                                    @if (CurrentPayroll.ManualAbsenceDays != 0)
+                                    else if (rule.IsPercentage)
                                     {
-                                        <option value="true">Saisie manuelle</option>
-                                        <option value="false">Utiliser les absences enregistrées</option>
+                                        <span class="text-muted ms-1">(@rule.Amount %)</span>
                                     }
-                                    else
-                                    {
-                                        <option value="false">Utiliser les absences enregistrées</option>
-                                        <option value="true">Saisie manuelle</option>
-                                    }
-                                </select>
-                            </div>
-
-                            <!-- Retenue par jour d'absence -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">
-                                    Retenue par jour d'absence
-                                    <i class="bi bi-info-circle ms-1 text-muted"
-                                    title="Montant appliqué automatiquement : salaire de base / 22."></i>
                                 </label>
-                                <InputNumber TValue="decimal"
-                                class="form-control"
-                                Value="CurrentPayroll.DeductionPerAbsenceDay"
-                                ValueExpression="@(() => CurrentPayroll.DeductionPerAbsenceDay)"
-                                Disabled="true" />
-                                <small class="text-muted">Calculé automatiquement</small>
                             </div>
 
-                            <!-- Absences -->
-                            <div class="col-md-6">
-                                <div class="card border-secondary p-3">
-                                    <h6 class="card-title mb-2"><i class="bi bi-calendar-x me-2"></i> Absences</h6>
+                            @if (rule.IsApplied)
+                            {
+                                <div class="d-flex align-items-center" style="gap: 0.5rem;">
+                                    @* Editable amount if not preset *@
+                                    @if (rule.IsEditable)
 
-                                    @if (UseManualAbsences || CurrentPayroll.ManualAbsenceDays != 0)
                                     {
-                                        <label class="form-label">Nombre de jours d'absence (manuel)</label>
+                                        <InputNumber TValue="decimal"
+                                                     class="form-control form-control-sm"
+                                                     style="width: 90px;"
+                                                     Value="rule.Amount"
+                                                     ValueChanged="val => OnAmountChanged(rule, val)"
+                                                     ValueExpression="@(() => rule.Amount)" />
+                                    }
+
+                                    @if (rule.IsCountable)
+                                    {
                                         <InputNumber TValue="int"
-                                        class="form-control"
-                                        Value="CurrentPayroll.ManualAbsenceDays"
-                                        ValueChanged="OnManualAbsenceDaysChanged"
-                                        ValueExpression="@(() =>CurrentPayroll.ManualAbsenceDays)" />
+                                                     class="form-control form-control-sm"
+                                                     style="width: 80px;"
+                                                     Value="rule.Quantity"
+                                                     ValueChanged="val => OnCountableQuantityChanged(rule, val)"
+                                                     ValueExpression="@(() => rule.Quantity)" />
                                     }
-                                    else if (EmployeeAbsences.Any())
-                                    {
-                                        <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
-                                            <table class="table table-bordered table-sm">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th style="width: 25%;">Date</th>
-                                                        <th>Motif</th>
-                                                        <th style="width: 100px;" class="text-center">Comptée</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @foreach (var a in EmployeeAbsences)
-                                                    {
-                                                        <tr>
-                                                            <td>@a.Date.ToShortDateString()</td>
-                                                            <td>
-                                                                <InputText class="form-control form-control-sm" @bind-Value="a.Reason" Disabled />
-                                                            </td>
-                                                            <td class="text-center">
-                                                                <InputCheckbox class="form-check-input mt-1"
-                                                                Value="a.Counted"
-                                                                ValueChanged="val => OnCountedChanged(a, val)"
-                                                                ValueExpression="@(() => a.Counted)" />
-                                                            </td>
-                                                        </tr>
-                                                    }
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="text-muted">Aucune absence enregistrée.</div>
-                                    }
+
+                                    <div class="text-success fw-semibold" style="min-width: 90px; text-align: end;">
+                                        @rule.CalculatedAmount.ToString("N2") DA
+                                    </div>
                                 </div>
-                            </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
 
-                            <!-- PRIMES -->
-                            <div class="col-md-6">
-                                <div class="card border-success p-3 shadow-sm rounded-3">
-                                    <h6 class="text-success mb-3"><i class="bi bi-plus-circle me-2"></i> Primes</h6>
 
-                                    @foreach (var rule in SelectedBonusRules)
+            <!-- RETENUES -->
+            <div class="col-md-6">
+                <div class="card border-danger p-3 shadow-sm rounded-3">
+                    <h6 class="text-danger mb-3"><i class="bi bi-dash-circle me-2"></i> Retenues</h6>
+
+                    @foreach (var rule in SelectedDeductionRules)
+                    {
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <!-- Checkbox and label -->
+                            <div class="d-flex align-items-center flex-grow-1 me-2">
+                                <InputCheckbox class="form-check-input me-2"
+                                               Value="rule.IsApplied"
+                                               ValueChanged="val => OnDeductionRuleChanged(rule, val)"
+                                               ValueExpression="@(() => rule.IsApplied)" />
+                                <label class="form-check-label mb-0">
+                                    @rule.Name
+                                    @if (!rule.IsPercentage && rule.Amount > 0)
                                     {
-                                        <div class="d-flex align-items-center justify-content-between mb-2">
-                                            <!-- Checkbox and label -->
-                                            <div class="d-flex align-items-center flex-grow-1 me-2">
-                                                <InputCheckbox class="form-check-input me-2"
-                                                Value="rule.IsApplied"
-                                                ValueChanged="val => OnBonusRuleChanged(rule, val)"
-                                                ValueExpression="@(() => rule.IsApplied)" />
-                                                <label class="form-check-label mb-0">
-                                                    @rule.Name
-                                                    @if (!rule.IsPercentage && rule.Amount > 0)
-                                                    {
-                                                        <span class="text-muted ms-1">(@rule.Amount.ToString("C"))</span>
-                                                    }
-                                                    else if (rule.IsPercentage)
-                                                    {
-                                                        <span class="text-muted ms-1">(@rule.Amount %)</span>
-                                                    }
-                                                </label>
-                                            </div>
-
-                                            @if (rule.IsApplied)
-                                            {
-                                                <div class="d-flex align-items-center" style="gap: 0.5rem;">
-                                                    @* Editable amount if not preset *@
-                                                    @if (rule.IsEditable)
-
-                                                    {
-                                                        <InputNumber TValue="decimal"
-                                                        class="form-control form-control-sm"
-                                                        style="width: 90px;"
-                                                        Value="rule.Amount"
-                                                        ValueChanged="val => OnAmountChanged(rule, val)"
-                                                        ValueExpression="@(() => rule.Amount)" />
-                                                    }
-
-                                                    @if (rule.IsCountable)
-                                                    {
-                                                        <InputNumber TValue="int"
-                                                        class="form-control form-control-sm"
-                                                        style="width: 80px;"
-                                                        Value="rule.Quantity"
-                                                        ValueChanged="val => OnCountableQuantityChanged(rule, val)"
-                                                        ValueExpression="@(() => rule.Quantity)" />
-                                                    }
-
-                                                    <div class="text-success fw-semibold" style="min-width: 90px; text-align: end;">
-                                                        @rule.CalculatedAmount.ToString("N2") DA
-                                                    </div>
-                                                </div>
-                                            }
-                                        </div>
+                                        <span class="text-muted ms-1">(@rule.Amount:N2 DA)</span>
                                     }
-                                </div>
-                            </div>
-
-
-                            <!-- RETENUES -->
-                            <div class="col-md-6">
-                                <div class="card border-danger p-3 shadow-sm rounded-3">
-                                    <h6 class="text-danger mb-3"><i class="bi bi-dash-circle me-2"></i> Retenues</h6>
-
-                                    @foreach (var rule in SelectedDeductionRules)
+                                    else if (rule.IsPercentage)
                                     {
-                                        <div class="d-flex align-items-center justify-content-between mb-2">
-                                            <!-- Checkbox and label -->
-                                            <div class="d-flex align-items-center flex-grow-1 me-2">
-                                                <InputCheckbox class="form-check-input me-2"
-                                                Value="rule.IsApplied"
-                                                ValueChanged="val => OnDeductionRuleChanged(rule, val)"
-                                                ValueExpression="@(() => rule.IsApplied)" />
-                                                <label class="form-check-label mb-0">
-                                                    @rule.Name
-                                                    @if (!rule.IsPercentage && rule.Amount > 0)
-                                                    {
-                                                        <span class="text-muted ms-1">(@rule.Amount:N2 DA)</span>
-                                                    }
-                                                    else if (rule.IsPercentage)
-                                                    {
-                                                        <span class="text-muted ms-1">(@rule.Amount %)</span>
-                                                    }
-                                                </label>
-                                            </div>
-
-                                            @if (rule.IsApplied)
-                                            {
-                                                <div class="d-flex align-items-center" style="gap: 0.5rem;">
-                                                    @if (rule.IsEditable)
-
-                                                    {
-                                                        <InputNumber TValue="decimal"
-                                                        class="form-control form-control-sm"
-                                                        style="width: 90px;"
-                                                        Value="rule.Amount"
-                                                        ValueChanged="val => OnAmountChanged(rule, val)"
-                                                        ValueExpression="@(() => rule.Amount)" />
-                                                    }
-
-                                                    @if (rule.IsCountable)
-                                                    {
-                                                        <InputNumber TValue="int"
-                                                        class="form-control form-control-sm"
-                                                        style="width: 80px;"
-                                                        Value="rule.Quantity"
-                                                        ValueChanged="val => OnCountableQuantityChanged(rule, val)"
-                                                        ValueExpression="@(() => rule.Quantity)" />
-                                                    }
-
-                                                    <div class="text-danger fw-semibold" style="min-width: 90px; text-align: end;">
-                                                        @rule.CalculatedAmount.ToString("N2") DA
-                                                    </div>
-                                                </div>
-                                            }
-                                        </div>
+                                        <span class="text-muted ms-1">(@rule.Amount %)</span>
                                     }
+                                </label>
+                            </div>
+
+                            @if (rule.IsApplied)
+                            {
+                                <div class="d-flex align-items-center" style="gap: 0.5rem;">
+                                    @if (rule.IsEditable)
+
+                                    {
+                                        <InputNumber TValue="decimal"
+                                                     class="form-control form-control-sm"
+                                                     style="width: 90px;"
+                                                     Value="rule.Amount"
+                                                     ValueChanged="val => OnAmountChanged(rule, val)"
+                                                     ValueExpression="@(() => rule.Amount)" />
+                                    }
+
+                                    @if (rule.IsCountable)
+                                    {
+                                        <InputNumber TValue="int"
+                                                     class="form-control form-control-sm"
+                                                     style="width: 80px;"
+                                                     Value="rule.Quantity"
+                                                     ValueChanged="val => OnCountableQuantityChanged(rule, val)"
+                                                     ValueExpression="@(() => rule.Quantity)" />
+                                    }
+
+                                    <div class="text-danger fw-semibold" style="min-width: 90px; text-align: end;">
+                                        @rule.CalculatedAmount.ToString("N2") DA
+                                    </div>
                                 </div>
-                            </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
 
 
 
 
 
-                            <!-- Résumé -->
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Total primes</label>
-                                <InputNumber class="form-control" @bind-Value="CurrentPayroll.Bonus" Disabled />
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Total retenues</label>
-                                <InputNumber class="form-control" @bind-Value="CurrentPayroll.Deductions" Disabled />
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold">Net à payer</label>
-                                <div class="form-control bg-light border border-success fw-bold">
-                                    @((CurrentPayroll.BaseSalary + CurrentPayroll.Bonus - CurrentPayroll.Deductions).ToString("C"))
-                                </div>
-                            </div>
-                        </div> <!-- .row g-3 -->
+            <!-- Résumé -->
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Total primes</label>
+                <InputNumber class="form-control" @bind-Value="CurrentPayroll.Bonus" Disabled />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Total retenues</label>
+                <InputNumber class="form-control" @bind-Value="CurrentPayroll.Deductions" Disabled />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold">Net à payer</label>
+                <div class="form-control bg-light border border-success fw-bold">
+                    @((CurrentPayroll.BaseSalary + CurrentPayroll.Bonus - CurrentPayroll.Deductions).ToString("C"))
+                </div>
+            </div>
+        </div> <!-- .row g-3 -->
+    </div>
+
+    <div class="modal-footer bg-light">
+        <button type="submit" class="btn btn-success px-4">
+            <i class="bi bi-save me-2"></i> Enregistrer
+        </button>
+        <button class="btn btn-outline-primary" @onclick="ShowPrintModal">🖨️ Aperçu impression</button>
+
+                        
+        <button type="button" class="btn btn-outline-secondary" @onclick="CloseModal">
+            <i class="bi bi-x-lg me-1"></i> Annuler
+        </button>
+    </div>
+    </div>
+    </div>
+    </div>
+    </EditForm>
+
+}
+@if (IsPrintModalOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content rounded-4 shadow border-primary">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Aperçu de la fiche de paie</h5>
+                    <button class="btn-close btn-close-white" @onclick="ClosePrintModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="printable-area">
+                        <PayrollPrint CurrentPayroll="CurrentPayroll"
+                                      Employee="CurrentPayroll.Employee"
+                                      Bonuses="SelectedBonusRules"
+                                      Deductions="SelectedDeductionRules"
+                                      Absences="EmployeeAbsences" />
                     </div>
-
-                    <div class="modal-footer bg-light">
-                        <button type="submit" class="btn btn-success px-4">
-                            <i class="bi bi-save me-2"></i> Enregistrer
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseModal">
-                            <i class="bi bi-x-lg me-1"></i> Annuler
-                        </button>
-                    </div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button class="btn btn-success" @onclick="Print">Imprimer</button>
+                    <button class="btn btn-outline-secondary" @onclick="ClosePrintModal">Fermer</button>
                 </div>
             </div>
         </div>
-    </EditForm>
+    </div>
 }
+@code {
+    private bool IsPrintModalOpen = false;
+    private bool IsModalOpen = false;
+    void ShowPrintModal()
+    {
+        IsPrintModalOpen = true;
+        StateHasChanged(); // Assurez-vous que l'UI est rafraîchie
+    }
+    void ClosePrintModal()
+    {
+        IsPrintModalOpen = false;
+        StateHasChanged(); // Assurez-vous que l'UI est rafraîchie
+    }
 
+   
 
-
+    async Task Print()
+    {
+        // Print only a portion of the page (optional improvement)
+        await JS.InvokeVoidAsync("printSection", "printable-area");
+    }
+}
+<div id="printable-area">
+    <!-- Fiche de paie content here -->
+</div>
 @code {
     private List<Payroll> Payrolls = new();
     private List<Employee> Employees = new();
@@ -379,9 +437,26 @@ else
     private List<SelectableRule> SelectedDeductionRules = new();
     private Payroll CurrentPayroll = new();
 
-    private bool IsModalOpen = false;
+    
     private bool UseManualAbsences = false;
+    private async Task PrintPreview()
+    {
+        var payload = new
+        {
+            Payroll = CurrentPayroll,
+            Employee = CurrentPayroll.Employee,
+            Bonuses = SelectedBonusRules,
+            Deductions = SelectedDeductionRules,
+            Absences = EmployeeAbsences
+        };
 
+        // Serialize and store in sessionStorage
+        var json = JsonSerializer.Serialize(payload);
+        await JS.InvokeVoidAsync("sessionStorage.setItem", "payroll-print-data", json);
+
+        // Open print page
+        await JS.InvokeVoidAsync("open", "/print-payroll", "_blank");
+    }
     private void OnBaseSalaryChanged(decimal value)
     {
         if (CurrentPayroll == null) return;
@@ -426,7 +501,7 @@ else
     private async Task LoadAbsenceDates(int employeeId, DateTime payMonth)
     {
         EmployeeAbsences = await AbsenceService.GetByEmployeeAndMonthAsync(employeeId, payMonth);
-        EmployeeAbsences = EmployeeAbsences.Where(a => a.PayrollId == null).ToList();
+     
     }
 
     private Task OnDeductionChanged(decimal val)
@@ -493,6 +568,7 @@ else
             await OnEmployeeChanged(CurrentPayroll.EmployeeId);
             await LoadAbsenceDates(CurrentPayroll.EmployeeId, CurrentPayroll.PayDate);
         }
+        IsPrintModalOpen = false; // Assurez-vous que la modale d'impression est fermée
         IsModalOpen = true;
     }
 
@@ -506,44 +582,69 @@ else
         await LoadPayrolls();
     }
 
-    private async void EditPayroll(Payroll payroll)
+    private async Task EditPayroll(Payroll payroll)
     {
+        // Clone selected payroll into a new instance for editing
         CurrentPayroll = new Payroll
-            {
-                Id = payroll.Id,
-                EmployeeId = payroll.EmployeeId,
-                PayDate = payroll.PayDate,
-                BaseSalary = payroll.BaseSalary,
-                Bonus = payroll.Bonus,
-                Deductions = payroll.Deductions,
-                DeductionPerAbsenceDay = payroll.DeductionPerAbsenceDay,
-                ManualAbsenceDays = payroll.ManualAbsenceDays
-            };
+        {
+            Id = payroll.Id,
+            EmployeeId = payroll.EmployeeId,
+            PayDate = payroll.PayDate,
+            BaseSalary = payroll.BaseSalary,
+            Bonus = payroll.Bonus,
+            Deductions = payroll.Deductions,
+            DeductionPerAbsenceDay = payroll.DeductionPerAbsenceDay,
+            ManualAbsenceDays = payroll.ManualAbsenceDays,
+            AbsenceDeduction = payroll.AbsenceDeduction,
+            AbsenceDays = payroll.AbsenceDays,
+            Employee = payroll.Employee
 
-        var appliedRules = payroll.AppliedRules ?? new List<PayrollAppliedRule>();
-        var jobTitleId = Employees.FirstOrDefault(e => e.Id == payroll.EmployeeId)?.JobTitleId;
+        };
+
+        // Try to get employee's job title
+        var employee = Employees.FirstOrDefault(e => e.Id == payroll.EmployeeId);
+        var jobTitleId = employee?.JobTitleId;
 
         if (jobTitleId != null)
         {
-            var bonusRules = AllAdjustmentRules.Where(r => r.Type == AdjustmentType.Bonus && r.JobTitles.Any(j => j.Id == jobTitleId));
-            var deductionRules = AllAdjustmentRules.Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId));
+            var appliedRules = payroll.AppliedRules ?? new List<PayrollAppliedRule>();
 
+            // Filter adjustment rules based on employee's job title
+            var bonusRules = AllAdjustmentRules
+                .Where(r => r.Type == AdjustmentType.Bonus && r.JobTitles.Any(j => j.Id == jobTitleId));
+            var deductionRules = AllAdjustmentRules
+                .Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId));
+
+            // Prepare selectable bonus rules
             SelectedBonusRules = bonusRules.Select(rule =>
             {
                 var applied = appliedRules.FirstOrDefault(a => a.RuleId == rule.Id);
                 return applied != null ? new SelectableRule(applied) : new SelectableRule(rule);
             }).ToList();
 
+            // Prepare selectable deduction rules
             SelectedDeductionRules = deductionRules.Select(rule =>
             {
                 var applied = appliedRules.FirstOrDefault(a => a.RuleId == rule.Id);
                 return applied != null ? new SelectableRule(applied) : new SelectableRule(rule);
             }).ToList();
         }
+        else
+        {
+            // Optional: log or notify if job title not found
+            Console.WriteLine("Job title not found for the selected employee.");
+            SelectedBonusRules = new List<SelectableRule>();
+            SelectedDeductionRules = new List<SelectableRule>();
+        }
 
+        // Load absences (use your own implementation inside LoadAbsenceDates)
         await LoadAbsenceDates(CurrentPayroll.EmployeeId, CurrentPayroll.PayDate);
+
+        // Open the modal for editing
+        IsPrintModalOpen = false; // Assurez-vous que la modale d'impression est fermée
         IsModalOpen = true;
     }
+
 
     private async Task SavePayroll()
     {
@@ -610,7 +711,12 @@ else
         }
     }
 
-    private void CloseModal() => IsModalOpen = false;
+    private void CloseModal()
+    {
+        IsModalOpen = false;
+        IsPrintModalOpen = false; // Ferme les deux modales si l'une est fermée
+        StateHasChanged(); 
+    }
 
     private async Task OnEmployeeChanged(int employeeId)
     {
@@ -719,3 +825,17 @@ else
         }
     }
 }
+@code {
+    private bool ShowPrintPreview;
+
+    void ShowPrint()
+    {
+        ShowPrintPreview = true;
+    }
+
+    async Task TriggerPrint()
+    {
+        await JS.InvokeVoidAsync("window.print");
+    }
+}
+

@@ -11,6 +11,6 @@ namespace RH.Models
         public string? Reason { get; set; }
         public bool Counted { get; set; }
         public int? PayrollId { get; set; } // nullable pour les absences non encore traitées
-
+        public Payroll? Payroll { get; set; }
     }
 }

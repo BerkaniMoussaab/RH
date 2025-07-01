@@ -30,6 +30,7 @@
                     <td>@request.Reason</td>
                     <td>
                         <button class="btn btn-sm btn-outline-secondary" @onclick="() => Edit(request.Id)">Modifier</button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => Delete(request.Id)">Supprimer</button>
                     </td>
                 </tr>
             }
@@ -70,7 +71,12 @@
         Selected = await LeaveRequestService.GetByIdAsync(id);
         ShowForm = true;
     }
-
+    private async Task Delete(int id)
+    {
+        await LeaveRequestService.DeleteAsync(id);
+        await LoadAsync();
+       
+    }
     private async Task Save(LeaveRequest req)
     {
         if (req.Id == 0)

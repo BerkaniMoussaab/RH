@@ -34,7 +34,7 @@ namespace RH.Migrations
 
                     b.HasIndex("PayrollAdjustmentRulesId");
 
-                    b.ToTable("JobTitlePayrollAdjustmentRule");
+                    b.ToTable("JobTitlePayrollAdjustmentRule", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -199,7 +199,7 @@ namespace RH.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PayrollAdjustmentRules");
+                    b.ToTable("PayrollAdjustmentRules", (string)null);
                 });
 
             modelBuilder.Entity("RH.Data.ApplicationUser", b =>
@@ -295,7 +295,7 @@ namespace RH.Migrations
 
                     b.HasIndex("PayrollId");
 
-                    b.ToTable("AbsenceRecords");
+                    b.ToTable("AbsenceRecords", (string)null);
                 });
 
             modelBuilder.Entity("RH.Models.Employee", b =>
@@ -342,7 +342,7 @@ namespace RH.Migrations
 
                     b.HasIndex("JobTitleId");
 
-                    b.ToTable("Employees");
+                    b.ToTable("Employees", (string)null);
                 });
 
             modelBuilder.Entity("RH.Models.JobTitle", b =>
@@ -370,7 +370,7 @@ namespace RH.Migrations
 
                     b.HasIndex("LeavePolicyId");
 
-                    b.ToTable("JobTitles");
+                    b.ToTable("JobTitles", (string)null);
                 });
 
             modelBuilder.Entity("RH.Models.LeavePolicy", b =>
@@ -386,7 +386,7 @@ namespace RH.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("LeavePolicies");
+                    b.ToTable("LeavePolicies", (string)null);
                 });
 
             modelBuilder.Entity("RH.Models.LeaveRequest", b =>
@@ -420,7 +420,7 @@ namespace RH.Migrations
 
                     b.HasIndex("EmployeeId");
 
-                    b.ToTable("LeaveRequests");
+                    b.ToTable("LeaveRequests", (string)null);
                 });
 
             modelBuilder.Entity("RH.Models.MonthlyAttendanceSummary", b =>
@@ -453,7 +453,7 @@ namespace RH.Migrations
 
                     b.HasIndex("EmployeeId");
 
-                    b.ToTable("MonthlyAttendanceSummaries");
+                    b.ToTable("MonthlyAttendanceSummaries", (string)null);
                 });
 
             modelBuilder.Entity("RH.Models.Payroll", b =>
@@ -495,7 +495,7 @@ namespace RH.Migrations
 
                     b.HasIndex("EmployeeId");
 
-                    b.ToTable("Payrolls");
+                    b.ToTable("Payrolls", (string)null);
                 });
 
             modelBuilder.Entity("RH.Models.PayrollAppliedRule", b =>
@@ -527,7 +527,7 @@ namespace RH.Migrations
 
                     b.HasIndex("RuleId");
 
-                    b.ToTable("PayrollAppliedRules");
+                    b.ToTable("PayrollAppliedRules", (string)null);
                 });
 
             modelBuilder.Entity("RH.Models.PerformanceReview", b =>
@@ -557,7 +557,7 @@ namespace RH.Migrations
 
                     b.HasIndex("EmployeeId");
 
-                    b.ToTable("PerformanceReviews");
+                    b.ToTable("PerformanceReviews", (string)null);
                 });
 
             modelBuilder.Entity("JobTitlePayrollAdjustmentRule", b =>
