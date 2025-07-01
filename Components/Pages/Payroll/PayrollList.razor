@@ -61,11 +61,11 @@ else
                         <td class="text-end text-danger fw-semibold">-@payroll.Deductions.ToString("C")</td>
                         <td class="text-end text-primary fw-bold">@payroll.NetPay.ToString("C")</td>
                         <td class="text-center">
-                            <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => EditPayroll(payroll)">
+                            <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() =>  EditPayroll(payroll)">
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <button class="btn btn-danger btn-sm"
-                                    @onclick="() => DeletePayroll(payroll.Id)">
+                            @onclick="() => DeletePayroll(payroll.Id)">
                                 Supprimer
                             </button>
                             <!-- Optional: Delete Button -->
@@ -118,10 +118,10 @@ else
                             <div class="col-md-6">
                                 <label class="form-label fw-semibold">Salaire de base</label>
                                 <InputNumber TValue="decimal"
-                                             class="form-control"
-                                             Value="CurrentPayroll.BaseSalary"
-                                             ValueChanged="OnBaseSalaryChanged"
-                                             ValueExpression="@(() => CurrentPayroll.BaseSalary)" />
+                                class="form-control"
+                                Value="CurrentPayroll.BaseSalary"
+                                ValueChanged="OnBaseSalaryChanged"
+                                ValueExpression="@(() => CurrentPayroll.BaseSalary)" />
                                 <small class="text-muted">Récupéré depuis la dernière fiche de paie</small>
                             </div>
 
@@ -147,13 +147,13 @@ else
                                 <label class="form-label fw-semibold">
                                     Retenue par jour d'absence
                                     <i class="bi bi-info-circle ms-1 text-muted"
-                                       title="Montant appliqué automatiquement : salaire de base / 22."></i>
+                                    title="Montant appliqué automatiquement : salaire de base / 22."></i>
                                 </label>
                                 <InputNumber TValue="decimal"
-                                             class="form-control"
-                                             Value="CurrentPayroll.DeductionPerAbsenceDay"
-                                             ValueExpression="@(() => CurrentPayroll.DeductionPerAbsenceDay)"
-                                             Disabled="true" />
+                                class="form-control"
+                                Value="CurrentPayroll.DeductionPerAbsenceDay"
+                                ValueExpression="@(() => CurrentPayroll.DeductionPerAbsenceDay)"
+                                Disabled="true" />
                                 <small class="text-muted">Calculé automatiquement</small>
                             </div>
 
@@ -371,7 +371,6 @@ else
 
 
 
-
 @code {
     private List<Payroll> Payrolls = new();
     private List<Employee> Employees = new();
@@ -389,11 +388,7 @@ else
 
         CurrentPayroll.BaseSalary = value;
         CurrentPayroll.DeductionPerAbsenceDay = Math.Round(value / 22, 2);
-      
     }
-
-
-    
 
     private Task OnManualAbsenceDaysChanged(int value)
     {
@@ -408,11 +403,9 @@ else
 
         if (isApplied && rule.IsCountable)
         {
-            // Trigger calculation with the current quantity
             OnCountableQuantityChanged(rule, rule.Quantity);
         }
     }
-
 
     private void OnDeductionRuleChanged(SelectableRule rule, bool isApplied)
     {
@@ -423,7 +416,6 @@ else
             OnCountableQuantityChanged(rule, rule.Quantity);
         }
     }
-
 
     private void OnCountedChanged(AbsenceRecord record, bool val)
     {
@@ -437,8 +429,6 @@ else
         EmployeeAbsences = EmployeeAbsences.Where(a => a.PayrollId == null).ToList();
     }
 
-
-
     private Task OnDeductionChanged(decimal val)
     {
         CurrentPayroll.DeductionPerAbsenceDay = val;
@@ -446,39 +436,23 @@ else
         return Task.CompletedTask;
     }
 
-
-
-
-
-
-
-
     private void RecalculateBonusesAndDeductions()
     {
-        // Calculate total bonuses
         CurrentPayroll.Bonus = SelectedBonusRules
             .Where(r => r.IsApplied)
-            .Sum(r => r.IsCountable && r.Quantity > 0
-                ? r.CalculatedAmount
-                : (r.IsPercentage ? CurrentPayroll.BaseSalary * r.Amount / 100 : r.Amount));
+            .Sum(r => r.IsCountable && r.Quantity > 0 ? r.CalculatedAmount : (r.IsPercentage ? CurrentPayroll.BaseSalary * r.Amount / 100 : r.Amount));
 
-        // Absence-based deductions
         var absenceDays = UseManualAbsences ? CurrentPayroll.ManualAbsenceDays : EmployeeAbsences.Count(a => a.Counted);
         var absenceDeduction = absenceDays * CurrentPayroll.DeductionPerAbsenceDay;
 
-        // Calculate total deductions
         var ruleBasedDeductions = SelectedDeductionRules
             .Where(r => r.IsApplied)
-            .Sum(r => r.IsCountable && r.Quantity > 0
-                ? r.CalculatedAmount
-                : (r.IsPercentage ? CurrentPayroll.BaseSalary * r.Amount / 100 : r.Amount));
+            .Sum(r => r.IsCountable && r.Quantity > 0 ? r.CalculatedAmount : (r.IsPercentage ? CurrentPayroll.BaseSalary * r.Amount / 100 : r.Amount));
 
         CurrentPayroll.Deductions = ruleBasedDeductions + absenceDeduction;
 
         StateHasChanged();
     }
-
-
 
     private int CurrentEmployeeId
     {
@@ -499,11 +473,11 @@ else
     {
         Employees = await EmployeeService.GetAllAsync();
         AllAdjustmentRules = await AdjustmentService.GetAllAsync();
-      
+
         if (CurrentPayroll.ManualAbsenceDays != 0)
         {
             UseManualAbsences = true;
-           }
+        }
         await LoadPayrolls();
     }
 
@@ -521,14 +495,14 @@ else
         }
         IsModalOpen = true;
     }
-   
+
     private async Task DeletePayroll(int id)
     {
         bool confirmed = await JS.InvokeAsync<bool>("confirm", "Êtes-vous sûr de vouloir supprimer cette fiche de paie ?");
         if (confirmed)
         {
             await PayrollService.DeleteAsync(id);
-        } 
+        }
         await LoadPayrolls();
     }
 
@@ -544,19 +518,27 @@ else
                 Deductions = payroll.Deductions,
                 DeductionPerAbsenceDay = payroll.DeductionPerAbsenceDay,
                 ManualAbsenceDays = payroll.ManualAbsenceDays
-
             };
 
-        var appliedBonuses = payroll.AppliedRules?.Where(r => r.Rule.Type == AdjustmentType.Bonus).Select(r => r.Rule.Id).ToList() ?? new();
-        var appliedDeductions = payroll.AppliedRules?.Where(r => r.Rule.Type == AdjustmentType.Deduction).Select(r => r.Rule.Id).ToList() ?? new();
-
+        var appliedRules = payroll.AppliedRules ?? new List<PayrollAppliedRule>();
         var jobTitleId = Employees.FirstOrDefault(e => e.Id == payroll.EmployeeId)?.JobTitleId;
+
         if (jobTitleId != null)
         {
-            SelectedBonusRules = AllAdjustmentRules.Where(r => r.Type == AdjustmentType.Bonus && r.JobTitles.Any(j => j.Id == jobTitleId))
-                .Select(r => new SelectableRule(r, appliedBonuses.Contains(r.Id))).ToList();
-            SelectedDeductionRules = AllAdjustmentRules.Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId))
-                .Select(r => new SelectableRule(r, appliedDeductions.Contains(r.Id))).ToList();
+            var bonusRules = AllAdjustmentRules.Where(r => r.Type == AdjustmentType.Bonus && r.JobTitles.Any(j => j.Id == jobTitleId));
+            var deductionRules = AllAdjustmentRules.Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId));
+
+            SelectedBonusRules = bonusRules.Select(rule =>
+            {
+                var applied = appliedRules.FirstOrDefault(a => a.RuleId == rule.Id);
+                return applied != null ? new SelectableRule(applied) : new SelectableRule(rule);
+            }).ToList();
+
+            SelectedDeductionRules = deductionRules.Select(rule =>
+            {
+                var applied = appliedRules.FirstOrDefault(a => a.RuleId == rule.Id);
+                return applied != null ? new SelectableRule(applied) : new SelectableRule(rule);
+            }).ToList();
         }
 
         await LoadAbsenceDates(CurrentPayroll.EmployeeId, CurrentPayroll.PayDate);
@@ -568,29 +550,42 @@ else
         RecalculateBonusesAndDeductions();
 
         CurrentPayroll.Bonus = SelectedBonusRules.Where(r => r.IsApplied)
-            .Sum(r => r.IsPercentage ? CurrentPayroll.BaseSalary * r.Amount / 100m : r.Amount);
+            .Sum(r => r.IsPercentage ? CurrentPayroll.BaseSalary * r.Amount / 100m : r.CalculatedAmount);
 
         CurrentPayroll.Deductions = SelectedDeductionRules.Where(r => r.IsApplied)
-            .Sum(r => r.IsPercentage ? CurrentPayroll.BaseSalary * r.Amount / 100m : r.Amount);
-
+            .Sum(r => r.IsPercentage ? CurrentPayroll.BaseSalary * r.Amount / 100m : r.CalculatedAmount);
 
         if (UseManualAbsences)
         {
             CurrentPayroll.AbsenceDays = CurrentPayroll.ManualAbsenceDays;
             CurrentPayroll.AbsenceDeduction = CurrentPayroll.ManualAbsenceDays * CurrentPayroll.DeductionPerAbsenceDay;
         }
-        else{
-            CurrentPayroll.AbsenceDays = EmployeeAbsences.Count(a => a.Counted);
-            CurrentPayroll.AbsenceDeduction = EmployeeAbsences.Count(a => a.Counted) * CurrentPayroll.DeductionPerAbsenceDay;
+        else
+        {
+            int countedAbsences = EmployeeAbsences.Count(a => a.Counted);
+            CurrentPayroll.AbsenceDays = countedAbsences;
+            CurrentPayroll.AbsenceDeduction = countedAbsences * CurrentPayroll.DeductionPerAbsenceDay;
         }
+
         CurrentPayroll.Deductions += CurrentPayroll.AbsenceDeduction;
+
+        CurrentPayroll.AppliedRules = SelectedBonusRules
+            .Where(r => r.IsApplied)
+            .Concat(SelectedDeductionRules.Where(r => r.IsApplied))
+            .Select(r => new PayrollAppliedRule
+                {
+                    RuleId = r.RuleId,
+                    Amount = r.Amount,
+                    Quantity = r.IsCountable ? r.Quantity : null
+                }).ToList();
+
         if (CurrentPayroll.Id == 0)
         {
-            await PayrollService.CreateAsync(CurrentPayroll, SelectedBonusRules.Where(r => r.IsApplied).ToList(), SelectedDeductionRules.Where(r => r.IsApplied).ToList());
+            await PayrollService.CreateAsync(CurrentPayroll);
         }
         else
         {
-            await PayrollService.UpdateAsync(CurrentPayroll, SelectedBonusRules.Where(r => r.IsApplied).ToList(), SelectedDeductionRules.Where(r => r.IsApplied).ToList());
+            await PayrollService.UpdateAsync(CurrentPayroll);
         }
 
         if (!UseManualAbsences)
@@ -601,7 +596,6 @@ else
                 await AbsenceService.UpdateAsync(abs);
             }
         }
-
 
         IsModalOpen = false;
         await LoadPayrolls();
@@ -639,7 +633,6 @@ else
         if (CurrentPayroll.BaseSalary != 0)
         {
             CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / 22, 2);
-
         }
         if (CurrentPayroll?.PayDate != null)
         {
@@ -654,29 +647,24 @@ else
     {
         RecalculateBonusesAndDeductions();
     }
+
     private void OnCountableQuantityChanged(SelectableRule rule, int? quantity)
     {
-        var finalQuantity = quantity ?? 1; // ✅ Default to 1 if null
+        var finalQuantity = quantity ?? 1;
         rule.Quantity = finalQuantity;
 
         if (rule.IsCountable)
         {
-            var unitAmount = rule.IsPercentage
-                ? CurrentPayroll.BaseSalary * rule.Amount / 100
-                : rule.Amount;
-
+            var unitAmount = rule.IsPercentage ? CurrentPayroll.BaseSalary * rule.Amount / 100 : rule.Amount;
             rule.CalculatedAmount = unitAmount * finalQuantity;
         }
         else
         {
-            rule.CalculatedAmount = rule.IsPercentage
-                ? CurrentPayroll.BaseSalary * rule.Amount / 100
-                : rule.Amount;
+            rule.CalculatedAmount = rule.IsPercentage ? CurrentPayroll.BaseSalary * rule.Amount / 100 : rule.Amount;
         }
 
         RecalculateBonusesAndDeductions();
     }
-
 
     private void OnAmountChanged(SelectableRule rule, decimal? newAmount)
     {
@@ -684,12 +672,11 @@ else
 
         if (!rule.IsCountable)
         {
-            rule.Quantity = 1; // treat as single item
+            rule.Quantity = 1;
         }
 
         OnCountableQuantityChanged(rule, rule.Quantity);
     }
-
 
     public class SelectableRule
     {
@@ -697,11 +684,26 @@ else
         public string Name { get; set; }
         public decimal Amount { get; set; }
         public bool IsPercentage { get; set; }
-        public bool IsCountable { get; set; } // ✅ NEW
+        public bool IsCountable { get; set; }
         public bool IsApplied { get; set; } = true;
-        public int Quantity { get; set; } = 1; // ✅ Default set to 1
-        public bool IsEditable { get; set; } = false; // ✅ NEW
-        public decimal CalculatedAmount { get; set; } // ✅ NEW
+        public int Quantity { get; set; } = 1;
+        public bool IsEditable { get; set; } = false;
+        public decimal CalculatedAmount { get; set; }
+
+        public SelectableRule(PayrollAppliedRule appliedRule)
+        {
+            RuleId = appliedRule.RuleId;
+            Name = appliedRule.Rule.Name;
+            Amount = appliedRule.Amount;
+            IsPercentage = appliedRule.Rule.IsPercentage;
+            IsCountable = appliedRule.Rule.IsCountable;
+            IsApplied = true;
+            IsEditable = appliedRule.Rule.IsEditable;
+            Quantity = appliedRule.Quantity ?? 1;
+            CalculatedAmount = IsCountable
+                ? (IsPercentage ? appliedRule.Payroll.BaseSalary * Amount / 100 : Amount) * Quantity
+                : (IsPercentage ? appliedRule.Payroll.BaseSalary * Amount / 100 : Amount);
+        }
 
         public SelectableRule(PayrollAdjustmentRule rule, bool isApplied = false)
         {
@@ -710,10 +712,10 @@ else
             Amount = rule.Amount;
             IsPercentage = rule.IsPercentage;
             IsCountable = rule.IsCountable;
-            IsApplied = isApplied;
             IsEditable = rule.IsEditable;
-
+            IsApplied = isApplied;
+            Quantity = 1;
+            CalculatedAmount = 0;
         }
     }
-
 }

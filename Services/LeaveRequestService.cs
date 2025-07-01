@@ -44,6 +44,17 @@ namespace RH.Services
             await context.SaveChangesAsync();
             return request;
         }
+        public async Task DeleteAsync(int requestId)
+        {
+            using var context = _contextFactory.CreateDbContext();
+
+            var request = await context.LeaveRequests.FindAsync(requestId);
+            if (request == null)
+                throw new InvalidOperationException($"Leave request with ID {requestId} not found.");
+
+            context.LeaveRequests.Remove(request);
+            await context.SaveChangesAsync();
+        }
 
         public async Task<float> GetRemainingDaysAsync(int employeeId)
         {

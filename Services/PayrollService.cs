@@ -53,55 +53,72 @@ public class PayrollService : IPayrollService
     public async Task<List<Payroll>> GetAllAsync()
     {
         return await _context.Payrolls
-     .Include(p => p.Employee)
-     .Include(p => p.AppliedRules)
-         .ThenInclude(pr => pr.Rule) // <-- THIS IS ESSENTIAL
-     .ToListAsync();
+       .Include(p => p.AppliedRules)
+           .ThenInclude(ar => ar.Rule)
+       .ToListAsync();
+
 
     }
 
     public async Task<Payroll?> GetByIdAsync(int id)
     {
-        return await _context.Payrolls.Include(p => p.Employee).FirstOrDefaultAsync(p => p.Id == id);
+        return await _context.Payrolls
+            .Include(p => p.AppliedRules)
+                .ThenInclude(ar => ar.Rule) // 👍 OK, on a besoin du nom, % etc.
+            .FirstOrDefaultAsync(p => p.Id == id); // ✅ Pas de ToListAsync ici
     }
 
-    public async Task<Payroll> CreateAsync(Payroll payroll, List<SelectableRule> bonuses, List<SelectableRule> deductions)
+
+    public async Task<Payroll> CreateAsync(Payroll payroll)
     {
-        payroll.AppliedRules = bonuses.Concat(deductions).Select(rule => new PayrollAppliedRule
+        // Ensure AppliedRules contains all required data (Amount, Quantity)
+        foreach (var rule in payroll.AppliedRules)
         {
-            RuleId = rule.RuleId
-        }).ToList();
+            rule.Payroll = payroll; // Optional, but good for EF tracking
+        }
 
         _context.Payrolls.Add(payroll);
         await _context.SaveChangesAsync();
         return payroll;
     }
 
-    public async Task<Payroll> UpdateAsync(Payroll payroll, List<SelectableRule> bonuses, List<SelectableRule> deductions)
+    public async Task<Payroll> UpdateAsync(Payroll payroll)
     {
         var existing = await _context.Payrolls
             .Include(p => p.AppliedRules)
             .FirstOrDefaultAsync(p => p.Id == payroll.Id);
 
-        if (existing == null) throw new Exception("Payroll not found");
+        if (existing == null)
+            throw new Exception("Payroll not found");
 
-        // Update fields
+        // Update scalar fields
         existing.EmployeeId = payroll.EmployeeId;
         existing.PayDate = payroll.PayDate;
         existing.BaseSalary = payroll.BaseSalary;
         existing.Bonus = payroll.Bonus;
         existing.Deductions = payroll.Deductions;
+        existing.AbsenceDays = payroll.AbsenceDays;
+        existing.AbsenceDeduction = payroll.AbsenceDeduction;
+        existing.ManualAbsenceDays = payroll.ManualAbsenceDays;
+        existing.DeductionPerAbsenceDay = payroll.DeductionPerAbsenceDay;
 
-        // Update applied rules
+        // Replace AppliedRules
         _context.PayrollAppliedRules.RemoveRange(existing.AppliedRules);
-        existing.AppliedRules = bonuses.Concat(deductions).Select(r => new PayrollAppliedRule
+
+        foreach (var rule in payroll.AppliedRules)
         {
-            RuleId = r.RuleId
-        }).ToList();
+            existing.AppliedRules.Add(new PayrollAppliedRule
+            {
+                RuleId = rule.RuleId,
+                Amount = rule.Amount,
+                Quantity = rule.Quantity
+            });
+        }
 
         await _context.SaveChangesAsync();
         return existing;
     }
+
 
     public async Task<Payroll?> GetLastPayrollForEmployeeAsync(int employeeId)
     {

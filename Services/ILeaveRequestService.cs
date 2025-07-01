@@ -10,6 +10,7 @@ namespace RH.Services
         Task<LeaveRequest> UpdateAsync(LeaveRequest request);
         Task<float> GetRemainingDaysAsync(int employeeId);
         Task UpdateStatusAsync(int requestId, LeaveStatus newStatus);
+        Task DeleteAsync(int requestId);
 
     }
 }
