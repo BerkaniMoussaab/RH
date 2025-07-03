@@ -28,17 +28,17 @@ public class AbsenceService
         context.AbsenceRecords.Update(absence);
         await context.SaveChangesAsync();
     }
-    public async Task<List<AbsenceRecord>> GetByEmployeeAndMonthAsync(int employeeId, DateTime month)
+    public async Task<List<AbsenceRecord>> GetUncountedAbsencesAsync(int employeeId, DateTime payrollMonth)
     {
-        var start = new DateTime(month.Year, month.Month, 1);
-        var end = start.AddMonths(1).AddDays(-1);
+        var end = new DateTime(payrollMonth.Year, payrollMonth.Month, 1); // exclude this month
 
         using var context = _contextFactory.CreateDbContext();
 
         return await context.AbsenceRecords
-            .Where(a => a.EmployeeId == employeeId && a.Date >= start && a.Date <= end)
+            .Where(a => a.EmployeeId == employeeId && a.Date < end)
             .ToListAsync();
     }
+
     public async Task<List<AbsenceRecord>> GetAllAsync()
     {
         using var context = _contextFactory.CreateDbContext();
