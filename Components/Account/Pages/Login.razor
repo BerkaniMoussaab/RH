@@ -5,72 +5,52 @@
 @using Microsoft.AspNetCore.Identity
 @using RH.Data
 @inject UserManager<ApplicationUser> UserManager
-
 @inject SignInManager<ApplicationUser> SignInManager
 @inject ILogger<Login> Logger
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 
-<PageTitle>Connexion</PageTitle>
+<PageTitle>Connexion - Ojra</PageTitle>
 
-<div class="d-flex min-vh-100">
-    <!-- Sidebar -->
-    @* <div class="d-none d-md-flex flex-column justify-content-center align-items-center bg-dark text-white p-5" style="width: 40%;">
-        <h1 class="display-5 fw-bold">Bienvenue 👋</h1>
-        <p class="lead text-secondary">Accédez à votre compte pour continuer</p>
-        <img src="images/login-illustration.svg" alt="Login Illustration" class="img-fluid mt-4" style="max-height: 280px;" />
-    </div> *@
+<div class="login-container">
+    <div class="card shadow border-0 p-4" style="width: 100%; max-width: 420px;">
+        <div class="text-center logo-container">
+            <img src="favicon.png" alt="Ojra Logo" style="height: 80px;" />
+            <h2 class="title-text mt-3">Connexion</h2>
+            <p class="subtitle-text mb-0">Entrez vos identifiants pour accéder à votre compte</p>
+        </div>
 
-    <!-- Login Form -->
-    <div class="d-flex flex-grow-1 justify-content-center align-items-center bg-light">
-        <div class="card shadow border-0 p-4" style="width: 100%; max-width: 400px; border-radius: 1rem;">
-            <div class="text-center mb-4">
-                <h2 class="fw-bold">Connexion</h2>
-                <p class="text-muted mb-0">Entrez vos identifiants</p>
+        <StatusMessage Message="@errorMessage" />
+
+        <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" />
+
+            <div class="form-floating mb-3">
+                <InputText id="emailOrUsername" @bind-Value="Input.EmailOrUsername" class="form-control" placeholder="Email ou nom d'utilisateur" />
+                <label for="emailOrUsername">Email ou nom d'utilisateur</label>
+                <ValidationMessage For="() => Input.EmailOrUsername" class="text-danger" />
             </div>
 
-            <StatusMessage Message="@errorMessage" />
-            <EditForm Model="Input" method="post" OnValidSubmit="LoginUser" FormName="login">
+            <div class="form-floating mb-3">
+                <InputText id="password" type="password" @bind-Value="Input.Password" class="form-control" placeholder="Mot de passe" />
+                <label for="password">Mot de passe</label>
+                <ValidationMessage For="() => Input.Password" class="text-danger" />
+            </div>
 
-                <DataAnnotationsValidator />
-                <ValidationSummary class="text-danger" />
+            <div class="form-check mb-3">
+                <InputCheckbox id="remember" @bind-Value="Input.RememberMe" class="form-check-input" />
+                <label for="remember" class="form-check-label">Se souvenir de moi</label>
+            </div>
 
-                <div class="form-floating mb-3">
-                    <InputText id="email" @bind-Value="Input.Email" class="form-control" placeholder="name@example.com" />
-                    <label for="email">Email</label>
-                    <ValidationMessage For="() => Input.Email" class="text-danger" />
-                </div>
+            <button type="submit" class="btn btn-primary w-100 mb-3">Se connecter</button>
 
-                <div class="form-floating mb-3">
-                    <InputText id="password" type="password" @bind-Value="Input.Password" class="form-control" placeholder="Mot de passe" />
-                    <label for="password">Mot de passe</label>
-                    <ValidationMessage For="() => Input.Password" class="text-danger" />
-                </div>
-
-                <div class="form-check mb-3">
-                    <InputCheckbox id="remember" @bind-Value="Input.RememberMe" class="form-check-input" />
-                    <label for="remember" class="form-check-label">Se souvenir de moi</label>
-                </div>
-
-                <button type="submit" class="btn btn-primary w-100 mb-3">Se connecter</button>
-
-              @*   <div class="text-center small">
-                    <p><a href="Account/ForgotPassword">Mot de passe oublié ?</a></p>
-                    <p><a href="@NavigationManager.GetUriWithQueryParameters("Account/Register", new Dictionary<string, object?> { ["ReturnUrl"] = ReturnUrl })">Créer un nouveau compte</a></p>
-                    <p><a href="Account/ResendEmailConfirmation">Renvoyer la confirmation</a></p>
-                </div> *@
-            </EditForm>
-
-           @*  <hr class="my-4" /> *@
-            @* <div class="text-center">
-                <p class="text-muted mb-2">Ou connectez-vous avec :</p>
-                <ExternalLoginPicker />
-            </div> *@
-        </div>
+            <div class="text-center">
+                <a href="Account/ForgotPassword" class="text-decoration-none" style="color: #667eea; font-size: 0.9rem;">Mot de passe oublié ?</a>
+            </div>
+        </EditForm>
     </div>
 </div>
-
-
 
 @code {
     private string? errorMessage;
@@ -88,56 +68,63 @@
     {
         if (HttpMethods.IsGet(HttpContext.Request.Method))
         {
-            // Clear the existing external cookie to ensure a clean login process
+            // Clear external cookies for clean login
             await HttpContext.SignOutAsync(IdentityConstants.ExternalScheme);
         }
     }
 
     public async Task LoginUser()
     {
-        var user = await UserManager.FindByEmailAsync(Input.Email);
-        if (user is null)
+        var identifier = Input.EmailOrUsername.Trim();
+        var user = await UserManager.FindByEmailAsync(identifier);
+
+        if (user == null)
         {
-            errorMessage = "Error: User not found.";
+            user = await UserManager.FindByNameAsync(identifier);
+        }
+
+        if (user == null)
+        {
+            errorMessage = "Erreur : utilisateur non trouvé.";
             return;
         }
 
-        var result = await SignInManager.PasswordSignInAsync(user.UserName, Input.Password, Input.RememberMe, lockoutOnFailure: false);
+        var result = await SignInManager.PasswordSignInAsync(
+            user.UserName, Input.Password, Input.RememberMe, lockoutOnFailure: false);
 
         if (result.Succeeded)
         {
-            Logger.LogInformation("User logged in.");
-            RedirectManager.RedirectTo(ReturnUrl);
+            Logger.LogInformation("Utilisateur connecté.");
+            RedirectManager.RedirectTo(ReturnUrl ?? "/");
         }
         else if (result.RequiresTwoFactor)
         {
             RedirectManager.RedirectTo(
                 "Account/LoginWith2fa",
-                new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe });
+                new() { ["returnUrl"] = ReturnUrl, ["rememberMe"] = Input.RememberMe.ToString() });
         }
         else if (result.IsLockedOut)
         {
-            Logger.LogWarning("User account locked out.");
+            Logger.LogWarning("Compte verrouillé.");
             RedirectManager.RedirectTo("Account/Lockout");
         }
         else
         {
-            errorMessage = "Error: Invalid login attempt.";
+            errorMessage = "Erreur : tentative de connexion invalide.";
         }
     }
 
-
     private sealed class InputModel
     {
-        [Required]
-        [EmailAddress]
-        public string Email { get; set; } = "";
+        [Required(ErrorMessage = "Ce champ est requis.")]
+        [Display(Name = "Email ou nom d'utilisateur")]
+        public string EmailOrUsername { get; set; } = "";
 
-        [Required]
+        [Required(ErrorMessage = "Mot de passe requis.")]
         [DataType(DataType.Password)]
         public string Password { get; set; } = "";
 
-        [Display(Name = "Remember me?")]
+        [Display(Name = "Se souvenir de moi")]
         public bool RememberMe { get; set; }
     }
 }

@@ -8,108 +8,231 @@
 @if (editContext != null)
 {
     <EditForm EditContext="editContext" OnValidSubmit="HandleValidSubmit">
-        <div class="modal @(IsOpen ? "show d-block fade" : "fade")" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal @(IsOpen ? "show d-block fade enhanced-modal-backdrop" : "fade")" tabindex="-1">
             <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content border-0 shadow-lg rounded-3">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title d-flex align-items-center">
-                            <i class="bi bi-calendar-check me-2 fs-4"></i>
-                            @((LeaveRequest.Id == 0) ? "Nouvelle demande de congé" : "Modifier la demande de congé")
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" @onclick="Close" aria-label="Fermer"></button>
+                <div class="modal-content enhanced-modal">
+                    <!-- Enhanced Modal Header -->
+                    <div class="modal-header enhanced-modal-header">
+                        <div class="modal-title-wrapper">
+                            <div class="modal-icon">
+                                <i class="bi bi-calendar-check-fill"></i>
+                            </div>
+                            <div class="modal-title-content">
+                                <h5 class="modal-title">
+                                    @((LeaveRequest.Id == 0) ? "Nouvelle demande de congé" : "Modifier la demande de congé")
+                                </h5>
+                                <small class="modal-subtitle">
+                                    @((LeaveRequest.Id == 0) ? "Créez une nouvelle demande de congé pour un employé" : "Modifiez les détails de la demande existante")
+                                </small>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close enhanced-close-btn" @onclick="Close" aria-label="Fermer"></button>
                     </div>
 
-                    <div class="modal-body">
-                        <div class="row g-3">
-                            <!-- Employé -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Employé</label>
-                                <InputSelect class="form-select" @bind-Value="CurrentEmployeeId">
-                                    <option value="">-- Sélectionner un employé --</option>
-                                    @foreach (var emp in Employees)
-                                    {
-                                        <option value="@emp.Id">@emp.FullName</option>
-                                    }
-                                </InputSelect>
-                                <ValidationMessage For="@(() => LeaveRequest.EmployeeId)" />
-                                @if (isLoadingRemainingDays)
+                    <!-- Enhanced Modal Body -->
+                    <div class="modal-body enhanced-modal-body">
+                        <div class="form-sections">
+                            <!-- Section Employé et Informations -->
+                            <div class="form-section compact-section">
+                                <div class="section-title compact-title">
+                                    <i class="bi bi-person-fill text-primary me-2"></i>
+                                    Informations de l'employé
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-md-8">
+                                        <div class="enhanced-form-group compact-form-group">
+                                            <label class="form-label enhanced-label compact-label">
+                                                <i class="bi bi-person me-1"></i>
+                                                Employé
+                                            </label>
+                                            <InputSelect class="form-select enhanced-select compact-input" @bind-Value="CurrentEmployeeId">
+                                                <option value="">-- Sélectionner un employé --</option>
+                                                @foreach (var emp in Employees)
+                                                {
+                                                    <option value="@emp.Id">@emp.FullName</option>
+                                                }
+                                            </InputSelect>
+                                            <ValidationMessage For="@(() => LeaveRequest.EmployeeId)" class="validation-message-enhanced" />
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-4">
+                                        <!-- Compact Remaining Days Display -->
+                                        <div class="compact-remaining-days">
+                                            <label class="form-label enhanced-label compact-label">
+                                                <i class="bi bi-clock-history me-1"></i>
+                                                Jours restants
+                                            </label>
+                                            @if (isLoadingRemainingDays)
+                                            {
+                                                <div class="compact-loading-badge">
+                                                    <div class="loading-spinner-small"></div>
+                                                    <span>Chargement...</span>
+                                                </div>
+                                            }
+                                            else if (RemainingDays != null)
+                                            {
+                                                <div class="compact-remaining-badge @GetRemainingDaysBadgeClass()">
+                                                    <span class="remaining-value">@RemainingDays.Value.ToString("0.0")</span>
+                                                    <span class="remaining-unit">jour(s)</span>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="compact-remaining-badge bg-secondary">
+                                                    <span class="remaining-value">--</span>
+                                                    <span class="remaining-unit">jour(s)</span>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Section Dates -->
+                            <div class="form-section">
+                                <div class="section-title">
+                                    <i class="bi bi-calendar-range text-success me-2"></i>
+                                    Période de congé
+                                </div>
+
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="enhanced-form-group">
+                                            <label class="form-label enhanced-label">
+                                                <i class="bi bi-calendar-plus me-1"></i>
+                                                Date de début
+                                            </label>
+                                            <InputDate class="form-control enhanced-input" @bind-Value="LeaveRequest.StartDate" />
+                                            <ValidationMessage For="@(() => LeaveRequest.StartDate)" class="validation-message-enhanced" />
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="enhanced-form-group">
+                                            <label class="form-label enhanced-label">
+                                                <i class="bi bi-calendar-x me-1"></i>
+                                                Date de fin
+                                            </label>
+                                            <InputDate class="form-control enhanced-input" @bind-Value="LeaveRequest.EndDate" />
+                                            <ValidationMessage For="@(() => LeaveRequest.EndDate)" class="validation-message-enhanced" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Duration Display -->
+                                @if (LeaveRequest.StartDate != default && LeaveRequest.EndDate != default && LeaveRequest.StartDate <= LeaveRequest.EndDate)
                                 {
-                                    <span class="badge bg-info mt-2">
-                                        <i class="bi bi-hourglass-split me-1"></i>Chargement...
-                                    </span>
-                                }
-                                else if (RemainingDays != null)
-                                {
-                                    <span class="badge @GetRemainingDaysBadgeClass() mt-2">
-                                        <i class="bi bi-clock-history me-1"></i>Reste : @RemainingDays.Value.ToString("0.0") jour(s)
-                                    </span>
+                                    var duration = (LeaveRequest.EndDate - LeaveRequest.StartDate).TotalDays + 1;
+                                    <div class="duration-display">
+                                        <i class="bi bi-hourglass-split me-2"></i>
+                                        <span class="duration-text">Durée: <strong>@duration.ToString("0") jour(s)</strong></span>
+                                    </div>
                                 }
                             </div>
 
-                            <!-- Date de début -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Date de début</label>
-                                <InputDate class="form-control" @bind-Value="LeaveRequest.StartDate" />
-                                <ValidationMessage For="@(() => LeaveRequest.StartDate)" />
-                            </div>
+                            <!-- Section Détails -->
+                            <div class="form-section">
+                                <div class="section-title">
+                                    <i class="bi bi-file-text text-warning me-2"></i>
+                                    Détails de la demande
+                                </div>
 
-                            <!-- Date de fin -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Date de fin</label>
-                                <InputDate class="form-control" @bind-Value="LeaveRequest.EndDate" />
-                                <ValidationMessage For="@(() => LeaveRequest.EndDate)" />
-                            </div>
+                                <div class="row g-3">
+                                    <div class="col-md-12">
+                                        <div class="enhanced-form-group">
+                                            <label class="form-label enhanced-label">
+                                                <i class="bi bi-chat-text me-1"></i>
+                                                Motif
+                                            </label>
+                                            <InputTextArea class="form-control enhanced-textarea" @bind-Value="LeaveRequest.Reason" rows="4" placeholder="Décrivez le motif de votre demande de congé..." />
+                                            <ValidationMessage For="@(() => LeaveRequest.Reason)" class="validation-message-enhanced" />
+                                        </div>
+                                    </div>
 
-                            <!-- Motif -->
-                            <div class="col-md-12">
-                                <label class="form-label fw-semibold">Motif</label>
-                                <InputTextArea class="form-control" @bind-Value="LeaveRequest.Reason" rows="3" />
-                                <ValidationMessage For="@(() => LeaveRequest.Reason)" />
-                            </div>
+                                    <div class="col-md-6">
+                                        <div class="enhanced-form-group">
+                                            <div class="form-check enhanced-form-check">
+                                                <InputCheckbox class="form-check-input enhanced-checkbox" @bind-Value="LeaveRequest.IsPaid" />
+                                                <label class="form-check-label enhanced-check-label">
+                                                    <i class="bi bi-cash-coin me-2"></i>
+                                                    <div class="check-content">
+                                                        <span class="check-title">Congé payé</span>
+                                                        <small class="check-description">Ce congé sera décompté du solde de congés payés</small>
+                                                    </div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                            <!-- Congé payé -->
-                            <div class="col-md-6 d-flex align-items-center mt-2">
-                                <InputCheckbox class="form-check-input me-2" @bind-Value="LeaveRequest.IsPaid" />
-                                <label class="form-check-label fw-semibold">Congé payé</label>
-                            </div>
-
-                            <!-- Statut -->
-                            <div class="col-md-6">
-                                <label class="form-label fw-semibold">Statut</label>
-                                <InputSelect class="form-select" @bind-Value="LeaveRequest.Status">
-                                    @foreach (var status in Enum.GetValues<LeaveStatus>())
-                                    {
-                                        <option value="@status">@status</option>
-                                    }
-                                </InputSelect>
-                                <ValidationMessage For="@(() => LeaveRequest.Status)" />
+                                    <div class="col-md-6">
+                                        <div class="enhanced-form-group">
+                                            <label class="form-label enhanced-label">
+                                                <i class="bi bi-flag me-1"></i>
+                                                Statut
+                                            </label>
+                                            <InputSelect class="form-select enhanced-select" @bind-Value="LeaveRequest.Status">
+                                                @foreach (var status in Enum.GetValues<LeaveStatus>())
+                                                {
+                                                    <option value="@status">@GetStatusDisplayName(status)</option>
+                                                }
+                                            </InputSelect>
+                                            <ValidationMessage For="@(() => LeaveRequest.Status)" class="validation-message-enhanced" />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Message d'erreur -->
+                        <!-- Enhanced Error Message -->
                         @if (!string.IsNullOrWhiteSpace(ValidationMessage))
                         {
-                            <div class="alert alert-danger mt-4">
-                                <i class="bi bi-exclamation-triangle-fill me-2"></i>@ValidationMessage
+                            <div class="alert alert-danger enhanced-alert">
+                                <div class="alert-icon">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                </div>
+                                <div class="alert-content">
+                                    <strong>Erreur de validation</strong>
+                                    <p class="mb-0">@ValidationMessage</p>
+                                </div>
                             </div>
                         }
 
                         <DataAnnotationsValidator />
                     </div>
 
-                    <div class="modal-footer bg-light border-top-0">
-                        <button type="submit" class="btn btn-success px-4" disabled="@isSubmitting">
-                            <i class="bi bi-save me-2"></i>@(isSubmitting ? "Enregistrement..." : "Enregistrer")
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary px-4" @onclick="Close">
-                            <i class="bi bi-x-circle me-2"></i>Annuler
-                        </button>
+                    <!-- Enhanced Modal Footer -->
+                    <div class="modal-footer enhanced-modal-footer">
+                        <div class="footer-actions">
+                            <button type="submit" class="btn btn-success enhanced-btn primary-action" disabled="@isSubmitting">
+                                @if (isSubmitting)
+                                {
+                                    <div class="loading-spinner-small me-2"></div>
+                                    <span>Enregistrement...</span>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-check-circle me-2"></i>
+                                    <span>Enregistrer</span>
+                                }
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary enhanced-btn" @onclick="Close">
+                                <i class="bi bi-x-circle me-2"></i>
+                                Annuler
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </EditForm>
 }
+
+<!-- Enhanced Styles -->
+<style>
+    
+</style>
 
 @code {
     [Parameter] public LeaveRequest LeaveRequest { get; set; } = new();
@@ -266,6 +389,24 @@
             return "bg-success";
 
         var requestedDays = (LeaveRequest.EndDate - LeaveRequest.StartDate).TotalDays + 1;
-        return requestedDays > RemainingDays.Value ? "bg-danger" : "bg-success";
+
+        if (requestedDays > RemainingDays.Value)
+            return "bg-danger";
+        else if (requestedDays > RemainingDays.Value * 0.8)
+            return "bg-warning";
+        else
+            return "bg-success";
+    }
+
+    private string GetStatusDisplayName(LeaveStatus status)
+    {
+        return status switch
+        {
+            LeaveStatus.Pending => "🕐 En attente",
+            LeaveStatus.Approved => "✅ Approuvé",
+            LeaveStatus.Rejected => "❌ Rejeté",
+            _ => status.ToString()
+        };
     }
 }
+
