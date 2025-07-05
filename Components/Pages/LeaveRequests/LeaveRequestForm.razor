@@ -26,7 +26,7 @@
                                 </small>
                             </div>
                         </div>
-                        <button type="button" class="btn-close enhanced-close-btn" @onclick="Close" aria-label="Fermer"></button>
+                        <button type="button" class="btn-close bg-white" @onclick="Close" aria-label="Fermer"></button>
                     </div>
 
                     <!-- Enhanced Modal Body -->
@@ -231,7 +231,7 @@
 
 <!-- Enhanced Styles -->
 <style>
-    
+    /* Your existing CSS styles here */
 </style>
 
 @code {
@@ -247,6 +247,9 @@
     private bool isLoadingRemainingDays;
     private bool isSubmitting;
 
+    // Store the previous EmployeeId to detect changes and re-fetch remaining days
+    private int _previousEmployeeId;
+
     private int CurrentEmployeeId
     {
         get => LeaveRequest.EmployeeId;
@@ -255,6 +258,7 @@
             if (LeaveRequest.EmployeeId != value)
             {
                 LeaveRequest.EmployeeId = value;
+                // Only invoke if the employee ID actually changed
                 InvokeAsync(async () => await OnEmployeeChanged(value));
             }
         }
@@ -275,7 +279,21 @@
 
     protected override void OnParametersSet()
     {
-        editContext = new EditContext(LeaveRequest);
+        // Re-initialize EditContext whenever the LeaveRequest parameter changes.
+        // This is crucial for the form to reflect the new data when editing.
+        if (editContext == null || editContext.Model != LeaveRequest)
+        {
+            editContext = new EditContext(LeaveRequest);
+            RemainingDays = null;
+        }
+
+        // If the employee ID has changed (e.g., when opening for a new employee or editing a request for a different employee)
+        // or if it's the initial load and an employee is already selected, fetch remaining days.
+        if (LeaveRequest.EmployeeId > 0 && (LeaveRequest.EmployeeId != _previousEmployeeId || RemainingDays == null))
+        {
+            InvokeAsync(async () => await OnEmployeeChanged(LeaveRequest.EmployeeId));
+        }
+        _previousEmployeeId = LeaveRequest.EmployeeId; // Update previous ID for next check
     }
 
     private async Task OnEmployeeChanged(int employeeId)
@@ -285,7 +303,7 @@
             try
             {
                 isLoadingRemainingDays = true;
-                StateHasChanged();
+                StateHasChanged(); // Show loading state immediately
 
                 RemainingDays = await LeaveRequestService.GetRemainingDaysAsync(employeeId);
             }
@@ -298,12 +316,13 @@
             finally
             {
                 isLoadingRemainingDays = false;
-                StateHasChanged();
+                StateHasChanged(); // Hide loading state and update display
             }
         }
         else
         {
-            RemainingDays = null;
+            RemainingDays = null; // No employee selected
+            StateHasChanged(); // Update display
         }
     }
 
@@ -322,7 +341,7 @@
             }
 
             await OnSave.InvokeAsync(LeaveRequest);
-            await Close();
+            // Close is handled by the parent after OnSave completes and reloads data
         }
         catch (Exception ex)
         {
@@ -353,9 +372,10 @@
             return (false, "La date de fin ne peut pas être avant la date de début");
         }
 
-        if (LeaveRequest.StartDate < DateTime.Today)
+        // Only enforce future start date for new requests, not for editing past ones
+        if (LeaveRequest.Id == 0 && LeaveRequest.StartDate < DateTime.Today)
         {
-            return (false, "La date de début ne peut pas être dans le passé");
+            return (false, "La date de début ne peut pas être dans le passé pour une nouvelle demande");
         }
 
         if (string.IsNullOrWhiteSpace(LeaveRequest.Reason))
@@ -363,9 +383,16 @@
             return (false, "Veuillez spécifier un motif");
         }
 
+        // Calculate requested days only if dates are valid
+        double requestedDays = 0;
+        if (LeaveRequest.StartDate != default && LeaveRequest.EndDate != default && LeaveRequest.StartDate <= LeaveRequest.EndDate)
+        {
+            requestedDays = (LeaveRequest.EndDate - LeaveRequest.StartDate).TotalDays + 1;
+        }
+
+
         if (LeaveRequest.IsPaid && RemainingDays.HasValue)
         {
-            var requestedDays = (float)(LeaveRequest.EndDate - LeaveRequest.StartDate).TotalDays + 1;
             if (requestedDays > RemainingDays.Value)
             {
                 return (false, $"Congé payé demandé ({requestedDays:0.0} jours) dépasse le solde restant ({RemainingDays.Value:0.0} jours)");
@@ -385,14 +412,16 @@
     {
         if (!RemainingDays.HasValue) return "bg-secondary";
 
-        if (LeaveRequest.StartDate == default || LeaveRequest.EndDate == default)
-            return "bg-success";
-
-        var requestedDays = (LeaveRequest.EndDate - LeaveRequest.StartDate).TotalDays + 1;
+        // Calculate requested days based on current form dates
+        double requestedDays = 0;
+        if (LeaveRequest.StartDate != default && LeaveRequest.EndDate != default && LeaveRequest.StartDate <= LeaveRequest.EndDate)
+        {
+            requestedDays = (LeaveRequest.EndDate - LeaveRequest.StartDate).TotalDays + 1;
+        }
 
         if (requestedDays > RemainingDays.Value)
             return "bg-danger";
-        else if (requestedDays > RemainingDays.Value * 0.8)
+        else if (RemainingDays.Value <= 5) // Example: warning if remaining days are low
             return "bg-warning";
         else
             return "bg-success";
@@ -409,4 +438,3 @@
         };
     }
 }
-

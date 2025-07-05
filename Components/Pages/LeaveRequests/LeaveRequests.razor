@@ -2,46 +2,66 @@
 @using RH.Models
 @using RH.Services
 @inject ILeaveRequestService LeaveRequestService
+@inject IEmployeeService EmployeeService // Inject EmployeeService to get employee details
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
+
 <h2 class="mb-4">Demandes de congé</h2>
 <button class="btn btn-primary mb-3" @onclick="CreateNew">Nouvelle demande</button>
 
-<table class="table table-bordered table-striped">
-    <thead>
-        <tr>
-            <th>Employé</th>
-            <th>Dates</th>
-            <th>Statut</th>
-            <th>Motif</th>
-            <th></th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (Requests.Any())
-        {
-            @foreach (var request in Requests)
+@if (isLoading)
+{
+    <p><em>Chargement des demandes de congé...</em></p>
+}
+else
+{
+    <table class="table table-bordered table-striped">
+        <thead>
+            <tr>
+                <th>Employé</th>
+
+                <th>Dates</th>
+                <th>Statut</th>
+                <th>Motif</th>
+                <th>Jours Restants</th> @* New column for remaining days *@
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Requests.Any())
             {
-                <tr>
-                    <td>@request.Employee?.FullName</td>
-                    <td>@request.StartDate.ToString("dd MMM yyyy") - @request.EndDate.ToString("dd MMM yyyy")</td>
+                @foreach (var request in Requests)
+                {
+                    <tr>
+                        <td>@request.Employee?.FullName</td>
 
-                    <td>@request.Status</td>
-                    <td>@request.Reason</td>
-                    <td>
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => Edit(request.Id)">Modifier</button>
-                        <button class="btn btn-sm btn-outline-danger" @onclick="() => Delete(request.Id)">Supprimer</button>
-                    </td>
-                </tr>
+                        <td>@request.StartDate.ToString("dd MMM yyyy") - @request.EndDate.ToString("dd MMM yyyy")</td>
+                        <td>@GetStatusDisplayName(request.Status)</td> @* Use helper for display name *@
+                        <td>@request.Reason</td>
+                        <td>
+                            @if (employeeRemainingDays.TryGetValue(request.EmployeeId, out float remaining))
+                            {
+                                <span class="badge @GetRemainingDaysBadgeClass(remaining)">@remaining.ToString("0.0") jour(s)</span>
+                            }
+                            else
+                            {
+                                <span>Chargement...</span>
+                            }
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => Edit(request.Id)">Modifier</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => Delete(request.Id)">Supprimer</button>
+                        </td>
+                    </tr>
+                }
             }
-        }
-        else
-        {
-            <tr><td colspan="5">Aucune demande de congé trouvée.</td></tr>
-        }
-    </tbody>
-</table>
-
+            else
+            {
+                <tr><td colspan="6">Aucune demande de congé trouvée.</td></tr> @* Updated colspan *@
+            }
+        </tbody>
+    </table>
+}
 
 <LeaveRequestForm LeaveRequest="Selected" IsOpen="ShowForm" IsOpenChanged="HandleClose" OnSave="Save" />
 
@@ -49,6 +69,8 @@
     private List<LeaveRequest> Requests = new();
     private LeaveRequest Selected = new();
     private bool ShowForm = false;
+    private bool isLoading = true;
+    private Dictionary<int, float> employeeRemainingDays = new Dictionary<int, float>();
 
     protected override async Task OnInitializedAsync()
     {
@@ -57,39 +79,97 @@
 
     private async Task LoadAsync()
     {
+        isLoading = true;
         Requests = await LeaveRequestService.GetAllAsync();
+
+        // Fetch remaining days for each unique employee in the requests
+        var uniqueEmployeeIds = Requests.Select(r => r.EmployeeId).Distinct().ToList();
+        employeeRemainingDays.Clear(); // Clear previous data
+
+        foreach (var empId in uniqueEmployeeIds)
+        {
+            try
+            {
+                var remaining = await LeaveRequestService.GetRemainingDaysAsync(empId);
+                employeeRemainingDays[empId] = remaining;
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"Error loading remaining days for employee {empId}: {ex.Message}");
+                // Optionally, set a default or error value
+                employeeRemainingDays[empId] = 0.0f; // Or some other indicator
+            }
+        }
+        isLoading = false;
     }
 
     private void CreateNew()
     {
-        Selected = new LeaveRequest();
+        Selected = new LeaveRequest(); // Always create a new instance for new requests
         ShowForm = true;
+        StateHasChanged();
     }
 
     private async Task Edit(int id)
     {
+        // FIX: Fetch the LeaveRequest first, THEN show the form.
         Selected = await LeaveRequestService.GetByIdAsync(id);
         ShowForm = true;
     }
+
     private async Task Delete(int id)
     {
         await LeaveRequestService.DeleteAsync(id);
-        await LoadAsync();
-       
+        await LoadAsync(); // Reload all requests after deletion
     }
+
     private async Task Save(LeaveRequest req)
     {
         if (req.Id == 0)
+        {
             await LeaveRequestService.CreateAsync(req);
+        }
         else
+        {
             await LeaveRequestService.UpdateAsync(req);
+        }
 
-        await LoadAsync();
-        ShowForm = false;
+        await LoadAsync(); // Reload all requests after save/update
+        ShowForm = false; // Close the form
     }
 
     private void HandleClose(bool isOpen)
     {
         ShowForm = isOpen;
+        // If the form is closed, and it was an edit, you might want to reset 'Selected'
+        // to prevent stale data if the user re-opens the form for a new request without
+        // explicitly clicking 'CreateNew'.
+        if (!isOpen)
+        {
+            Selected = new LeaveRequest();
+        }
+    }
+
+    // Helper method for status display
+    private string GetStatusDisplayName(LeaveStatus status)
+    {
+        return status switch
+        {
+            LeaveStatus.Pending => "🕐 En attente",
+            LeaveStatus.Approved => "✅ Approuvé",
+            LeaveStatus.Rejected => "❌ Rejeté",
+            _ => status.ToString()
+        };
+    }
+
+    // Helper method for remaining days badge class (similar to child component)
+    private string GetRemainingDaysBadgeClass(float remainingDays)
+    {
+        if (remainingDays <= 0)
+            return "bg-danger";
+        else if (remainingDays < 5) // Example threshold for warning
+            return "bg-warning";
+        else
+            return "bg-success";
     }
 }

@@ -5,6 +5,10 @@ window.getSelectedValues = function (selectElement) {
 
 function printSection(id) {
     const content = document.getElementById(id).innerHTML;
+
+    // ADD THIS LINE TO LOG THE CONTENT
+    console.log("Content to be printed:", content);
+
     const win = window.open('', '', 'width=800,height=1000');
 
     const stylesheets = Array.from(document.styleSheets)
@@ -59,4 +63,3 @@ function printSection(id) {
 
     win.document.close();
 }
-

@@ -6,6 +6,10 @@
     [Parameter] public List<PayrollList.SelectableRule> Bonuses { get; set; }
     [Parameter] public List<PayrollList.SelectableRule> Deductions { get; set; }
     [Parameter] public List<AbsenceRecord> Absences { get; set; }
+    [Parameter] public int? ManualAbsences { get; set; }
+    [Parameter] public int? Transaction { get; set; }
+    [Parameter] public int? Cash { get; set; }
+
 }
 
 <div id="printable-area" class="payroll-sheet">
@@ -64,7 +68,32 @@
             <p class="net-pay-label">NET À PAYER</p>
             <p class="net-pay-value">@((CurrentPayroll.BaseSalary + CurrentPayroll.Bonus - CurrentPayroll.Deductions).ToString("N2")) DA</p>
         </div>
+
+        @if (CurrentPayroll.Cash != null || CurrentPayroll.Transaction != null)
+        {
+            <div class="row mt-3">
+                @if (CurrentPayroll.Cash != null)
+                {
+                    <div class="col-md-6">
+                        <div class="summary-item">
+                            <p class="label">Paiement en espèces</p>
+                            <p class="value">@CurrentPayroll.Cash.ToString("N2") DA</p>
+                        </div>
+                    </div>
+                }
+                @if (CurrentPayroll.Transaction != null)
+                {
+                    <div class="col-md-6">
+                        <div class="summary-item">
+                            <p class="label">Paiement par virement</p>
+                            <p class="value">@CurrentPayroll.Transaction.ToString("N2") DA</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
     </div>
+
 
     @if (Bonuses?.Any(b => b.IsApplied) == true)
     {
@@ -118,33 +147,46 @@
         </div>
     }
 
-    @if (Absences?.Any() == true)
+    @if (Absences?.Any() == true || ManualAbsences > 0)
     {
         <div class="details-section mb-3">
             <h5 class="section-title">DÉTAILS DES ABSENCES</h5>
-            <div class="table-container">
-                <table class="table table-sm table-bordered details-table">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Date</th>
-                            <th>Motif</th>
-                            <th class="text-center">Comptée</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var a in Absences)
-                        {
+
+            @if (ManualAbsences > 0)
+            {
+                <div class="alert alert-warning d-flex align-items-center mb-3">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Nombre des Absences : </strong> @ManualAbsences jour(s)
+                </div>
+            }
+
+            @if (Absences?.Any() == true)
+            {
+                <div class="table-container">
+                    <table class="table table-sm table-bordered details-table">
+                        <thead class="table-light">
                             <tr>
-                                <td>@a.Date.ToShortDateString()</td>
-                                <td class="description-cell">@a.Reason</td>
-                                <td class="text-center">@(a.Counted ? "Oui" : "Non")</td>
+                                <th>Date</th>
+                                <th>Motif</th>
+                                <th class="text-center">Comptée</th>
                             </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                        </thead>
+                        <tbody>
+                            @foreach (var a in Absences)
+                            {
+                                <tr>
+                                    <td>@a.Date.ToShortDateString()</td>
+                                    <td class="description-cell">@a.Reason</td>
+                                    <td class="text-center">@(a.Counted ? "Oui" : "Non")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
         </div>
     }
+
 
     <div class="footer-section">
         <div class="row">

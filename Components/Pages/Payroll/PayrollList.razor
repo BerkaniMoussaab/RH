@@ -320,7 +320,7 @@ else
 
                                                             @if (rule.IsCountable)
                                                             {
-                                                                <InputNumber TValue="int"
+                                                                <InputNumber TValue="decimal"
                                                                              class="form-control form-control-sm enhanced-input-sm"
                                                                              Value="rule.Quantity"
                                                                              ValueChanged="val => OnCountableQuantityChanged(rule, val)"
@@ -390,7 +390,7 @@ else
 
                                                             @if (rule.IsCountable)
                                                             {
-                                                                <InputNumber TValue="int"
+                                                                <InputNumber TValue="decimal"
                                                                              class="form-control form-control-sm enhanced-input-sm"
                                                                              Value="rule.Quantity"
                                                                              ValueChanged="val => OnCountableQuantityChanged(rule, val)"
@@ -570,7 +570,8 @@ else
                                       Employee="CurrentPayroll.Employee"
                                       Bonuses="SelectedBonusRules"
                                       Deductions="SelectedDeductionRules"
-                                      Absences="EmployeeAbsences" />
+                                      Absences="EmployeeAbsences"
+                                      ManualAbsences="CurrentPayroll.ManualAbsenceDays" />
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
@@ -982,7 +983,7 @@ else
         RecalculateBonusesAndDeductions();
     }
 
-    private void OnCountableQuantityChanged(SelectableRule rule, int? quantity)
+    private void OnCountableQuantityChanged(SelectableRule rule, decimal? quantity)
     {
         Console.WriteLine($"OnCountableQuantityChanged: Rule '{rule.Name}', Old Quantity: {rule.Quantity}, New Quantity: {quantity}");
         var finalQuantity = quantity ?? 1;
@@ -1027,7 +1028,7 @@ else
         public bool IsPercentage { get; set; }
         public bool IsCountable { get; set; }
         public bool IsApplied { get; set; } = true;
-        public int Quantity { get; set; } = 1;
+        public decimal Quantity { get; set; } = 1;
         public bool IsEditable { get; set; } = false;
         public decimal CalculatedAmount { get; set; }
         public int WorkDays { get; set; } = 30;
