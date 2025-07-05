@@ -699,6 +699,11 @@ else
         EmployeeAbsences = await AbsenceService.GetUncountedAbsencesAsync(employeeId, payMonth);
      
     }
+    private async Task LoadPayrollAbsences(int Id)
+    {
+        EmployeeAbsences = await AbsenceService.GetcountedAbsences(Id);
+
+    }
 
     private Task OnDeductionChanged(decimal val)
     {
@@ -888,7 +893,7 @@ else
         }
 
         // Load absences (use your own implementation inside LoadAbsenceDates)
-        await LoadAbsenceDates(CurrentPayroll.EmployeeId, CurrentPayroll.PayDate);
+        await LoadPayrollAbsences(CurrentPayroll.Id);
 
         // Open the modal for editing
         IsPrintModalOpen = false; // Assurez-vous que la modale d'impression est fermée

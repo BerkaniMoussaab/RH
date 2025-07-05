@@ -38,6 +38,14 @@ public class AbsenceService
             .Where(a => a.EmployeeId == employeeId && a.Date < end)
             .ToListAsync();
     }
+    public async Task<List<AbsenceRecord>> GetcountedAbsences(int payrollId)
+    {
+        using var context = _contextFactory.CreateDbContext();
+
+        return await context.AbsenceRecords
+            .Where(a => a.PayrollId == payrollId )
+            .ToListAsync();
+    }
 
     public async Task<List<AbsenceRecord>> GetAllAsync()
     {
