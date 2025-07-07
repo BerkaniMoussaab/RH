@@ -1,0 +1,238 @@
+﻿@page "/recuperation"
+@using RH.Models
+@using RH.Services
+@inject WorkedDaysOffService WorkedService
+@inject RecoveryDayService RecoveryService
+@inject EmployeeService EmployeeService
+
+<h3>Gestion des jours de récupération et jours travaillés</h3>
+
+<div class="mb-3">
+    <label>Employé :</label>
+    <select class="form-select" @onchange="OnEmployeeChanged">
+        <option value="">-- Sélectionnez un employé --</option>
+        @foreach (var emp in Employees)
+        {
+            <option value="@emp.Id">@emp.FullName</option>
+        }
+    </select>
+</div>
+
+@if (SelectedEmployeeId > 0)
+{
+    <p class="alert alert-info">
+        Jours de récupération restants : <strong>@RemainingRecoveryDays</strong>
+    </p>
+
+    <h5>Ajouter un jour travaillé</h5>
+    <EditForm Model="NewWorkedDay" OnValidSubmit="AddWorkedDay">
+        <div class="row g-2 mb-3">
+            <div class="col-md-2">
+                <InputDate class="form-control" @bind-Value="NewWorkedDay.Date" />
+            </div>
+            <div class="col-md-3">
+                <InputText class="form-control" @bind-Value="NewWorkedDay.Reason" placeholder="Motif" />
+            </div>
+            <div class="col-md-2">
+                <InputCheckbox @bind-Value="NewWorkedDay.GrantsRecoveryDay" /> Repos
+            </div>
+            <div class="col-md-2">
+                <InputCheckbox @bind-Value="NewWorkedDay.GrantsBonus" /> Prime
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-success" type="submit">Ajouter</button>
+            </div>
+        </div>
+    </EditForm>
+
+    <h5>Jours travaillés (repos)</h5>
+    <table class="table table-sm table-bordered">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Motif</th>
+                <th>Repos</th>
+                <th>Prime</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var day in WorkedDays)
+            {
+                <tr>
+                    <td>@day.Date.ToShortDateString()</td>
+                    <td>@day.Reason</td>
+                    <td>
+                        @if (day.GrantsRecoveryDay)
+                        {
+                            @if (day.ConvertedToRecovery)
+                            {
+                                <span class="badge bg-secondary">Attribué</span>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => ConvertToRecovery(day.Id)">Convertir</button>
+                            }
+                        }
+                    </td>
+                    <td>
+                        @if (day.GrantsBonus)
+                        {
+                            @if (day.BonusPaid)
+                            {
+                                <span class="badge bg-success">Payée</span>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-success" @onclick="() => MarkBonusPaid(day.Id)">Marquer payée</button>
+                            }
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteWorkedDay(day.Id)">Supprimer</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <h5 class="mt-4">Jours de récupération</h5>
+    <EditForm Model="NewRecoveryDay" OnValidSubmit="AddRecoveryDay">
+        <div class="row g-2 mb-3">
+            <div class="col-md-3">
+                <InputDate class="form-control" @bind-Value="NewRecoveryDay.Date" />
+            </div>
+            <div class="col-md-5">
+                <InputText class="form-control" @bind-Value="NewRecoveryDay.Reason" placeholder="Motif" />
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-primary" type="submit">Ajouter</button>
+            </div>
+        </div>
+    </EditForm>
+
+    <table class="table table-sm table-bordered">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Motif</th>
+                <th>Statut</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var rec in RecoveryDays)
+            {
+                <tr>
+                    <td>@rec.Date.ToShortDateString()</td>
+                    <td>@rec.Reason</td>
+                    <td>
+                        @if (rec.Used)
+                        {
+                            <span class="badge bg-secondary">Utilisé</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">Disponible</span>
+                        }
+                    </td>
+                    <td>
+                        @if (!rec.Used)
+                        {
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => MarkAsUsed(rec.Id)">Marquer utilisé</button>
+                        }
+                        else
+                        {
+                            <button class="btn btn-sm btn-outline-warning" @onclick="() => MarkAsUnused(rec.Id)">Annuler</button>
+                        }
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteRecovery(rec.Id)">Supprimer</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+@code {
+    private List<Employee> Employees = new();
+    private int SelectedEmployeeId;
+
+    private List<WorkedDayOff> WorkedDays = new();
+    private List<RecoveryDay> RecoveryDays = new();
+
+    private WorkedDayOff NewWorkedDay = new();
+    private RecoveryDay NewRecoveryDay = new();
+
+    private int RemainingRecoveryDays = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Employees = await EmployeeService.GetAllAsync();
+    }
+
+    private async Task OnEmployeeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id))
+        {
+            SelectedEmployeeId = id;
+            await LoadData();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        WorkedDays = await WorkedService.GetByEmployeeAsync(SelectedEmployeeId);
+        RecoveryDays = await RecoveryService.GetByEmployeeAsync(SelectedEmployeeId);
+        RemainingRecoveryDays = await RecoveryService.GetRemainingDaysAsync(SelectedEmployeeId);
+    }
+
+    private async Task AddWorkedDay()
+    {
+        NewWorkedDay.EmployeeId = SelectedEmployeeId;
+        await WorkedService.AddAsync(NewWorkedDay);
+        NewWorkedDay = new();
+        await LoadData();
+    }
+
+    private async Task ConvertToRecovery(int id)
+    {
+        await WorkedService.ConvertToRecovery(id);
+        await LoadData();
+    }
+
+    private async Task MarkBonusPaid(int id)
+    {
+        await WorkedService.MarkBonusPaid(id);
+        await LoadData();
+    }
+
+    private async Task DeleteWorkedDay(int id)
+    {
+        // You can implement delete in WorkedDayOffService if needed
+    }
+
+    private async Task AddRecoveryDay()
+    {
+        NewRecoveryDay.EmployeeId = SelectedEmployeeId;
+        await RecoveryService.AddAsync(NewRecoveryDay);
+        NewRecoveryDay = new();
+        await LoadData();
+    }
+
+    private async Task DeleteRecovery(int id)
+    {
+        await RecoveryService.DeleteAsync(id);
+        await LoadData();
+    }
+
+    private async Task MarkAsUsed(int id)
+    {
+        await RecoveryService.MarkAsUsedAsync(id);
+        await LoadData();
+    }
+
+    private async Task MarkAsUnused(int id)
+    {
+        await RecoveryService.MarkAsUnusedAsync(id);
+        await LoadData();
+    }
+}

@@ -18,6 +18,9 @@ namespace RH.Data
         
         public DbSet<AbsenceRecord> AbsenceRecords { get; set; }
         public DbSet<LeavePolicy> LeavePolicies { get; set; }
+        public DbSet<WorkedDayOff> WorkedDaysOff { get; set; }
+        public DbSet<RecoveryDay> RecoveryDays { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

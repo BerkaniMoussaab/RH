@@ -74,6 +74,9 @@ builder.Services.AddScoped<PayrollService>();
 builder.Services.AddScoped<EmployeeService>();
 builder.Services.AddScoped<IPayrollService , PayrollService>();
 builder.Services.AddScoped<AbsenceService>();
+builder.Services.AddScoped<RecoveryDayService>();
+builder.Services.AddScoped<WorkedDaysOffService>();
+
 builder.Services.AddAntiforgery(options =>
 {
     options.FormFieldName = "__RequestVerificationToken";

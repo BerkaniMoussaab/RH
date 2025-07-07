@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RH.Data;
 
@@ -11,9 +12,11 @@ using RH.Data;
 namespace RH.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250707140724_AddWorkedDaysOff")]
+    partial class AddWorkedDaysOff
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -575,33 +578,6 @@ namespace RH.Migrations
                     b.ToTable("PerformanceReviews");
                 });
 
-            modelBuilder.Entity("RH.Models.RecoveryDay", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("Date")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("EmployeeId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Reason")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("Used")
-                        .HasColumnType("bit");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EmployeeId");
-
-                    b.ToTable("RecoveryDays");
-                });
-
             modelBuilder.Entity("RH.Models.WorkedDayOff", b =>
                 {
                     b.Property<int>("Id")
@@ -789,17 +765,6 @@ namespace RH.Migrations
                 {
                     b.HasOne("RH.Models.Employee", "Employee")
                         .WithMany("PerformanceReviews")
-                        .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Employee");
-                });
-
-            modelBuilder.Entity("RH.Models.RecoveryDay", b =>
-                {
-                    b.HasOne("RH.Models.Employee", "Employee")
-                        .WithMany()
                         .HasForeignKey("EmployeeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

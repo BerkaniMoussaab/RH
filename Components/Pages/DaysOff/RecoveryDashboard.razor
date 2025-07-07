@@ -1,0 +1,82 @@
+﻿@page "/recovery-dashboard"
+@using RH.Services
+@inject RecoveryDayService RecoveryService
+@inject WorkedDaysOffService WorkedService
+@inject EmployeeService EmployeeService
+
+<h3 class="mb-4">Tableau de bord — Jours de récupération</h3>
+
+@if (EmployeeSummaries == null)
+{
+    <p><em>Chargement...</em></p>
+}
+else
+{
+    <table class="table table-bordered table-striped">
+        <thead class="table-light">
+            <tr>
+                <th>Employé</th>
+                <th>Jours travaillés (repos)</th>
+                <th>Jours de récupération</th>
+                <th>Disponibles</th>
+                <th>Primes payées</th>
+                <th>Primes en attente</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var summary in EmployeeSummaries)
+            {
+                <tr>
+                    <td>@summary.FullName</td>
+                    <td>@summary.TotalWorkedDays</td>
+                    <td>@summary.TotalRecoveryDays</td>
+                    <td><strong>@summary.UnusedRecoveryDays</strong></td>
+                    <td>@summary.BonusPaid</td>
+                    <td>@summary.BonusPending</td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-primary" href="/recuperation" target="_blank">Gérer</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+@code {
+    private List<EmployeeSummaryViewModel>? EmployeeSummaries;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var employees = await EmployeeService.GetAllAsync();
+        var allWorked = await WorkedService.GetAllAsync(); // new method to fetch all
+        var allRecovery = await RecoveryService.GetAllAsync();
+
+        EmployeeSummaries = employees.Select(emp =>
+        {
+            var worked = allWorked.Where(w => w.EmployeeId == emp.Id).ToList();
+            var recovery = allRecovery.Where(r => r.EmployeeId == emp.Id).ToList();
+
+            return new EmployeeSummaryViewModel
+                {
+                    EmployeeId = emp.Id,
+                    FullName = emp.FullName,
+                    TotalWorkedDays = worked.Count,
+                    TotalRecoveryDays = recovery.Count,
+                    UnusedRecoveryDays = recovery.Count(r => !r.Used),
+                    BonusPaid = worked.Count(w => w.GrantsBonus && w.BonusPaid),
+                    BonusPending = worked.Count(w => w.GrantsBonus && !w.BonusPaid)
+                };
+        }).OrderBy(e => e.FullName).ToList();
+    }
+
+    private class EmployeeSummaryViewModel
+    {
+        public int EmployeeId { get; set; }
+        public string FullName { get; set; } = "";
+        public int TotalWorkedDays { get; set; }
+        public int TotalRecoveryDays { get; set; }
+        public int UnusedRecoveryDays { get; set; }
+        public int BonusPaid { get; set; }
+        public int BonusPending { get; set; }
+    }
+}
