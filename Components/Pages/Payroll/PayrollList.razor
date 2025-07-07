@@ -45,6 +45,7 @@ else
                 <tr>
                     <th>Code</th>
                     <th>Employé</th>
+                    <th>Période de paie</th>
                     <th>Date de paiement</th>
                     <th>Salaire de base</th>
                     <th>Primes</th>
@@ -59,6 +60,18 @@ else
                     <tr>
                         <td class="text-center fw-semibold">#@payroll.Id</td>
                         <td>@payroll.Employee?.FullName</td>
+                        <td class="text-center">
+                            @if (payroll.PayrollStartDate.HasValue && payroll.PayrollEndDate.HasValue)
+                            {
+                                <span class="badge bg-info">
+                                    @payroll.PayrollStartDate.Value.ToString("dd/MM") - @payroll.PayrollEndDate.Value.ToString("dd/MM/yyyy")
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Non définie</span>
+                            }
+                        </td>
                         <td class="text-center">@payroll.PayDate.ToString("dd/MM/yyyy")</td>
                         <td class="text-end">@payroll.BaseSalary.ToString("C")</td>
                         <td class="text-end text-success">
@@ -96,7 +109,6 @@ else
                     <!-- Enhanced Header -->
                     <div class="modal-header bg-primary text-white enhanced-header">
                         <div class="d-flex align-items-center">
-                           
                             <div>
                                 <h5 class="modal-title mb-1 fw-bold">
                                     <i class="bi bi-cash-coin me-2"></i>
@@ -104,7 +116,6 @@ else
                                         ? "Ajouter une fiche de paie"
                                         : $"Modifier la fiche de paie (ID: {CurrentPayroll.Id})")
                                 </h5>
-
                             </div>
                         </div>
                         <button type="button" class="btn-close btn-close-white enhanced-close-btn" @onclick="CloseModal"></button>
@@ -112,15 +123,15 @@ else
 
                     <div class="modal-body enhanced-body">
                         <div class="row g-3">
-                            <!-- Section Informations Employé -->
+                            <!-- Section Informations Employé et Période -->
                             <div class="col-12">
                                 <div class="info-section">
                                     <div class="section-title">
                                         <i class="bi bi-person-badge text-primary me-2"></i>
-                                        <span>Informations de l'employé</span>
+                                        <span>Informations de l'employé et période de paie</span>
                                     </div>
                                     <div class="row g-3">
-                                        <div class="col-md-6">
+                                        <div class="col-md-4">
                                             <div class="enhanced-form-group">
                                                 <label class="form-label fw-semibold">
                                                     <i class="bi bi-person me-1"></i>Employé
@@ -134,12 +145,98 @@ else
                                                 </InputSelect>
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-4">
                                             <div class="enhanced-form-group">
                                                 <label class="form-label fw-semibold">
                                                     <i class="bi bi-calendar-event me-1"></i>Date de paiement
                                                 </label>
                                                 <InputDate class="form-control enhanced-input" @bind-Value="CurrentPayroll.PayDate" />
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Enhanced Date Interval Selection Section -->
+                                    <div class="row g-3 mt-2">
+                                        <div class="col-12">
+                                            <div class="payroll-period-section">
+                                                <div class="section-subtitle">
+                                                    <i class="bi bi-calendar-range text-info me-2"></i>
+                                                    <span>Période de paie</span>
+                                                    <small class="text-muted ms-2">(Définit la période pour le calcul des absences et primes)</small>
+                                                </div>
+
+                                                <div class="row g-3 mt-2">
+                                                    <div class="col-md-3">
+                                                        <div class="enhanced-form-group">
+                                                            <label class="form-label fw-semibold">
+                                                                <i class="bi bi-calendar-check me-1"></i>Date de début
+                                                            </label>
+                                                            <InputDate class="form-control enhanced-input"
+                                                                       @bind-Value="CurrentPayroll.PayrollStartDate"
+                                                                       @onchange="OnPayrollPeriodChanged" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="enhanced-form-group">
+                                                            <label class="form-label fw-semibold">
+                                                                <i class="bi bi-calendar-x me-1"></i>Date de fin
+                                                            </label>
+                                                            <InputDate class="form-control enhanced-input"
+                                                                       @bind-Value="CurrentPayroll.PayrollEndDate"
+                                                                       @onchange="OnPayrollPeriodChanged" />
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="enhanced-form-group">
+                                                            <label class="form-label fw-semibold">Période prédéfinie</label>
+                                                            <select class="form-select enhanced-select" @onchange="OnPredefinedPeriodChanged">
+                                                                <option value="">-- Sélectionner --</option>
+                                                                <option value="current_month">Mois en cours</option>
+                                                                <option value="previous_month">Mois précédent</option>
+                                                                <option value="last_30_days">30 derniers jours</option>
+                                                                <option value="current_quarter">Trimestre en cours</option>
+                                                                <option value="custom">Personnalisé</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3 ">
+                                                        <label class="form-label fw-semibold"> </label>
+                                                        <button type="button" class="btn btn-outline-info w-100"
+                                                                @onclick="RefreshAbsencesForPeriod"
+                                                                disabled="@(!CurrentPayroll.PayrollStartDate.HasValue || !CurrentPayroll.PayrollEndDate.HasValue || CurrentPayroll.EmployeeId == 0)">
+                                                            <i class="bi bi-arrow-clockwise me-1"></i>
+                                                            Actualiser les absences
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                @if (CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue)
+                                                {
+                                                    <div class="period-summary mt-3 p-3 bg-light rounded">
+                                                        <div class="row">
+                                                            <div class="col-md-4">
+                                                                <strong>Période sélectionnée:</strong><br>
+                                                                <span class="text-primary">
+                                                                    @CurrentPayroll.PayrollStartDate.Value.ToString("dd/MM/yyyy")
+                                                                    au
+                                                                    @CurrentPayroll.PayrollEndDate.Value.ToString("dd/MM/yyyy")
+                                                                </span>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <strong>Durée:</strong><br>
+                                                                <span class="text-info">
+                                                                    @((CurrentPayroll.PayrollEndDate.Value - CurrentPayroll.PayrollStartDate.Value).Days + 1) jours
+                                                                </span>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <strong>Jours ouvrables:</strong><br>
+                                                                <span class="text-success">
+                                                                    @CalculateWorkingDays(CurrentPayroll.PayrollStartDate.Value, CurrentPayroll.PayrollEndDate.Value) jours
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
                                             </div>
                                         </div>
                                     </div>
@@ -199,7 +296,7 @@ else
                                         <i class="bi bi-calculator text-info me-2"></i>
                                         <span>Retenue par jour d'absence</span>
                                         <i class="bi bi-info-circle ms-1 text-muted"
-                                           title="Montant appliqué automatiquement : salaire de base / 30."></i>
+                                           title="Montant appliqué automatiquement : salaire de base / jours ouvrables de la période."></i>
                                     </div>
                                     <div class="enhanced-form-group">
                                         <InputNumber TValue="decimal"
@@ -218,6 +315,12 @@ else
                                     <div class="section-title">
                                         <i class="bi bi-calendar-x text-warning me-2"></i>
                                         <span>Absences</span>
+                                        @if (CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue)
+                                        {
+                                            <small class="text-muted ms-2">
+                                                (Période: @CurrentPayroll.PayrollStartDate.Value.ToString("dd/MM") - @CurrentPayroll.PayrollEndDate.Value.ToString("dd/MM"))
+                                            </small>
+                                        }
                                     </div>
 
                                     @if (UseManualAbsences || CurrentPayroll.ManualAbsenceDays != 0)
@@ -231,9 +334,10 @@ else
                                                          ValueExpression="@(() =>CurrentPayroll.ManualAbsenceDays)" />
                                         </div>
                                     }
-                                    else if (EmployeeAbsences.Any())
+
+                                    @if (EmployeeAbsences.Any())
                                     {
-                                        <div class="absence-table-wrapper">
+                                        <div class="absence-table-wrapper mb-3">
                                             <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
                                                 <table class="table table-bordered table-sm enhanced-table">
                                                     <thead class="table-light">
@@ -247,14 +351,14 @@ else
                                                         @foreach (var a in EmployeeAbsences)
                                                         {
                                                             <tr class="@(a.Counted ? "table-warning" : "")">
-                                                                <td class="fw-medium">@a.Date.ToShortDateString()</td>
+                                                                <td class="fw-medium">@a.Date.ToString("dd/MM/yyyy")</td>
                                                                 <td>
                                                                     <InputText class="form-control form-control-sm border-0" @bind-Value="a.Reason" Disabled />
                                                                 </td>
                                                                 <td class="text-center">
                                                                     <InputCheckbox class="form-check-input enhanced-checkbox"
                                                                                    Value="a.Counted"
-                                                                                   ValueChanged="val => OnCountedChanged(a, val)"
+                                                                                   ValueChanged="GetCountedChangedCallback(a)"
                                                                                    ValueExpression="@(() => a.Counted)" />
                                                                 </td>
                                                             </tr>
@@ -268,7 +372,16 @@ else
                                     {
                                         <div class="empty-state">
                                             <i class="bi bi-calendar-check text-muted"></i>
-                                            <span class="text-muted">Aucune absence enregistrée.</span>
+                                            <span class="text-muted">
+                                                @if (CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue)
+                                                {
+                                                    <text>Aucune absence enregistrée pour cette période.</text>
+                                                }
+                                                else
+                                                {
+                                                    <text>Veuillez définir une période de paie pour voir les absences.</text>
+                                                }
+                                            </span>
                                         </div>
                                     }
                                 </div>
@@ -414,7 +527,6 @@ else
                                 </div>
                             </div>
 
-
                             <!-- Section Résumé -->
                             <div class="col-12">
                                 <div class="summary-section">
@@ -552,9 +664,8 @@ else
             </div>
         </div>
     </EditForm>
-
-    
 }
+
 @if (IsPrintModalOpen)
 {
     <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.5);">
@@ -582,31 +693,33 @@ else
         </div>
     </div>
 }
+
 @code {
     private bool IsPrintModalOpen = false;
     private bool IsModalOpen = false;
+
     void ShowPrintModal()
     {
         IsPrintModalOpen = true;
-        StateHasChanged(); // Assurez-vous que l'UI est rafraîchie
+        StateHasChanged();
     }
+
     void ClosePrintModal()
     {
         IsPrintModalOpen = false;
-        StateHasChanged(); // Assurez-vous que l'UI est rafraîchie
+        StateHasChanged();
     }
-
-   
 
     async Task Print()
     {
-        // Print only a portion of the page (optional improvement)
         await JS.InvokeVoidAsync("printSection", "printable-area");
     }
 }
+
 <div id="printable-area">
     <!-- Fiche de paie content here -->
 </div>
+
 @code {
     private List<Payroll> Payrolls = new();
     private List<Employee> Employees = new();
@@ -616,8 +729,11 @@ else
     private Payroll CurrentPayroll = new();
     public int WorkDays { get; set; } = 22;
 
-    
+    private DateTime? SelectedStartDate { get; set; }
+    private DateTime? SelectedEndDate { get; set; }
+
     private bool UseManualAbsences = false;
+
     private async Task PrintPreview()
     {
         var payload = new
@@ -629,19 +745,23 @@ else
             Absences = EmployeeAbsences
         };
 
-        // Serialize and store in sessionStorage
         var json = JsonSerializer.Serialize(payload);
         await JS.InvokeVoidAsync("sessionStorage.setItem", "payroll-print-data", json);
-
-        // Open print page
         await JS.InvokeVoidAsync("open", "/print-payroll", "_blank");
     }
-    private void OnBaseSalaryChanged(decimal value,int workDays)
+
+    private void OnBaseSalaryChanged(decimal value, int workDays)
     {
         if (CurrentPayroll == null) return;
 
         CurrentPayroll.BaseSalary = value;
-        CurrentPayroll.DeductionPerAbsenceDay = Math.Round(value / workDays, 2);
+
+        // Calculate deduction per absence day based on working days in the payroll period
+        var actualWorkDays = CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue
+            ? CalculateWorkingDays(CurrentPayroll.PayrollStartDate.Value, CurrentPayroll.PayrollEndDate.Value)
+            : workDays;
+
+        CurrentPayroll.DeductionPerAbsenceDay = Math.Round(value / actualWorkDays, 2);
     }
 
     private Task OnManualAbsenceDaysChanged(int value)
@@ -651,6 +771,101 @@ else
         return Task.CompletedTask;
     }
 
+    // New method to handle payroll period changes
+    private async Task OnPayrollPeriodChanged()
+    {
+        if (CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue)
+        {
+            // Recalculate deduction per absence day based on new period
+            if (CurrentPayroll.BaseSalary > 0)
+            {
+                var workingDays = CalculateWorkingDays(CurrentPayroll.PayrollStartDate.Value, CurrentPayroll.PayrollEndDate.Value);
+                CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workingDays, 2);
+            }
+
+            // Refresh absences for the new period
+            if (CurrentPayroll.EmployeeId > 0)
+            {
+                await RefreshAbsencesForPeriod();
+            }
+        }
+
+        StateHasChanged();
+    }
+
+    // New method to handle predefined period selection
+    private async Task OnPredefinedPeriodChanged(ChangeEventArgs e)
+    {
+        var selectedPeriod = e.Value?.ToString();
+        var today = DateTime.Today;
+
+        switch (selectedPeriod)
+        {
+            case "current_month":
+                CurrentPayroll.PayrollStartDate = new DateTime(today.Year, today.Month, 1);
+                CurrentPayroll.PayrollEndDate = CurrentPayroll.PayrollStartDate.Value.AddMonths(1).AddDays(-1);
+                break;
+
+            case "previous_month":
+                var firstDayPrevMonth = new DateTime(today.Year, today.Month, 1).AddMonths(-1);
+                CurrentPayroll.PayrollStartDate = firstDayPrevMonth;
+                CurrentPayroll.PayrollEndDate = firstDayPrevMonth.AddMonths(1).AddDays(-1);
+                break;
+
+            case "last_30_days":
+                CurrentPayroll.PayrollEndDate = today;
+                CurrentPayroll.PayrollStartDate = today.AddDays(-29);
+                break;
+
+            case "current_quarter":
+                var quarter = (today.Month - 1) / 3 + 1;
+                CurrentPayroll.PayrollStartDate = new DateTime(today.Year, (quarter - 1) * 3 + 1, 1);
+                CurrentPayroll.PayrollEndDate = CurrentPayroll.PayrollStartDate.Value.AddMonths(3).AddDays(-1);
+                break;
+
+            case "custom":
+                // Keep current values or reset to null for custom selection
+                break;
+
+            default:
+                return;
+        }
+
+        if (selectedPeriod != "custom")
+        {
+            await OnPayrollPeriodChanged();
+        }
+    }
+
+    // New method to refresh absences for the selected period
+    private async Task RefreshAbsencesForPeriod()
+    {
+        if (CurrentPayroll.PayrollStartDate.HasValue &&
+            CurrentPayroll.PayrollEndDate.HasValue &&
+            CurrentPayroll.EmployeeId > 0)
+        {
+            await LoadAbsenceDates(CurrentPayroll.EmployeeId,
+                                 CurrentPayroll.PayrollStartDate.Value,
+                                 CurrentPayroll.PayrollEndDate.Value);
+            RecalculateBonusesAndDeductions();
+            StateHasChanged();
+        }
+    }
+
+    // New method to calculate working days (excluding weekends)
+    private int CalculateWorkingDays(DateTime startDate, DateTime endDate)
+    {
+        int workingDays = 0;
+        for (var date = startDate; date <= endDate; date = date.AddDays(1))
+        {
+            if (date.DayOfWeek != DayOfWeek.Friday && date.DayOfWeek != DayOfWeek.Saturday)
+            {
+                workingDays++;
+            }
+        }
+        return workingDays;
+    }
+
     private void OnBonusRuleChanged(SelectableRule rule, bool isApplied)
     {
         Console.WriteLine($"OnBonusRuleChanged: Rule '{rule.Name}', IsApplied changed from {rule.IsApplied} to {isApplied}");
@@ -658,12 +873,10 @@ else
 
         if (isApplied && rule.IsCountable)
         {
-            // If it's applied and countable, ensure quantity is at least 1 for calculation
             OnCountableQuantityChanged(rule, rule.Quantity > 0 ? rule.Quantity : 1);
         }
         else
         {
-            // If rule is unapplied or not countable, just recalculate
             RecalculateBonusesAndDeductions();
         }
         Console.WriteLine($"After update: Rule '{rule.Name}', IsApplied: {rule.IsApplied}");
@@ -676,17 +889,14 @@ else
 
         if (isApplied && rule.IsCountable)
         {
-            // If it's applied and countable, ensure quantity is at least 1 for calculation
             OnCountableQuantityChanged(rule, rule.Quantity > 0 ? rule.Quantity : 1);
         }
         else
         {
-            // If rule is unapplied or not countable, just recalculate
             RecalculateBonusesAndDeductions();
         }
         Console.WriteLine($"After update: Rule '{rule.Name}', IsApplied: {rule.IsApplied}");
     }
-
 
     private void OnCountedChanged(AbsenceRecord record, bool val)
     {
@@ -694,15 +904,19 @@ else
         RecalculateBonusesAndDeductions();
     }
 
-    private async Task LoadAbsenceDates(int employeeId, DateTime payMonth)
+    private async Task LoadAbsenceDates(int employeeId, DateTime startDate, DateTime endDate)
     {
-        EmployeeAbsences = await AbsenceService.GetUncountedAbsencesAsync(employeeId, payMonth);
-     
+        EmployeeAbsences = await AbsenceService.GetUncountedAbsencesAsync(employeeId, startDate, endDate);
     }
+
     private async Task LoadPayrollAbsences(int Id)
     {
         EmployeeAbsences = await AbsenceService.GetcountedAbsences(Id);
+    }
 
+    private EventCallback<bool> GetCountedChangedCallback(AbsenceRecord record)
+    {
+        return EventCallback.Factory.Create<bool>(this, val => OnCountedChanged(record, val));
     }
 
     private Task OnDeductionChanged(decimal val)
@@ -710,6 +924,15 @@ else
         CurrentPayroll.DeductionPerAbsenceDay = val;
         RecalculateBonusesAndDeductions();
         return Task.CompletedTask;
+    }
+
+    private async Task ReloadAbsences()
+    {
+        if (SelectedStartDate != null && SelectedEndDate != null && CurrentPayroll?.EmployeeId != 0)
+        {
+            await LoadAbsenceDates(CurrentPayroll.EmployeeId, SelectedStartDate.Value, SelectedEndDate.Value);
+            StateHasChanged();
+        }
     }
 
     private void RecalculateBonusesAndDeductions()
@@ -724,7 +947,6 @@ else
                 decimal calculatedValue;
                 if (r.IsCountable && r.Quantity > 0)
                 {
-                    // Use the pre-calculated CalculatedAmount for countable rules
                     calculatedValue = r.CalculatedAmount;
                 }
                 else if (r.IsPercentage)
@@ -753,7 +975,6 @@ else
                 decimal calculatedValue;
                 if (r.IsCountable && r.Quantity > 0)
                 {
-                    // Use the pre-calculated CalculatedAmount for countable rules
                     calculatedValue = r.CalculatedAmount;
                 }
                 else if (r.IsPercentage)
@@ -772,14 +993,12 @@ else
         CurrentPayroll.Deductions = ruleBasedDeductions + absenceDeduction;
         Console.WriteLine($"Total Deductions (Rules + Absences): {CurrentPayroll.Deductions}");
 
-        // Calculate Net Pay (for debugging purposes, though not directly updated here)
         var netPay = CurrentPayroll.BaseSalary + CurrentPayroll.Bonus - CurrentPayroll.Deductions;
         Console.WriteLine($"Calculated Net Pay: {netPay}");
 
         StateHasChanged();
         Console.WriteLine("--- Recalculation Complete, StateHasChanged called ---");
     }
-
 
     private int CurrentEmployeeId
     {
@@ -812,15 +1031,23 @@ else
 
     private async Task AddPayroll()
     {
-        CurrentPayroll = new Payroll { PayDate = DateTime.Today };
+        CurrentPayroll = new Payroll
+            {
+                PayDate = DateTime.Today,
+                // Set default payroll period to current month
+                PayrollStartDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1),
+                PayrollEndDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(1).AddDays(-1)
+            };
+
         SelectedBonusRules.Clear();
         SelectedDeductionRules.Clear();
+
         if (Employees.Any())
         {
             await OnEmployeeChanged(CurrentPayroll.EmployeeId);
-            await LoadAbsenceDates(CurrentPayroll.EmployeeId, CurrentPayroll.PayDate);
         }
-        IsPrintModalOpen = false; // Assurez-vous que la modale d'impression est fermée
+
+        IsPrintModalOpen = false;
         IsModalOpen = true;
     }
 
@@ -836,27 +1063,25 @@ else
 
     private async Task EditPayroll(Payroll payroll)
     {
-        // Clone selected payroll into a new instance for editing
         CurrentPayroll = new Payroll
-        {
-            Id = payroll.Id,
-            EmployeeId = payroll.EmployeeId,
-            PayDate = payroll.PayDate,
-            BaseSalary = payroll.BaseSalary,
-            Bonus = payroll.Bonus,
-            Deductions = payroll.Deductions,
-            DeductionPerAbsenceDay = payroll.DeductionPerAbsenceDay,
-            ManualAbsenceDays = payroll.ManualAbsenceDays,
-            AbsenceDeduction = payroll.AbsenceDeduction,
-            AbsenceDays = payroll.AbsenceDays,
-            Employee = payroll.Employee,
-            Transaction = payroll.Transaction,
-            Cash = payroll.Cash
+            {
+                Id = payroll.Id,
+                EmployeeId = payroll.EmployeeId,
+                PayDate = payroll.PayDate,
+                PayrollStartDate = payroll.PayrollStartDate,
+                PayrollEndDate = payroll.PayrollEndDate,
+                BaseSalary = payroll.BaseSalary,
+                Bonus = payroll.Bonus,
+                Deductions = payroll.Deductions,
+                DeductionPerAbsenceDay = payroll.DeductionPerAbsenceDay,
+                ManualAbsenceDays = payroll.ManualAbsenceDays,
+                AbsenceDeduction = payroll.AbsenceDeduction,
+                AbsenceDays = payroll.AbsenceDays,
+                Employee = payroll.Employee,
+                Transaction = payroll.Transaction,
+                Cash = payroll.Cash
+            };
 
-
-        };
-
-        // Try to get employee's job title
         var employee = Employees.FirstOrDefault(e => e.Id == payroll.EmployeeId);
         var jobTitleId = employee?.JobTitleId;
 
@@ -864,20 +1089,17 @@ else
         {
             var appliedRules = payroll.AppliedRules ?? new List<PayrollAppliedRule>();
 
-            // Filter adjustment rules based on employee's job title
             var bonusRules = AllAdjustmentRules
                 .Where(r => r.Type == AdjustmentType.Bonus && r.JobTitles.Any(j => j.Id == jobTitleId));
             var deductionRules = AllAdjustmentRules
                 .Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId));
 
-            // Prepare selectable bonus rules
             SelectedBonusRules = bonusRules.Select(rule =>
             {
                 var applied = appliedRules.FirstOrDefault(a => a.RuleId == rule.Id);
                 return applied != null ? new SelectableRule(applied) : new SelectableRule(rule);
             }).ToList();
 
-            // Prepare selectable deduction rules
             SelectedDeductionRules = deductionRules.Select(rule =>
             {
                 var applied = appliedRules.FirstOrDefault(a => a.RuleId == rule.Id);
@@ -886,24 +1108,19 @@ else
         }
         else
         {
-            // Optional: log or notify if job title not found
             Console.WriteLine("Job title not found for the selected employee.");
             SelectedBonusRules = new List<SelectableRule>();
             SelectedDeductionRules = new List<SelectableRule>();
         }
 
-        // Load absences (use your own implementation inside LoadAbsenceDates)
         await LoadPayrollAbsences(CurrentPayroll.Id);
 
-        // Open the modal for editing
-        IsPrintModalOpen = false; // Assurez-vous que la modale d'impression est fermée
+        IsPrintModalOpen = false;
         IsModalOpen = true;
     }
 
-
     private async Task SavePayroll()
     {
-       
         CurrentPayroll.AppliedRules = SelectedBonusRules
             .Where(r => r.IsApplied)
             .Concat(SelectedDeductionRules.Where(r => r.IsApplied))
@@ -948,8 +1165,8 @@ else
     private void CloseModal()
     {
         IsModalOpen = false;
-        IsPrintModalOpen = false; // Ferme les deux modales si l'une est fermée
-        StateHasChanged(); 
+        IsPrintModalOpen = false;
+        StateHasChanged();
     }
 
     private async Task OnEmployeeChanged(int employeeId)
@@ -957,26 +1174,35 @@ else
         SelectedBonusRules.Clear();
         SelectedDeductionRules.Clear();
         CurrentPayroll.BaseSalary = 0;
+
         var employee = Employees.FirstOrDefault(e => e.Id == employeeId);
         if (employee == null) return;
 
         if (employee.JobTitleId is int jobTitleId)
         {
-            SelectedBonusRules = AllAdjustmentRules.Where(r => r.Type == AdjustmentType.Bonus && r.JobTitles.Any(j => j.Id == jobTitleId))
+            SelectedBonusRules = AllAdjustmentRules
+                .Where(r => r.Type == AdjustmentType.Bonus && r.JobTitles.Any(j => j.Id == jobTitleId))
                 .Select(r => new SelectableRule(r)).ToList();
-            SelectedDeductionRules = AllAdjustmentRules.Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId))
+
+            SelectedDeductionRules = AllAdjustmentRules
+                .Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId))
                 .Select(r => new SelectableRule(r)).ToList();
         }
 
         var lastPayroll = await PayrollService.GetLastPayrollForEmployeeAsync(employeeId);
         CurrentPayroll.BaseSalary = lastPayroll?.BaseSalary ?? 0;
+
         if (CurrentPayroll.BaseSalary != 0)
         {
-            CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / 22, 2);
+            var workingDays = CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue
+                ? CalculateWorkingDays(CurrentPayroll.PayrollStartDate.Value, CurrentPayroll.PayrollEndDate.Value)
+                : 22;
+            CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workingDays, 2);
         }
-        if (CurrentPayroll?.PayDate != null)
+
+        if (CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue)
         {
-            await LoadAbsenceDates(employeeId, CurrentPayroll.PayDate);
+            await LoadAbsenceDates(employeeId, CurrentPayroll.PayrollStartDate.Value, CurrentPayroll.PayrollEndDate.Value);
         }
 
         RecalculateBonusesAndDeductions();
@@ -1001,7 +1227,6 @@ else
         }
         else
         {
-            // For non-countable rules, CalculatedAmount is just the base amount (or percentage of base salary)
             rule.CalculatedAmount = rule.IsPercentage ? CurrentPayroll.BaseSalary * rule.Amount / 100 : rule.Amount;
         }
         Console.WriteLine($"  Rule '{rule.Name}' - Amount: {rule.Amount}, Quantity: {rule.Quantity}, CalculatedAmount: {rule.CalculatedAmount}");
@@ -1016,14 +1241,12 @@ else
 
         if (!rule.IsCountable)
         {
-            rule.Quantity = 1; // Ensure quantity is 1 for non-countable rules
+            rule.Quantity = 1;
         }
 
-        // This will also call RecalculateBonusesAndDeductions()
         OnCountableQuantityChanged(rule, rule.Quantity);
         Console.WriteLine($"After OnAmountChanged: Rule '{rule.Name}' - Amount: {rule.Amount}, Quantity: {rule.Quantity}, CalculatedAmount: {rule.CalculatedAmount}");
     }
-
 
     public class SelectableRule
     {
@@ -1037,6 +1260,8 @@ else
         public bool IsEditable { get; set; } = false;
         public decimal CalculatedAmount { get; set; }
         public int WorkDays { get; set; } = 30;
+        private DateTime? SelectedStartDate { get; set; }
+        private DateTime? SelectedEndDate { get; set; }
 
         public SelectableRule(PayrollAppliedRule appliedRule)
         {
@@ -1067,6 +1292,7 @@ else
         }
     }
 }
+
 @code {
     private bool ShowPrintPreview;
 
@@ -1095,4 +1321,42 @@ else
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         }
 
+    .payroll-period-section {
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .section-subtitle {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+    }
+
+    .period-summary {
+        border-left: 4px solid #007bff;
+    }
+
+    .enhanced-select:focus,
+    .enhanced-input:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: #6c757d;
+    }
+
+        .empty-state i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
 </style>
+
