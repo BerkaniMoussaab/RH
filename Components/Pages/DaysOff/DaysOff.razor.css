@@ -1,0 +1,194 @@
+﻿.recovery-page {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+    padding: 2rem 0;
+}
+
+.page-header {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.2);
+}
+
+.stats-card {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.2);
+}
+
+.enhanced-card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    transition: all 0.3s ease;
+}
+
+    .enhanced-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+.card-header-custom {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 2px solid #dee2e6;
+    border-radius: 15px 15px 0 0 !important;
+    padding: 1.5rem;
+}
+
+.form-control-enhanced {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+    .form-control-enhanced:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        transform: translateY(-1px);
+    }
+
+.btn-enhanced {
+    border-radius: 10px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+    .btn-enhanced:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+
+.btn-primary-enhanced {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+}
+
+.btn-success-enhanced {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.btn-danger-enhanced {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+}
+
+.btn-warning-enhanced {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    color: #212529;
+}
+
+.item-card {
+    border: 2px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+    .item-card:hover {
+        border-color: #007bff;
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.1);
+    }
+
+.badge-enhanced {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.badge-success-enhanced {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.badge-secondary-enhanced {
+    background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    color: white;
+}
+
+.badge-warning-enhanced {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    color: #212529;
+}
+
+.checkbox-container {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 1rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+    .checkbox-container:hover {
+        border-color: #007bff;
+        background-color: #f8f9fa;
+    }
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #6c757d;
+}
+
+    .empty-state i {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+
+.toast-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+    min-width: 300px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.icon-container {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+}
+
+.icon-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+}
+
+.icon-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
