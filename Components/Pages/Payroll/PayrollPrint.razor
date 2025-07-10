@@ -1,5 +1,6 @@
 ﻿@using RH.Models
-
+@using RH.Services
+@inject CompanyInfoService CompanyService
 @code {
     [Parameter] public Payroll CurrentPayroll { get; set; }
     [Parameter] public Employee Employee { get; set; }
@@ -9,24 +10,44 @@
     [Parameter] public int? ManualAbsences { get; set; }
     [Parameter] public int? Transaction { get; set; }
     [Parameter] public int? Cash { get; set; }
-
+    private CompanyInfo? Company;
+    protected override async Task OnInitializedAsync()
+    {
+        Company = await CompanyService.GetAsync();
+    }
 }
 
 <div id="printable-area" class="payroll-sheet">
-    <div class="header-section">
-        <div class="row align-items-center">
-            <div class="col-4">
-                <!-- Remplacez ceci par votre logo réel -->
-                <img src="https://via.placeholder.com/150x50?text=Votre+Logo" alt="Logo Entreprise" class="company-logo">
-            </div>
-            <div class="col-8 text-end">
-                <h2 class="title">FICHE DE PAIE</h2>
-                <p class="date-info">Période de paie : @CurrentPayroll?.PayDate.ToString("MMMM yyyy")</p>
-                <p class="date-info">Date d'émission : @DateTime.Now.ToString("dd/MM/yyyy")</p>
+    @if (Company != null)
+    {
+        <div class="payroll-header border rounded p-4 shadow-sm mb-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div class="d-flex align-items-center">
+                    @if (Company.LogoBytes != null)
+                    {
+                        <img src="data:@Company.LogoMimeType;base64,@Convert.ToBase64String(Company.LogoBytes)"
+                             alt="Logo Entreprise"
+                             class="company-logo me-3 rounded border" />
+                    }
+                    <div class="company-info">
+                        <h5 class="mb-1 fw-bold">@Company.Name</h5>
+                        <small>@Company.Address</small><br />
+                        <small>RC : @Company.RC | NIF : @Company.NIF</small>
+                    </div>
+                </div>
+
+                <div class="text-end mt-3 mt-md-0">
+                    <h4 class="text-primary fw-bold mb-2">FICHE DE PAIE</h4>
+                    <p class="mb-1 text-muted">
+                        <strong>Période :</strong> @CurrentPayroll?.PayDate.ToString("MMMM yyyy")
+                    </p>
+                    <p class="mb-0 text-muted">
+                        <strong>Émission :</strong> @DateTime.Now.ToString("dd/MM/yyyy")
+                    </p>
+                </div>
             </div>
         </div>
-        <hr class="header-divider" />
-    </div>
+    }
 
     <div class="employee-info-section mb-3">
         <h5 class="section-title">INFORMATIONS EMPLOYÉ</h5>

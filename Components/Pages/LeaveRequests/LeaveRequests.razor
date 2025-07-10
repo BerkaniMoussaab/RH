@@ -105,7 +105,11 @@ else
 
     private void CreateNew()
     {
-        Selected = new LeaveRequest(); // Always create a new instance for new requests
+        Selected = new LeaveRequest(){
+            StartDate = DateTime.Today,
+            EndDate = DateTime.Today
+           
+        }; // Always create a new instance for new requests
         ShowForm = true;
         StateHasChanged();
     }

@@ -20,6 +20,7 @@ namespace RH.Data
         public DbSet<LeavePolicy> LeavePolicies { get; set; }
         public DbSet<WorkedDayOff> WorkedDaysOff { get; set; }
         public DbSet<RecoveryDay> RecoveryDays { get; set; }
+        public DbSet<CompanyInfo> CompanyInfos { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

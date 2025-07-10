@@ -16,6 +16,12 @@ namespace RH.Services
         {
             return await _context.WorkedDaysOff.Include(w => w.Employee).ToListAsync();
         }
+        public async Task<int> GetWorkedDayOffCountAsync(int employeeId, DateTime start, DateTime end)
+        {
+            return await _context.WorkedDaysOff
+                .Where(w => w.EmployeeId == employeeId && w.Date >= start && w.Date <= end && w.GrantsBonus)
+                .CountAsync();
+        }
 
         public async Task<List<WorkedDayOff>> GetByEmployeeAsync(int employeeId)
         {
@@ -31,25 +37,37 @@ namespace RH.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task ConvertToRecovery(int id)
+        public async Task ConvertToRecovery(int workedDayId)
         {
-            var worked = await _context.WorkedDaysOff.FindAsync(id);
-            if (worked != null && worked.GrantsRecoveryDay && !worked.ConvertedToRecovery)
+            var worked = await _context.WorkedDaysOff
+                .Include(w => w.Employee)
+                .FirstOrDefaultAsync(w => w.Id == workedDayId);
+
+            if (worked == null || !worked.GrantsRecoveryDay || worked.ConvertedToRecovery)
+                return;
+
+            var companyInfo = await _context.CompanyInfos.FirstOrDefaultAsync();
+            var ratio = companyInfo?.RecoveryDaysPerWorkedDayOff ?? 1f;
+
+            // Total recovery time earned = quantity of day worked × company-configured ratio
+            float totalRecovery = worked.Quantity * ratio;
+
+            // Add as one RecoveryDay with quantity (preferred)
+            var recoveryDay = new RecoveryDay
             {
-                worked.ConvertedToRecovery = true;
+                EmployeeId = worked.EmployeeId,
+                Date = DateTime.Today,
+                Reason = $"Repos compensatoire pour travail du {worked.Date:dd/MM/yyyy}",
+                Quantity = totalRecovery
+            };
 
-                // Add RecoveryDay entry
-                var recovery = new RecoveryDay
-                {
-                    EmployeeId = worked.EmployeeId,
-                    Date = DateTime.Today,
-                    Reason = $"Repos compensatoire pour travail du {worked.Date:dd/MM/yyyy}"
-                };
+            _context.RecoveryDays.Add(recoveryDay);
+            worked.ConvertedToRecovery = true;
 
-                _context.RecoveryDays.Add(recovery);
-                await _context.SaveChangesAsync();
-            }
+            await _context.SaveChangesAsync();
         }
+
+
 
         public async Task MarkBonusPaid(int id)
         {

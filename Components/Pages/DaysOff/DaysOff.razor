@@ -8,17 +8,26 @@
 @inject IJSRuntime JSRuntime
 
 <style>
-  
+
 </style>
+
+
+@using RH.Models
+@inject RecoveryDayService RecoveryService
+@inject WorkedDaysOffService WorkedService
+@inject EmployeeService EmployeeService
+
+<h3 class="visually-hidden">Recovery Dashboard</h3>
 
 <div class="recovery-page">
     <div class="container">
+
         <!-- Page Header -->
         <div class="page-header">
             <div class="row align-items-center">
                 <div class="col-md-8">
                     <h1 class="mb-2">
-                        <i class="fas fa-calendar-alt me-3"></i>
+                        <i class="bi bi-calendar"></i>
                         Gestion des jours de récupération
                     </h1>
                     <p class="mb-0 opacity-75">Gérez efficacement les jours travaillés et les jours de récupération de vos employés</p>
@@ -53,7 +62,6 @@
                     </option>
                 }
             </select>
-
         </div>
 
         @if (SelectedEmployeeId > 0)
@@ -67,7 +75,7 @@
                             Jours de récupération disponibles
                         </h3>
                         <div class="d-flex align-items-center">
-                            <span style="font-size: 3rem; font-weight: bold;">@RemainingRecoveryDays</span>
+                            <span style="font-size: 3rem; font-weight: bold;">@RemainingRecoveryDays.ToString("0.##")</span>
                             <span class="ms-3 opacity-75">jours restants</span>
                         </div>
                     </div>
@@ -104,28 +112,27 @@
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold">Motif</label>
-                                        <InputText class="form-control form-control-enhanced" @bind-Value="NewWorkedDay.Reason" placeholder="Raison du jour travaillé" />
+                                        <InputText class="form-control form-control-enhanced" @bind-Value="NewWorkedDay.Reason" />
                                     </div>
                                     <div class="col-md-6">
-                                        <div class="checkbox-container">
-                                            <div class="form-check">
-                                                <InputCheckbox class="form-check-input" @bind-Value="NewWorkedDay.GrantsRecoveryDay" id="recoveryCheck" />
-                                                <label class="form-check-label fw-bold" for="recoveryCheck">
-                                                    <i class="fas fa-bed me-2 text-primary"></i>
-                                                    Donne droit à un repos
-                                                </label>
-                                            </div>
+                                        <label class="form-label fw-bold">Durée (jours)</label>
+                                        <InputNumber class="form-control form-control-enhanced" @bind-Value="NewWorkedDay.Quantity" step="0.1" min="0.1" />
+                                        <small class="text-muted">Ex : 1 pour un jour complet, 0.5 pour une demi-journée</small>
+                                    </div>
+                                    <div class="col-md-6 d-flex flex-column justify-content-center">
+                                        <div class="form-check">
+                                            <InputCheckbox class="form-check-input" @bind-Value="NewWorkedDay.GrantsRecoveryDay" id="recoveryCheck" />
+                                            <label class="form-check-label fw-bold" for="recoveryCheck">
+                                                <i class="fas fa-bed me-2 text-primary"></i>
+                                                Donne droit à un repos
+                                            </label>
                                         </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="checkbox-container">
-                                            <div class="form-check">
-                                                <InputCheckbox class="form-check-input" @bind-Value="NewWorkedDay.GrantsBonus" id="bonusCheck" />
-                                                <label class="form-check-label fw-bold" for="bonusCheck">
-                                                    <i class="fas fa-dollar-sign me-2 text-success"></i>
-                                                    Donne droit à une prime
-                                                </label>
-                                            </div>
+                                        <div class="form-check mt-2">
+                                            <InputCheckbox class="form-check-input" @bind-Value="NewWorkedDay.GrantsBonus" id="bonusCheck" />
+                                            <label class="form-check-label fw-bold" for="bonusCheck">
+                                                <i class="fas fa-dollar-sign me-2 text-success"></i>
+                                                Donne droit à une prime
+                                            </label>
                                         </div>
                                     </div>
                                     <div class="col-12">
@@ -159,7 +166,8 @@
                                                     <i class="fas fa-calendar me-2 text-primary"></i>
                                                     @day.Date.ToShortDateString()
                                                 </h6>
-                                                <p class="mb-2 text-muted">@day.Reason</p>
+                                                <p class="mb-1 text-muted">@day.Reason</p>
+                                                <p class="mb-2 text-muted">Durée : @day.Quantity jour(s)</p>
                                                 <div class="d-flex flex-wrap gap-2">
                                                     @if (day.GrantsRecoveryDay)
                                                     {
@@ -199,7 +207,7 @@
                                             </div>
                                             <div class="col-md-4 text-end">
                                                 <button class="btn btn-sm btn-enhanced btn-danger-enhanced" @onclick="() => ConfirmDeleteWorkedDay(day.Id)">
-                                                    <i class="fas fa-trash"></i>
+                                                    <i class="bi bi-trash"></i>
                                                 </button>
                                             </div>
                                         </div>
@@ -238,13 +246,17 @@
                         <div class="card-body">
                             <EditForm Model="NewRecoveryDay" OnValidSubmit="AddRecoveryDay">
                                 <div class="row g-3">
-                                    <div class="col-12">
+                                    <div class="col-md-6">
                                         <label class="form-label fw-bold">Date</label>
                                         <InputDate class="form-control form-control-enhanced" @bind-Value="NewRecoveryDay.Date" />
                                     </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Durée (jours)</label>
+                                        <InputNumber class="form-control form-control-enhanced" @bind-Value="NewRecoveryDay.Quantity" step="0.1" min="0.1" />
+                                    </div>
                                     <div class="col-12">
                                         <label class="form-label fw-bold">Motif</label>
-                                        <InputText class="form-control form-control-enhanced" @bind-Value="NewRecoveryDay.Reason" placeholder="Raison du jour de récupération" />
+                                        <InputText class="form-control form-control-enhanced" @bind-Value="NewRecoveryDay.Reason" />
                                     </div>
                                     <div class="col-12">
                                         <button type="submit" class="btn btn-enhanced btn-primary-enhanced w-100">
@@ -261,7 +273,7 @@
                     <div class="enhanced-card card">
                         <div class="card-header-custom">
                             <h5 class="mb-0">
-                                <i class="fas fa-calendar-check me-2"></i>
+                               <i class="bi bi-calendar-check"></i>
                                 Jours de récupération (@RecoveryDays.Count)
                             </h5>
                         </div>
@@ -277,7 +289,8 @@
                                                     <i class="fas fa-calendar me-2 text-primary"></i>
                                                     @rec.Date.ToShortDateString()
                                                 </h6>
-                                                <p class="mb-2 text-muted">@rec.Reason</p>
+                                                <p class="mb-1 text-muted">@rec.Reason</p>
+                                                <p class="mb-2 text-muted">Durée : @rec.Quantity jour(s)</p>
                                                 <div>
                                                     @if (rec.Used)
                                                     {
@@ -312,7 +325,7 @@
                                                         </button>
                                                     }
                                                     <button class="btn btn-sm btn-enhanced btn-danger-enhanced" @onclick="() => ConfirmDeleteRecovery(rec.Id)">
-                                                        <i class="fas fa-trash"></i>
+                                                        <i class="bi bi-trash"></i>
                                                     </button>
                                                 </div>
                                             </div>
@@ -335,7 +348,6 @@
         }
         else
         {
-            <!-- Empty State -->
             <div class="enhanced-card card">
                 <div class="card-body">
                     <div class="empty-state">
@@ -348,6 +360,7 @@
         }
     </div>
 </div>
+
 
 <!-- Toast Notification -->
 @if (!string.IsNullOrEmpty(ToastMessage))
@@ -383,7 +396,7 @@
     private WorkedDayOff NewWorkedDay = new();
     private RecoveryDay NewRecoveryDay = new();
 
-    private int RemainingRecoveryDays = 0;
+    private float RemainingRecoveryDays = 0;
 
     // Toast notification properties
     private string ToastMessage = "";
@@ -393,6 +406,8 @@
     protected override async Task OnInitializedAsync()
     {
         Employees = await EmployeeService.GetAllAsync();
+        NewWorkedDay.Date = DateTime.Today;
+        NewRecoveryDay.Date = DateTime.Today;
     }
 
     private async Task OnEmployeeChanged(ChangeEventArgs e)

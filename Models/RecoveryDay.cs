@@ -14,5 +14,7 @@ namespace RH.Models
         public string? Reason { get; set; }
 
         public bool Used { get; set; } = false;
+        public float Quantity { get; set; } = 1f;
+
     }
 }

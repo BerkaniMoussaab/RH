@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RH.Data;
 
@@ -11,9 +12,11 @@ using RH.Data;
 namespace RH.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250709101632_AddCompanyInfo")]
+    partial class AddCompanyInfo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -331,9 +334,6 @@ namespace RH.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<float>("RecoveryDaysPerWorkedDayOff")
-                        .HasColumnType("real");
-
                     b.HasKey("Id");
 
                     b.ToTable("CompanyInfos");
@@ -630,9 +630,6 @@ namespace RH.Migrations
                     b.Property<int>("EmployeeId")
                         .HasColumnType("int");
 
-                    b.Property<float>("Quantity")
-                        .HasColumnType("real");
-
                     b.Property<string>("Reason")
                         .HasColumnType("nvarchar(max)");
 
@@ -671,9 +668,6 @@ namespace RH.Migrations
 
                     b.Property<bool>("GrantsRecoveryDay")
                         .HasColumnType("bit");
-
-                    b.Property<float>("Quantity")
-                        .HasColumnType("real");
 
                     b.Property<string>("Reason")
                         .HasColumnType("nvarchar(max)");

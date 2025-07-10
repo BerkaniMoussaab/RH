@@ -18,6 +18,8 @@
         public bool ConvertedToRecovery { get; set; } = false;
 
         public bool BonusPaid { get; set; } = false;
+        public float Quantity { get; set; } = 1f;
+
     }
 
 }

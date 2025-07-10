@@ -8,6 +8,7 @@
 @inject IEmployeeService EmployeeService
 @inject PayrollAdjustmentRuleService AdjustmentService
 @inject AbsenceService AbsenceService
+@inject WorkedDaysOffService WorkedDaysOffService
 @inject IJSRuntime JS
 @attribute [Authorize]
 
@@ -1247,6 +1248,48 @@ else
         OnCountableQuantityChanged(rule, rule.Quantity);
         Console.WriteLine($"After OnAmountChanged: Rule '{rule.Name}' - Amount: {rule.Amount}, Quantity: {rule.Quantity}, CalculatedAmount: {rule.CalculatedAmount}");
     }
+    private async Task ApplyTriggeredRules()
+    {
+        if (CurrentPayroll.EmployeeId == 0 ||
+            !CurrentPayroll.PayrollStartDate.HasValue ||
+            !CurrentPayroll.PayrollEndDate.HasValue)
+            return;
+
+        var jobTitleId = Employees.FirstOrDefault(e => e.Id == CurrentPayroll.EmployeeId)?.JobTitleId;
+        if (jobTitleId == null) return;
+
+        // Get eligible rules
+        var triggeredRules = AllAdjustmentRules
+            .Where(r => r.Type == AdjustmentType.Bonus && r.Trigger == RuleTrigger.WorkedDayOffBonus && r.JobTitles.Any(j => j.Id == jobTitleId))
+            .ToList();
+
+        var workedDayOffCount = await WorkedDaysOffService.GetWorkedDayOffCountAsync(
+            CurrentPayroll.EmployeeId,
+            CurrentPayroll.PayrollStartDate.Value,
+            CurrentPayroll.PayrollEndDate.Value
+        );
+
+        foreach (var rule in triggeredRules)
+        {
+            var existing = SelectedBonusRules.FirstOrDefault(r2 => r2.RuleId == rule.Id);
+            if (existing != null)
+            {
+                existing.IsApplied = true;
+                existing.Quantity = workedDayOffCount;
+                OnCountableQuantityChanged(existing, workedDayOffCount);
+            }
+            else
+            {
+                var newRule = new SelectableRule(rule, isApplied: true)
+                    {
+                        Quantity = workedDayOffCount
+                    };
+                OnCountableQuantityChanged(newRule, workedDayOffCount);
+                SelectedBonusRules.Add(newRule);
+            }
+        }
+    }
+
 
     public class SelectableRule
     {
@@ -1262,6 +1305,7 @@ else
         public int WorkDays { get; set; } = 30;
         private DateTime? SelectedStartDate { get; set; }
         private DateTime? SelectedEndDate { get; set; }
+        public RuleTrigger Trigger { get; set; } = RuleTrigger.Manual;
 
         public SelectableRule(PayrollAppliedRule appliedRule)
         {
@@ -1273,6 +1317,7 @@ else
             IsApplied = true;
             IsEditable = appliedRule.Rule.IsEditable;
             Quantity = appliedRule.Quantity ?? 1;
+            Trigger = appliedRule.Rule.Trigger;
             CalculatedAmount = IsCountable
                 ? (IsPercentage ? appliedRule.Payroll.BaseSalary * Amount / 100 : Amount) * Quantity
                 : (IsPercentage ? appliedRule.Payroll.BaseSalary * Amount / 100 : Amount);
@@ -1289,6 +1334,7 @@ else
             IsApplied = isApplied;
             Quantity = 1;
             CalculatedAmount = rule.Amount;
+            Trigger = rule.Trigger;
         }
     }
 }

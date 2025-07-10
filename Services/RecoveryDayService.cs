@@ -73,19 +73,21 @@ public class RecoveryDayService
     }
 
     // ✅ Get count of remaining (unused) recovery days for one employee
-    public async Task<int> GetRemainingDaysAsync(int employeeId)
+    public async Task<float> GetRemainingDaysAsync(int employeeId)
     {
         return await _context.RecoveryDays
             .Where(r => r.EmployeeId == employeeId && !r.Used)
-            .CountAsync();
+            .SumAsync(r => r.Quantity);
     }
 
+
     // ✅ Get dictionary of employeeId → remaining days (for dashboard)
-    public async Task<Dictionary<int, int>> GetRemainingDaysForAllAsync()
+    public async Task<Dictionary<int, float>> GetRemainingDaysForAllAsync()
     {
         return await _context.RecoveryDays
             .Where(r => !r.Used)
             .GroupBy(r => r.EmployeeId)
-            .ToDictionaryAsync(g => g.Key, g => g.Count());
+            .ToDictionaryAsync(g => g.Key, g => g.Sum(r => r.Quantity));
     }
+
 }

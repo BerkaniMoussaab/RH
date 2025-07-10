@@ -1,0 +1,85 @@
+﻿@page "/admin/settings"
+@inject CompanyInfoService CompanyService
+@using Microsoft.AspNetCore.Components.Forms
+@using RH.Models
+@using RH.Services
+
+<div class="container my-4">
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Paramètres de l'entreprise</h4>
+        </div>
+        <div class="card-body">
+            <EditForm Model="@company" OnValidSubmit="Save">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Nom</label>
+                        <InputText @bind-Value="company.Name" class="form-control" placeholder="Entrer le nom de l'entreprise" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Adresse</label>
+                        <InputText @bind-Value="company.Address" class="form-control" placeholder="Entrer l'adresse" />
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label">RC</label>
+                        <InputText @bind-Value="company.RC" class="form-control" placeholder="Entrer RC" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">NIF</label>
+                        <InputText @bind-Value="company.NIF" class="form-control" placeholder="Entrer NIF" />
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <InputNumber @bind-Value="company.RecoveryDaysPerWorkedDayOff" step="0.1" class="form-control" />
+                        <span class="text-muted">Nombre de jours de récupération par jour travaillé</span>
+                    </div>
+                 
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Logo</label>
+                    <InputFile OnChange="UploadLogo" class="form-control" />
+                    @if (company.LogoBytes != null)
+                    {
+                        <div class="mt-3">
+                            <img src="data:@company.LogoMimeType;base64,@Convert.ToBase64String(company.LogoBytes)" alt="Logo Entreprise" class="img-thumbnail" style="max-height: 100px;" />
+                        </div>
+                    }
+                </div>
+
+                <button type="submit" class="btn btn-success">Enregistrer</button>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    private CompanyInfo company = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        company = await CompanyService.GetAsync();
+    }
+
+    private async Task Save()
+    {
+        await CompanyService.SaveAsync(company);
+    }
+
+    private async Task UploadLogo(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        using var stream = file.OpenReadStream();
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        company.LogoBytes = ms.ToArray();
+        company.LogoMimeType = file.ContentType;
+    }
+}

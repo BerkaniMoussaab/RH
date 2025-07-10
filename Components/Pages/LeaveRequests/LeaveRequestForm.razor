@@ -235,7 +235,7 @@
 </style>
 
 @code {
-    [Parameter] public LeaveRequest LeaveRequest { get; set; } = new();
+    [Parameter] public LeaveRequest LeaveRequest { get; set; } = new(){};
     [Parameter] public bool IsOpen { get; set; }
     [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
     [Parameter] public EventCallback<LeaveRequest> OnSave { get; set; }
@@ -269,6 +269,7 @@
         try
         {
             Employees = await EmployeeService.GetAllAsync() ?? new();
+           
         }
         catch (Exception ex)
         {
