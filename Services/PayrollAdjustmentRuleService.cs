@@ -5,78 +5,98 @@ using System;
 
 public class PayrollAdjustmentRuleService : IPayrollAdjustmentRuleService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
 
-    public PayrollAdjustmentRuleService(ApplicationDbContext context)
+    public PayrollAdjustmentRuleService(IDbContextFactory<ApplicationDbContext> dbContextFactory)
     {
-        _context = context;
+        _dbContextFactory = dbContextFactory;
     }
 
     public async Task<List<PayrollAdjustmentRule>> GetAllAsync()
     {
-        return await _context.PayrollAdjustmentRules
-            .Include(r => r.JobTitles) // This is mandatory
+        using var context = _dbContextFactory.CreateDbContext();
+
+        var rules = await context.PayrollAdjustmentRules
+            .Include(r => r.JobTitles)
             .ToListAsync();
+
+        // Detach to avoid accessing disposed context later
+        foreach (var rule in rules)
+        {
+            context.Entry(rule).State = EntityState.Detached;
+            foreach (var jt in rule.JobTitles)
+            {
+                context.Entry(jt).State = EntityState.Detached;
+            }
+        }
+
+        return rules;
     }
 
 
     public async Task<PayrollAdjustmentRule?> GetByIdAsync(int id)
     {
-        return await _context.PayrollAdjustmentRules.Include(r => r.JobTitles).FirstOrDefaultAsync(r => r.Id == id);
+        using (var context = _dbContextFactory.CreateDbContext())
+        {
+            return await context.PayrollAdjustmentRules.Include(r => r.JobTitles).FirstOrDefaultAsync(r => r.Id == id);
+        }
     }
 
     public async Task AddAsync(PayrollAdjustmentRule rule)
     {
-        // Reuse tracked JobTitle entities from context
-        var jobTitleIds = rule.JobTitles.Select(j => j.Id).ToList();
+        using (var context = _dbContextFactory.CreateDbContext())
+        {
+            var jobTitleIds = rule.JobTitles.Select(j => j.Id).ToList();
 
-        rule.JobTitles = await _context.JobTitles
-            .Where(j => jobTitleIds.Contains(j.Id))
-            .ToListAsync();
+            rule.JobTitles = await context.JobTitles
+                .Where(j => jobTitleIds.Contains(j.Id))
+                .ToListAsync();
 
-        _context.PayrollAdjustmentRules.Add(rule);
-        await _context.SaveChangesAsync();
+            context.PayrollAdjustmentRules.Add(rule);
+            await context.SaveChangesAsync();
+        }
     }
-
-
-
 
     public async Task UpdateAsync(PayrollAdjustmentRule rule)
     {
-        // Load the existing entity from the context
-        var existingRule = await _context.PayrollAdjustmentRules
-            .Include(r => r.JobTitles)
-            .FirstOrDefaultAsync(r => r.Id == rule.Id);
-
-        if (existingRule == null)
-            throw new InvalidOperationException($"PayrollAdjustmentRule with Id {rule.Id} not found.");
-
-        // Update scalar properties (if any)
-        _context.Entry(existingRule).CurrentValues.SetValues(rule);
-
-        // Update many-to-many JobTitles
-        existingRule.JobTitles.Clear();
-
-        var jobTitleIds = rule.JobTitles.Select(j => j.Id).ToList();
-        var jobTitles = await _context.JobTitles
-            .Where(j => jobTitleIds.Contains(j.Id))
-            .ToListAsync();
-
-        foreach (var jt in jobTitles)
+        using (var context = _dbContextFactory.CreateDbContext())
         {
-            existingRule.JobTitles.Add(jt);
-        }
+            var existingRule = await context.PayrollAdjustmentRules
+                .Include(r => r.JobTitles)
+                .FirstOrDefaultAsync(r => r.Id == rule.Id);
 
-        await _context.SaveChangesAsync();
+            if (existingRule == null)
+                throw new InvalidOperationException($"PayrollAdjustmentRule with Id {rule.Id} not found.");
+
+            context.Entry(existingRule).CurrentValues.SetValues(rule);
+
+            existingRule.JobTitles.Clear();
+
+            var jobTitleIds = rule.JobTitles.Select(j => j.Id).ToList();
+            var jobTitles = await context.JobTitles
+                .Where(j => jobTitleIds.Contains(j.Id))
+                .ToListAsync();
+
+            foreach (var jt in jobTitles)
+            {
+                existingRule.JobTitles.Add(jt);
+            }
+
+            await context.SaveChangesAsync();
+        }
     }
 
     public async Task DeleteAsync(int id)
     {
-        var rule = await _context.PayrollAdjustmentRules.FindAsync(id);
-        if (rule != null)
+        using (var context = _dbContextFactory.CreateDbContext())
         {
-            _context.PayrollAdjustmentRules.Remove(rule);
-            await _context.SaveChangesAsync();
+            var rule = await context.PayrollAdjustmentRules.FindAsync(id);
+            if (rule != null)
+            {
+                context.PayrollAdjustmentRules.Remove(rule);
+                await context.SaveChangesAsync();
+            }
         }
     }
 }
+

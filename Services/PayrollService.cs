@@ -62,10 +62,12 @@ public class PayrollService : IPayrollService
     {
         return await _context.Payrolls
             .Include(p => p.Employee)
+                .ThenInclude(e => e.JobTitle)
             .Include(p => p.AppliedRules)
                 .ThenInclude(ar => ar.Rule)
             .ToListAsync();
     }
+
 
     public async Task<Payroll?> GetByIdAsync(int id)
     {

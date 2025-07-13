@@ -23,14 +23,17 @@
                     }
                 </select>
             </div>
+
             <div class="col-md-3">
                 <label class="form-label">Date de début</label>
                 <InputDate class="form-control" @bind-Value="StartDate" />
             </div>
+
             <div class="col-md-3">
                 <label class="form-label">Date de fin</label>
                 <InputDate class="form-control" @bind-Value="EndDate" />
             </div>
+
             <div class="col-md-2 d-grid">
                 <button class="btn btn-primary" @onclick="LoadFilteredAbsences">Filtrer</button>
                 <button class="btn btn-outline-secondary mt-2" @onclick="ResetFilters">Réinitialiser</button>
@@ -42,7 +45,11 @@
 <!-- Absence Cards -->
 @if (Absences == null)
 {
-    <p>Chargement...</p>
+    <div class="text-center my-4">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+    </div>
 }
 else if (!Absences.Any())
 {
@@ -70,12 +77,10 @@ else
                                                ValueChanged="async (val) => await UpdateCounted(absence, val)"
                                                disabled="@((absence.PayrollId != null))" />
 
-
                                 <label class="form-check-label" for=@($"countedSwitch_{absence.Id}")>
                                     @(absence.Counted ? "Oui" : "Non")
                                 </label>
                             </div>
-
 
                             <strong>Inclus dans la paie :</strong>
                             @if (absence.PayrollId is not null)
@@ -107,8 +112,14 @@ else
     {
         Employees = await EmployeeService.GetAllAsync();
         EmployeeNames = Employees.ToDictionary(e => e.Id, e => e.FullName);
+
+        var today = DateTime.Today;
+        StartDate = new DateTime(today.Year, today.Month, 1);
+        EndDate = StartDate.Value.AddMonths(1).AddDays(-1);
+
         await LoadFilteredAbsences();
     }
+
 
     private async Task LoadFilteredAbsences()
     {
@@ -131,21 +142,17 @@ else
     {
         return EmployeeNames.TryGetValue(id, out var name) ? name : $"Employé #{id}";
     }
+
     private async Task UpdateCounted(AbsenceRecord absence, bool newValue)
     {
         try
         {
             await AbsenceService.UpdateCountedStatus(absence.Id, newValue);
-            absence.Counted = newValue; // ensure sync with backend
+            absence.Counted = newValue; // sync UI with backend
         }
         catch
         {
-            // If backend update failed, revert local value
-            absence.Counted = !newValue;
-            // You can also show a toast or alert here
+            absence.Counted = !newValue; // revert if failed
         }
     }
-
-
-
 }

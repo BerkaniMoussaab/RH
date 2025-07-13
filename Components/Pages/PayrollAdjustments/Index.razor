@@ -23,7 +23,7 @@
                 Gérez les primes et déductions applicables aux différents postes
             </p>
         </div>
-        <button class="btn btn-primary enhanced-btn add-btn" @onclick="() => ShowModal = true">
+        <button class="btn btn-primary enhanced-btn add-btn" @onclick="OpenAddModal">
             <i class="bi bi-plus-circle me-2"></i>
             Nouvelle règle
         </button>
@@ -241,250 +241,18 @@ else
 
 @if (ShowModal)
 {
-    <div class="modal fade show d-block enhanced-modal-backdrop" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content enhanced-modal">
-                <div class="modal-header enhanced-modal-header">
-                    <div class="modal-title-wrapper">
-                        <div class="modal-icon">
-                            <i class="bi bi-sliders2-vertical"></i>
-                        </div>
-                        <div class="modal-title-content">
-                            <h5 class="modal-title">
-                                @((IsEditMode ? "Modifier" : "Ajouter") + " une règle d'ajustement")
-                            </h5>
-                            <small class="modal-subtitle">
-                                @(IsEditMode ? "Modifiez les paramètres de la règle existante" : "Créez une nouvelle règle de prime ou déduction")
-                            </small>
-                        </div>
-                    </div>
-                    <button type="button" class="btn-close bg-white" @onclick="CloseModal"></button>
-                </div>
+    <PayrollModal ShowModal="@ShowModal"
+                  ShowModalChanged="@(value => ShowModal = value)"
+                  NewAdjustment="@NewAdjustment"
+                  NewAdjustmentChanged="@(value => NewAdjustment = value)"
+                  IsEditMode="@IsEditMode"
+                  IsEditModeChanged="@(value => IsEditMode = value)"
+                  SelectedJobTitleIds="@SelectedJobTitleIds"
+                  SelectedJobTitleIdsChanged="@(value => SelectedJobTitleIds = value)"
+                  AllJobTitles="@AllJobTitles"
+                  OnSave="@HandleSaveAdjustment"
+                  OnClose="@CloseModal" />
 
-                <EditForm Model="@NewAdjustment" OnValidSubmit="SaveAdjustment">
-                    <DataAnnotationsValidator />
-
-                    <div class="modal-body enhanced-modal-body">
-                        <ValidationSummary class="validation-summary-enhanced" />
-
-                        <div class="form-sections">
-                            <!-- Section Informations de base -->
-                            <div class="form-section">
-                                <div class="section-title-small">
-                                    <i class="bi bi-info-circle text-primary me-2"></i>
-                                    Informations de base
-                                </div>
-
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <div class="enhanced-form-group">
-                                            <label class="form-label enhanced-label">
-                                                <i class="bi bi-tag me-1"></i>
-                                                Nom de la règle
-                                            </label>
-                                            <InputText class="form-control enhanced-input" @bind-Value="NewAdjustment.Name" placeholder="Ex: Prime de performance" />
-                                            <ValidationMessage For="@(() => NewAdjustment.Name)" class="validation-message-enhanced" />
-                                        </div>
-                                    </div>
-
-                                    <div class="col-md-6">
-                                        <div class="enhanced-form-group">
-                                            <label class="form-label enhanced-label">
-                                                <i class="bi bi-list-ul me-1"></i>
-                                                Type de règle
-                                            </label>
-                                            <InputSelect class="form-select enhanced-select" @bind-Value="NewAdjustment.Type">
-                                                <option disabled value="">-- Sélectionner le type --</option>
-                                                <option value="@AdjustmentType.Bonus">🎁 Prime (Bonus)</option>
-                                                <option value="@AdjustmentType.Deduction">🛡️ Déduction (Retenue)</option>
-                                            </InputSelect>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Section Montant et Options -->
-                         <div class="form-section p-4 rounded-4 shadow-sm bg-white border">
-    <div class="d-flex align-items-center mb-3 section-title-small text-primary fs-5 fw-semibold">
-        <i class="bi bi-currency-dollar text-success me-2 fs-4"></i>
-        Configuration du montant et options
-    </div>
-
-    <div class="row g-4">
-        <!-- Montant Section -->
-        <div class="col-lg-7">
-            <div class="enhanced-form-group">
-                <label class="form-label fw-semibold">
-                    <i class="bi bi-calculator me-1 text-muted"></i>
-                    Montant
-                </label>
-
-                <div class="input-group">
-                    <InputNumber class="form-control"
-                                 @bind-Value="NewAdjustment.Amount"
-                                 disabled="@NewAdjustment.IsEditable"
-                                 placeholder="0.00" />
-                    <span class="input-group-text bg-light">
-                        <div class="form-check m-0">
-                            <InputCheckbox class="form-check-input"
-                                           @bind-Value="NewAdjustment.IsPercentage" />
-                            <label class="form-check-label ms-1 mb-0">%</label>
-                        </div>
-                    </span>
-                </div>
-
-                <ValidationMessage For="@(() => NewAdjustment.Amount)" class="text-danger mt-1 small" />
-
-                @if (NewAdjustment.IsEditable)
-                {
-                    <div class="text-info mt-1 small">
-                        <i class="bi bi-info-circle me-1"></i>
-                        Le montant sera saisi lors de l'application de la règle
-                    </div>
-                }
-            </div>
-        </div>
-
-        <!-- Options Section -->
-        <div class="col-lg-5">
-            <div class="enhanced-form-group">
-                <label class="form-label fw-semibold">
-                    <i class="bi bi-gear me-1 text-muted"></i>
-                    Options
-                </label>
-
-                <div class="d-flex flex-column gap-2">
-                    <!-- IsCountable -->
-                    <div class="form-check">
-                        <InputCheckbox class="form-check-input"
-                                       @bind-Value="NewAdjustment.IsCountable" />
-                        <label class="form-check-label ms-2">
-                            <div class="fw-semibold">Avec quantité</div>
-                            <div class="text-muted small">Permet de multiplier par une quantité</div>
-                        </label>
-                    </div>
-
-                    <!-- IsEditable -->
-                    <div class="form-check">
-                        <InputCheckbox class="form-check-input"
-                                       Value="NewAdjustment.IsEditable"
-                                       ValueChanged="val => OnEditableChanged(new ChangeEventArgs { Value = val })"
-                                       ValueExpression="@(() => NewAdjustment.IsEditable)" />
-                        <label class="form-check-label ms-2">
-                            <div class="fw-semibold">Montant modifiable</div>
-                            <div class="text-muted small">Le montant peut être ajusté lors de l'application</div>
-                        </label>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-                            <!-- Section Postes -->
-                            <div class="form-section">
-                                <div class="section-title-small">
-                                    <i class="bi bi-people text-warning me-2"></i>
-                                    Postes concernés
-                                </div>
-
-                                <div class="enhanced-form-group">
-                                    <label class="form-label enhanced-label">
-                                        <i class="bi bi-briefcase me-1"></i>
-                                        Sélection des postes
-                                    </label>
-
-                                    <div class="position-relative">
-                                        <button type="button" class="btn enhanced-dropdown-btn w-100" @onclick="ToggleDropdown">
-                                            <div class="dropdown-content">
-                                                <span class="dropdown-text">
-                                                    @((SelectedJobTitleIds.Any())
-                                                        ? $"{SelectedJobTitleIds.Count} poste(s) sélectionné(s)"
-                                                        : "Sélectionnez des postes")
-                                                </span>
-                                                <i class="bi bi-caret-down-fill dropdown-icon"></i>
-                                            </div>
-                                        </button>
-
-                                        @if (ShowDropdown)
-                                        {
-                                            <div class="enhanced-dropdown-menu">
-                                                <div class="dropdown-header">
-                                                    <i class="bi bi-search me-2"></i>
-                                                    Sélectionnez les postes concernés
-                                                </div>
-                                                <div class="dropdown-body">
-                                                    @foreach (var jt in AllJobTitles)
-                                                    {
-                                                        <div class="dropdown-item enhanced-dropdown-item">
-                                                            <div class="form-check">
-                                                                <input class="form-check-input enhanced-checkbox"
-                                                                       type="checkbox"
-                                                                       id="jt_@jt.Id"
-                                                                       checked="@SelectedJobTitleIds.Contains(jt.Id)"
-                                                                       @onchange="() => ToggleJobTitleSelection(jt.Id)" />
-                                                                <label class="form-check-label" for="jt_@jt.Id">
-                                                                    @jt.Title
-                                                                </label>
-                                                            </div>
-                                                        </div>
-                                                    }
-                                                </div>
-                                            </div>
-                                        }
-                                    </div>
-
-                                    @if (ShowJobTitleValidation && !SelectedJobTitleIds.Any())
-                                    {
-                                        <div class="validation-message-enhanced">
-                                            <i class="bi bi-exclamation-triangle me-1"></i>
-                                            Veuillez sélectionner au moins un poste.
-                                        </div>
-                                    }
-
-                                    @if (SelectedJobTitleIds.Any())
-                                    {
-                                        <div class="selected-items-preview">
-                                            <small class="text-muted mb-2 d-block">Postes sélectionnés:</small>
-                                            <div class="selected-badges">
-                                                @foreach (var selectedId in SelectedJobTitleIds)
-                                                {
-                                                    var jobTitle = AllJobTitles.FirstOrDefault(j => j.Id == selectedId);
-                                                    if (jobTitle != null)
-                                                    {
-                                                        <span class="selected-badge">
-                                                            @jobTitle.Title
-                                                            <button type="button" class="badge-remove" @onclick="() => ToggleJobTitleSelection(selectedId)">
-                                                                <i class="bi bi-x"></i>
-                                                            </button>
-                                                        </span>
-                                                    }
-                                                }
-                                            </div>
-                                        </div>
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="modal-footer enhanced-modal-footer">
-                        <div class="footer-actions">
-                            <button type="submit" class="btn btn-success enhanced-btn primary-action">
-                                <i class="bi bi-check-circle me-2"></i>
-                                @(IsEditMode ? "Enregistrer les modifications" : "Créer la règle")
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary enhanced-btn" @onclick="CloseModal">
-                                <i class="bi bi-x-circle me-2"></i>
-                                Annuler
-                            </button>
-                        </div>
-                    </div>
-                </EditForm>
-            </div>
-        </div>
-    </div>
 }
 
 
@@ -496,10 +264,8 @@ else
     private List<int> SelectedJobTitleIds = new();
     private List<PayrollAdjustmentRule> Adjustments = new();
     private bool isLoading = true;
-    private bool ShowJobTitleValidation = false;
     private bool ShowModal = false;
     private bool IsEditMode = false;
-    private bool ShowDropdown = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -514,26 +280,12 @@ else
         Adjustments = await AdjustmentService.GetAllAsync();
     }
 
-    private void ToggleJobTitleSelection(int id)
+    private void OpenAddModal()
     {
-        if (SelectedJobTitleIds.Contains(id))
-            SelectedJobTitleIds.Remove(id);
-        else
-            SelectedJobTitleIds.Add(id);
-    }
-    private void OnEditableChanged(ChangeEventArgs e)
-    {
-        if (bool.TryParse(e?.Value?.ToString(), out var isEditable))
-        {
-            NewAdjustment.IsEditable = isEditable;
-
-            if (isEditable)
-            {
-                NewAdjustment.Amount = 0; // force amount to 0
-            }
-
-            StateHasChanged(); // refresh form
-        }
+        NewAdjustment = new() { Type = AdjustmentType.Bonus };
+        SelectedJobTitleIds.Clear();
+        IsEditMode = false;
+        ShowModal = true;
     }
 
     private void OpenEditModal(PayrollAdjustmentRule adjustment)
@@ -554,26 +306,16 @@ else
         ShowModal = true;
     }
 
-    private async Task SaveAdjustment()
+    private async Task HandleSaveAdjustment(PayrollAdjustmentRule adjustmentToSave)
     {
-        ShowJobTitleValidation = SelectedJobTitleIds.Count == 0;
-        if (string.IsNullOrWhiteSpace(NewAdjustment.Name) || ShowJobTitleValidation)
-            return;
-        if (NewAdjustment.IsEditable && NewAdjustment.Amount != 0)
-        {
-            NewAdjustment.Amount = 0;
-        }
-        NewAdjustment.JobTitles = AllJobTitles
-            .Where(j => SelectedJobTitleIds.Contains(j.Id))
-            .ToList();
-
+        // This logic was moved from the modal component
         if (IsEditMode)
         {
-            await AdjustmentService.UpdateAsync(NewAdjustment);
+            await AdjustmentService.UpdateAsync(adjustmentToSave);
         }
         else
         {
-            await AdjustmentService.AddAsync(NewAdjustment);
+            await AdjustmentService.AddAsync(adjustmentToSave);
         }
 
         await LoadAdjustments();
@@ -583,17 +325,10 @@ else
     private void CloseModal()
     {
         ShowModal = false;
-        ShowJobTitleValidation = false;
         SelectedJobTitleIds.Clear();
         NewAdjustment = new PayrollAdjustmentRule { Type = AdjustmentType.Bonus };
         EditingAdjustment = null;
         IsEditMode = false;
     }
 
-    private void ToggleDropdown()
-    {
-        ShowDropdown = !ShowDropdown;
-    }
-
 }
-

@@ -11,5 +11,6 @@
         public byte[]? LogoBytes { get; set; }
         public string? LogoMimeType { get; set; } // e.g. "image/png"
         public float RecoveryDaysPerWorkedDayOff { get; set; } = 1f;
+        public int WorKdaysInMonth { get; set; }
     }
 }
