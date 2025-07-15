@@ -21,7 +21,8 @@ namespace RH.Models
         [Range(0, double.MaxValue)]
         public decimal Deductions { get; set; }
 
-        public decimal NetPay => BaseSalary + Bonus - Deductions;
+        // Updated NetPay calculation to include advance deductions
+        public decimal NetPay => BaseSalary + Bonus - Deductions - AdvanceDeductionsAmounts;
 
         public ICollection<PayrollAppliedRule> AppliedRules { get; set; } = new List<PayrollAppliedRule>();
         public int AbsenceDays { get; set; } // how many days the employee was absent
@@ -38,6 +39,11 @@ namespace RH.Models
 
         private decimal _transaction;
         private decimal _cash;
+
+        // Advance payment properties (already present in the model)
+        public decimal AdvanceDeductionsAmounts { get; set; }
+        public virtual ICollection<AdvanceDeduction> AdvanceDeductions { get; set; } = new List<AdvanceDeduction>();
+
         public decimal Transaction
         {
             get => _transaction;
@@ -64,7 +70,7 @@ namespace RH.Models
             }
         }
 
-   
+
         /// <summary>
         /// Start date of the payroll period for calculating absences and bonuses
         /// </summary>
@@ -262,5 +268,5 @@ namespace RH.Models
             return workingDays;
         }
     }
-
 }
+

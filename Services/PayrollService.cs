@@ -216,4 +216,147 @@ public class PayrollService : IPayrollService
             return (startDate, endDate);
         }
     }
+
+    private readonly IAdvanceService _advanceService;
+
+    // Add this constructor parameter to your existing PayrollService constructor
+    // private readonly IAdvanceService _advanceService;
+
+    /// <summary>
+    /// Calculate advance deductions for a payroll
+    /// </summary>
+    public async Task<decimal> CalculateAdvanceDeductionsAsync(int employeeId, decimal preliminaryNetPay)
+    {
+        try
+        {
+            var maxDeductionAmount = await _advanceService.CalculateMaximumDeductionAsync(employeeId, preliminaryNetPay);
+            var activeAdvances = await _advanceService.GetActiveAdvancesByEmployeeIdAsync(employeeId);
+
+            var totalPossibleDeduction = activeAdvances.Sum(a => a.RemainingAmount);
+            return Math.Min(totalPossibleDeduction, maxDeductionAmount);
+        }
+        catch (Exception ex)
+        {
+            // Log error
+            Console.WriteLine($"Error calculating advance deductions: {ex.Message}");
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Process advance deductions when saving a payroll
+    /// </summary>
+    public async Task<List<AdvanceDeduction>> ProcessAdvanceDeductionsForPayrollAsync(Payroll payroll)
+    {
+        try
+        {
+            // Updated to use AdvanceDeductionsAmounts instead of AdvanceDeductionAmount
+            if (payroll.AdvanceDeductionsAmounts <= 0)
+            {
+                return new List<AdvanceDeduction>();
+            }
+
+            var deductions = await _advanceService.ProcessAdvanceDeductionsAsync(
+                payroll.EmployeeId,
+                payroll.Id,
+                payroll.AdvanceDeductionsAmounts);
+
+            return deductions;
+        }
+        catch (Exception ex)
+        {
+            // Log error
+            Console.WriteLine($"Error processing advance deductions: {ex.Message}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Get advance deduction summary for a payroll
+    /// </summary>
+    public async Task<AdvanceDeductionSummary> GetAdvanceDeductionSummaryAsync(int employeeId, decimal preliminaryNetPay)
+    {
+        try
+        {
+            var activeAdvances = await _advanceService.GetActiveAdvancesByEmployeeIdAsync(employeeId);
+            var maxDeductionAmount = await _advanceService.CalculateMaximumDeductionAsync(employeeId, preliminaryNetPay);
+
+            var summary = new AdvanceDeductionSummary
+            {
+                ActiveAdvances = activeAdvances,
+                TotalActiveAmount = activeAdvances.Sum(a => a.RemainingAmount),
+                MaximumDeductionAllowed = maxDeductionAmount,
+                ProposedDeduction = Math.Min(activeAdvances.Sum(a => a.RemainingAmount), maxDeductionAmount)
+            };
+
+            return summary;
+        }
+        catch (Exception ex)
+        {
+            // Log error
+            Console.WriteLine($"Error getting advance deduction summary: {ex.Message}");
+            return new AdvanceDeductionSummary();
+        }
+    }
+
+    /// <summary>
+    /// Reverse advance deductions (for payroll deletion/modification)
+    /// </summary>
+    public async Task ReverseAdvanceDeductionsAsync(int payrollId)
+    {
+        try
+        {
+            var deductions = await _context.AdvanceDeductions
+                .Where(d => d.PayrollId == payrollId)
+                .ToListAsync();
+
+            foreach (var deduction in deductions)
+            {
+                var advance = await _advanceService.GetByIdAsync(deduction.AdvanceId);
+                if (advance != null)
+                {
+                    advance.RemainingAmount += deduction.DeductedAmount;
+                    if (advance.Status == AdvanceStatus.Completed)
+                    {
+                        advance.Status = AdvanceStatus.Active;
+                        advance.CompletedAt = null;
+                    }
+                    await _advanceService.UpdateAsync(advance);
+                }
+            }
+
+            _context.AdvanceDeductions.RemoveRange(deductions);
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log error
+            Console.WriteLine($"Error reversing advance deductions: {ex.Message}");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Get deductions for a specific payroll (used by AdvanceService)
+    /// </summary>
+    public List<AdvanceDeduction> GetDeductionsForPayroll(int payrollId)
+    {
+        return _context.AdvanceDeductions
+            .Where(d => d.PayrollId == payrollId)
+            .ToList();
+    }
+
+
+/// <summary>
+/// Summary of advance deductions for display purposes
+/// </summary>
+public class AdvanceDeductionSummary
+{
+    public List<Advance> ActiveAdvances { get; set; } = new List<Advance>();
+    public decimal TotalActiveAmount { get; set; }
+    public decimal MaximumDeductionAllowed { get; set; }
+    public decimal ProposedDeduction { get; set; }
+    public bool HasActiveAdvances => ActiveAdvances.Any();
+    public bool CanDeductFully => TotalActiveAmount <= MaximumDeductionAllowed;
+}
 }

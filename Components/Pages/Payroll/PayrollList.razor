@@ -4,11 +4,13 @@
 @using RH.Models
 @using RH.Services
 @using System.Text.Json
+@using static PayrollService
 @inject PayrollService PayrollService
 @inject IEmployeeService EmployeeService
 @inject PayrollAdjustmentRuleService AdjustmentService
 @inject AbsenceService AbsenceService
 @inject WorkedDaysOffService WorkedDaysOffService
+@inject IAdvanceService AdvanceService
 @inject IJSRuntime JS
 @attribute [Authorize]
 
@@ -51,6 +53,7 @@ else
                     <th>Salaire de base</th>
                     <th>Primes</th>
                     <th>Retenues</th>
+                    <th>Avances</th>
                     <th>Net à payer</th>
                     <th>Actions</th>
                 </tr>
@@ -80,6 +83,9 @@ else
                         </td>
                         <td class="text-end text-danger">
                             <span class="fw-semibold">-@payroll.Deductions.ToString("C")</span>
+                        </td>
+                        <td class="text-end text-warning">
+                            <span class="fw-semibold">-@payroll.AdvanceDeductionsAmounts.ToString("C")</span>
                         </td>
                         <td class="text-end fw-bold text-primary">@payroll.NetPay.ToString("C")</td>
                         <td class="text-center">
@@ -388,6 +394,104 @@ else
                                 </div>
                             </div>
 
+                            <!-- UPDATED SECTION: Advance Payments with correct property name -->
+                            <div class="col-12">
+                                <div class="advance-section">
+                                    <div class="section-title">
+                                        <i class="bi bi-credit-card-2-front text-warning me-2"></i>
+                                        <span>Avances sur salaire</span>
+                                        <span class="badge bg-warning ms-auto">-@CurrentAdvanceDeductionSummary.ProposedDeduction.ToString("C")</span>
+                                    </div>
+
+                                    @if (CurrentAdvanceDeductionSummary.HasActiveAdvances)
+                                    {
+                                        <div class="advance-summary-card mb-3 p-3 bg-light rounded">
+                                            <div class="row">
+                                                <div class="col-md-3">
+                                                    <strong>Avances actives:</strong><br>
+                                                    <span class="text-info">@CurrentAdvanceDeductionSummary.ActiveAdvances.Count</span>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <strong>Montant total:</strong><br>
+                                                    <span class="text-warning">@CurrentAdvanceDeductionSummary.TotalActiveAmount.ToString("C")</span>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <strong>Déduction max autorisée:</strong><br>
+                                                    <span class="text-success">@CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString("C")</span>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <strong>Déduction proposée:</strong><br>
+                                                    <span class="text-primary fw-bold">@CurrentAdvanceDeductionSummary.ProposedDeduction.ToString("C")</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="advance-details-wrapper">
+                                            <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                                                <table class="table table-bordered table-sm enhanced-table">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th>Date</th>
+                                                            <th>Montant initial</th>
+                                                            <th>Montant restant</th>
+                                                            <th>Motif</th>
+                                                            <th>Statut</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach (var advance in CurrentAdvanceDeductionSummary.ActiveAdvances.OrderBy(a => a.Date))
+                                                        {
+                                                            <tr>
+                                                                <td class="fw-medium">@advance.Date.ToString("dd/MM/yyyy")</td>
+                                                                <td class="text-end">@advance.Amount.ToString("C")</td>
+                                                                <td class="text-end text-warning fw-semibold">@advance.RemainingAmount.ToString("C")</td>
+                                                                <td>@(advance.Reason ?? "Non spécifié")</td>
+                                                                <td>
+                                                                    <span class="badge bg-success">@advance.Status</span>
+                                                                </td>
+                                                            </tr>
+                                                        }
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        @if (!CurrentAdvanceDeductionSummary.CanDeductFully)
+                                        {
+                                            <div class="alert alert-warning mt-3">
+                                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                                <strong>Attention:</strong> Le montant total des avances (@CurrentAdvanceDeductionSummary.TotalActiveAmount.ToString("C"))
+                                                dépasse la déduction maximale autorisée (@CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString("C")).
+                                                Seuls @CurrentAdvanceDeductionSummary.ProposedDeduction.ToString("C") seront déduits ce mois-ci.
+                                            </div>
+                                        }
+
+                                        <div class="enhanced-form-group mt-3">
+                                            <label class="form-label fw-semibold">
+                                                <i class="bi bi-cash-stack me-1"></i>Montant de déduction des avances
+                                            </label>
+                                            <InputNumber TValue="decimal"
+                                                         class="form-control enhanced-input"
+                                                         Value="CurrentPayroll.AdvanceDeductionsAmounts"
+                                                         ValueChanged="OnAdvanceDeductionChanged"
+                                                         ValueExpression="@(() => CurrentPayroll.AdvanceDeductionsAmounts)"
+                                                         max="@CurrentAdvanceDeductionSummary.MaximumDeductionAllowed" />
+                                            <small class="text-muted">
+                                                Maximum autorisé: @CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString("C")
+                                                (50% du salaire net)
+                                            </small>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="empty-state">
+                                            <i class="bi bi-credit-card-2-front text-muted"></i>
+                                            <span class="text-muted">Aucune avance active pour cet employé.</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
                             <!-- Section PRIMES -->
                             <div class="col-md-6">
                                 <div class="bonus-section">
@@ -536,7 +640,6 @@ else
                                 </div>
                             </div>
 
-
                             <!-- Section Résumé -->
                             <div class="col-12">
                                 <div class="summary-section">
@@ -545,23 +648,29 @@ else
                                         <span>Résumé des calculs</span>
                                     </div>
                                     <div class="row g-3">
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
                                             <div class="summary-card">
                                                 <label class="form-label fw-semibold">Total primes</label>
                                                 <InputNumber class="form-control enhanced-input summary-input success" @bind-Value="CurrentPayroll.Bonus" Disabled />
                                             </div>
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
                                             <div class="summary-card">
                                                 <label class="form-label fw-semibold">Total retenues</label>
                                                 <InputNumber class="form-control enhanced-input summary-input danger" @bind-Value="CurrentPayroll.Deductions" Disabled />
                                             </div>
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
+                                            <div class="summary-card">
+                                                <label class="form-label fw-semibold">Avances déduites</label>
+                                                <InputNumber class="form-control enhanced-input summary-input warning" @bind-Value="CurrentPayroll.AdvanceDeductionsAmounts" Disabled />
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
                                             <div class="summary-card">
                                                 <label class="form-label fw-semibold">Net à payer</label>
                                                 <div class="form-control enhanced-input summary-input primary fw-bold">
-                                                    @((CurrentPayroll.BaseSalary + CurrentPayroll.Bonus - CurrentPayroll.Deductions).ToString("C"))
+                                                    @CurrentPayroll.NetPay.ToString("C")
                                                 </div>
                                             </div>
                                         </div>
@@ -692,7 +801,8 @@ else
                                       Bonuses="SelectedBonusRules"
                                       Deductions="SelectedDeductionRules"
                                       Absences="EmployeeAbsences"
-                                      ManualAbsences="CurrentPayroll.ManualAbsenceDays" />
+                                      ManualAbsences="CurrentPayroll.ManualAbsenceDays"
+                                      AdvanceSummary="CurrentAdvanceDeductionSummary" />
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
@@ -739,6 +849,9 @@ else
     private Payroll CurrentPayroll = new();
     public int workDaysPerMonth;
 
+    // Advance payment related properties
+    private AdvanceDeductionSummary CurrentAdvanceDeductionSummary = new();
+
     private DateTime? SelectedStartDate { get; set; }
     private DateTime? SelectedEndDate { get; set; }
 
@@ -752,7 +865,8 @@ else
             Employee = CurrentPayroll.Employee,
             Bonuses = SelectedBonusRules,
             Deductions = SelectedDeductionRules,
-            Absences = EmployeeAbsences
+            Absences = EmployeeAbsences,
+            AdvanceSummary = CurrentAdvanceDeductionSummary
         };
 
         var json = JsonSerializer.Serialize(payload);
@@ -770,6 +884,9 @@ else
         var actualWorkDays = workDays;
 
         CurrentPayroll.DeductionPerAbsenceDay = Math.Round(value / actualWorkDays, 2);
+
+        // Recalculate advance deductions when base salary changes
+        InvokeAsync(async () => await RefreshAdvanceDeductionSummary());
     }
 
     private Task OnManualAbsenceDaysChanged(int value)
@@ -777,6 +894,29 @@ else
         CurrentPayroll.ManualAbsenceDays = value;
         RecalculateBonusesAndDeductions();
         return Task.CompletedTask;
+    }
+
+    // Method to handle advance deduction changes - UPDATED to use correct property
+    private async Task OnAdvanceDeductionChanged(decimal value)
+    {
+        // Ensure the value doesn't exceed the maximum allowed
+        var maxAllowed = CurrentAdvanceDeductionSummary.MaximumDeductionAllowed;
+        CurrentPayroll.AdvanceDeductionsAmounts = Math.Min(value, maxAllowed);
+
+        RecalculateBonusesAndDeductions();
+        StateHasChanged();
+    }
+
+    // Method to refresh advance deduction summary
+    private async Task RefreshAdvanceDeductionSummary()
+    {
+        if (CurrentPayroll.EmployeeId > 0)
+        {
+            var preliminaryNetPay = CurrentPayroll.BaseSalary + CurrentPayroll.Bonus - CurrentPayroll.Deductions;
+            CurrentAdvanceDeductionSummary = await PayrollService.GetAdvanceDeductionSummaryAsync(CurrentPayroll.EmployeeId, preliminaryNetPay);
+            CurrentPayroll.AdvanceDeductionsAmounts = CurrentAdvanceDeductionSummary.ProposedDeduction;
+            StateHasChanged();
+        }
     }
 
     // New method to handle payroll period changes
@@ -1001,8 +1141,11 @@ else
         CurrentPayroll.Deductions = ruleBasedDeductions + absenceDeduction;
         Console.WriteLine($"Total Deductions (Rules + Absences): {CurrentPayroll.Deductions}");
 
-        var netPay = CurrentPayroll.BaseSalary + CurrentPayroll.Bonus - CurrentPayroll.Deductions;
-        Console.WriteLine($"Calculated Net Pay: {netPay}");
+        // Refresh advance deduction summary when other values change
+        InvokeAsync(async () => await RefreshAdvanceDeductionSummary());
+
+        var netPay = CurrentPayroll.NetPay; // This now includes advance deductions automatically
+        Console.WriteLine($"Calculated Net Pay (with advances): {netPay}");
 
         StateHasChanged();
         Console.WriteLine("--- Recalculation Complete, StateHasChanged called ---");
@@ -1039,7 +1182,6 @@ else
         await LoadPayrolls();
     }
 
-
     private async Task LoadPayrolls() => Payrolls = await PayrollService.GetAllAsync();
 
     private async Task AddPayroll()
@@ -1054,6 +1196,7 @@ else
 
         SelectedBonusRules.Clear();
         SelectedDeductionRules.Clear();
+        CurrentAdvanceDeductionSummary = new AdvanceDeductionSummary(); // Reset advance summary
 
         // Auto-apply rules with AutoApplied = true
         SelectedBonusRules = AllAdjustmentRules
@@ -1080,6 +1223,8 @@ else
         bool confirmed = await JS.InvokeAsync<bool>("confirm", "Êtes-vous sûr de vouloir supprimer cette fiche de paie ?");
         if (confirmed)
         {
+            // Reverse advance deductions before deleting payroll
+            await PayrollService.ReverseAdvanceDeductionsAsync(id);
             await PayrollService.DeleteAsync(id);
         }
         await LoadPayrolls();
@@ -1103,7 +1248,8 @@ else
                 AbsenceDays = payroll.AbsenceDays,
                 Employee = payroll.Employee,
                 Transaction = payroll.Transaction,
-                Cash = payroll.Cash
+                Cash = payroll.Cash,
+                AdvanceDeductionsAmounts = payroll.AdvanceDeductionsAmounts // UPDATED property name
             };
 
         var employee = Employees.FirstOrDefault(e => e.Id == payroll.EmployeeId);
@@ -1119,12 +1265,12 @@ else
                 .Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId));
 
             SelectedBonusRules = bonusRules.Select(rule =>
-     {
-         var applied = appliedRules.FirstOrDefault(a => a.RuleId == rule.Id);
-         return applied != null
-         ? new SelectableRule(applied, workDaysPerMonth)
-         : new SelectableRule(rule, workDaysPerMonth, rule.AutoApplied);
-     }).ToList();
+            {
+                var applied = appliedRules.FirstOrDefault(a => a.RuleId == rule.Id);
+                return applied != null
+                ? new SelectableRule(applied, workDaysPerMonth)
+                : new SelectableRule(rule, workDaysPerMonth, rule.AutoApplied);
+            }).ToList();
 
             SelectedDeductionRules = deductionRules.Select(rule =>
             {
@@ -1144,6 +1290,9 @@ else
 
         await LoadPayrollAbsences(CurrentPayroll.Id);
 
+        // Load advance deduction summary for editing
+        await RefreshAdvanceDeductionSummary();
+
         IsPrintModalOpen = false;
         IsModalOpen = true;
     }
@@ -1160,6 +1309,7 @@ else
                     Quantity = r.IsCountable ? r.Quantity : null
                 }).ToList();
         CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workDaysPerMonth, 2);
+
         if (CurrentPayroll.Id == 0)
         {
             await PayrollService.CreateAsync(CurrentPayroll);
@@ -1167,6 +1317,12 @@ else
         else
         {
             await PayrollService.UpdateAsync(CurrentPayroll);
+        }
+
+        // Process advance deductions after saving payroll - UPDATED property name
+        if (CurrentPayroll.AdvanceDeductionsAmounts > 0)
+        {
+            await PayrollService.ProcessAdvanceDeductionsForPayrollAsync(CurrentPayroll);
         }
 
         if (!UseManualAbsences)
@@ -1203,6 +1359,7 @@ else
         SelectedBonusRules.Clear();
         SelectedDeductionRules.Clear();
         CurrentPayroll.BaseSalary = 0;
+        CurrentAdvanceDeductionSummary = new AdvanceDeductionSummary(); // Reset advance summary
 
         var employee = Employees.FirstOrDefault(e => e.Id == employeeId);
         if (employee == null) return;
@@ -1233,10 +1390,12 @@ else
             await LoadAbsenceDates(employeeId, CurrentPayroll.PayrollStartDate.Value, CurrentPayroll.PayrollEndDate.Value);
         }
 
+        // Load advance deduction summary for the selected employee
+        await RefreshAdvanceDeductionSummary();
+
         RecalculateBonusesAndDeductions();
         StateHasChanged();
     }
-
 
     private void OnAbsenceDeductionChanged()
     {
@@ -1318,7 +1477,6 @@ else
         }
     }
 
-
     public class SelectableRule
     {
         public int RuleId { get; set; }
@@ -1373,8 +1531,6 @@ else
                 ? Amount * Quantity
                 : Amount;
         }
-
-
     }
 }
 
@@ -1443,5 +1599,33 @@ else
             margin-bottom: 0.5rem;
             display: block;
         }
+
+    /* Advance payment section styles */
+    .advance-section {
+        background: #fff8e1;
+        border: 1px solid #ffcc02;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .advance-summary-card {
+        border-left: 4px solid #ff9800;
+    }
+
+    .advance-details-wrapper {
+        max-height: 250px;
+        overflow-y: auto;
+    }
+
+    .summary-input.warning {
+        border-color: #ff9800;
+        background-color: #fff3e0;
+    }
+
+    .calculated-amount.warning {
+        color: #ff9800;
+        font-weight: bold;
+    }
 </style>
 

@@ -21,7 +21,8 @@ namespace RH.Data
         public DbSet<WorkedDayOff> WorkedDaysOff { get; set; }
         public DbSet<RecoveryDay> RecoveryDays { get; set; }
         public DbSet<CompanyInfo> CompanyInfos { get; set; }
-
+        public DbSet<Advance> Advances { get; set; }
+        public DbSet<AdvanceDeduction> AdvanceDeductions { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
