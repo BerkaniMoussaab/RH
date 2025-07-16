@@ -6,15 +6,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using static RH.Components.Pages.Payroll.PayrollList;
 
 public class PayrollService : IPayrollService
 {
     private readonly ApplicationDbContext _context;
+    private readonly IAdvanceService _advanceService;
 
-    public PayrollService(ApplicationDbContext context)
+    public PayrollService(ApplicationDbContext context, IAdvanceService advanceService)
     {
         _context = context;
+        _advanceService = advanceService ?? throw new ArgumentNullException(nameof(advanceService));
     }
 
     public async Task<Payroll> GeneratePayrollForEmployee(int employeeId, DateTime payDate)
@@ -68,7 +69,6 @@ public class PayrollService : IPayrollService
             .ToListAsync();
     }
 
-
     public async Task<Payroll?> GetByIdAsync(int id)
     {
         return await _context.Payrolls
@@ -111,9 +111,9 @@ public class PayrollService : IPayrollService
         existing.Transaction = payroll.Transaction;
         existing.PayrollStartDate = payroll.PayrollStartDate;
         existing.PayrollEndDate = payroll.PayrollEndDate;
-        existing.PayrollStartDate = payroll.PayrollStartDate;
-        existing.PayrollEndDate = payroll.PayrollEndDate;
+
         _context.PayrollAppliedRules.RemoveRange(existing.AppliedRules);
+
         foreach (var rule in payroll.AppliedRules)
         {
             existing.AppliedRules.Add(new PayrollAppliedRule
@@ -184,6 +184,7 @@ public class PayrollService : IPayrollService
                 .Where(p => p.Id != excludePayrollId.Value)
                 .ToList();
         }
+
         return !existingPayrolls.Any();
     }
 
@@ -217,44 +218,28 @@ public class PayrollService : IPayrollService
         }
     }
 
-    private readonly IAdvanceService _advanceService;
-
-    // Add this constructor parameter to your existing PayrollService constructor
-    // private readonly IAdvanceService _advanceService;
-
-    /// <summary>
-    /// Calculate advance deductions for a payroll
-    /// </summary>
     public async Task<decimal> CalculateAdvanceDeductionsAsync(int employeeId, decimal preliminaryNetPay)
     {
         try
         {
             var maxDeductionAmount = await _advanceService.CalculateMaximumDeductionAsync(employeeId, preliminaryNetPay);
             var activeAdvances = await _advanceService.GetActiveAdvancesByEmployeeIdAsync(employeeId);
-
             var totalPossibleDeduction = activeAdvances.Sum(a => a.RemainingAmount);
             return Math.Min(totalPossibleDeduction, maxDeductionAmount);
         }
         catch (Exception ex)
         {
-            // Log error
             Console.WriteLine($"Error calculating advance deductions: {ex.Message}");
             return 0;
         }
     }
 
-    /// <summary>
-    /// Process advance deductions when saving a payroll
-    /// </summary>
     public async Task<List<AdvanceDeduction>> ProcessAdvanceDeductionsForPayrollAsync(Payroll payroll)
     {
         try
         {
-            // Updated to use AdvanceDeductionsAmounts instead of AdvanceDeductionAmount
             if (payroll.AdvanceDeductionsAmounts <= 0)
-            {
                 return new List<AdvanceDeduction>();
-            }
 
             var deductions = await _advanceService.ProcessAdvanceDeductionsAsync(
                 payroll.EmployeeId,
@@ -265,43 +250,34 @@ public class PayrollService : IPayrollService
         }
         catch (Exception ex)
         {
-            // Log error
             Console.WriteLine($"Error processing advance deductions: {ex.Message}");
             throw;
         }
     }
 
-    /// <summary>
-    /// Get advance deduction summary for a payroll
-    /// </summary>
     public async Task<AdvanceDeductionSummary> GetAdvanceDeductionSummaryAsync(int employeeId, decimal preliminaryNetPay)
     {
         try
         {
-            var activeAdvances = await _advanceService.GetActiveAdvancesByEmployeeIdAsync(employeeId);
+            var activeAdvances = await _advanceService.GetActiveAdvancesByEmployeeIdAsync(employeeId) ?? new List<Advance>();
             var maxDeductionAmount = await _advanceService.CalculateMaximumDeductionAsync(employeeId, preliminaryNetPay);
+            var totalActiveAmount = activeAdvances.Sum(a => a.RemainingAmount);
 
-            var summary = new AdvanceDeductionSummary
+            return new AdvanceDeductionSummary
             {
                 ActiveAdvances = activeAdvances,
-                TotalActiveAmount = activeAdvances.Sum(a => a.RemainingAmount),
+                TotalActiveAmount = totalActiveAmount,
                 MaximumDeductionAllowed = maxDeductionAmount,
-                ProposedDeduction = Math.Min(activeAdvances.Sum(a => a.RemainingAmount), maxDeductionAmount)
+                ProposedDeduction = Math.Min(totalActiveAmount, maxDeductionAmount)
             };
-
-            return summary;
         }
         catch (Exception ex)
         {
-            // Log error
             Console.WriteLine($"Error getting advance deduction summary: {ex.Message}");
             return new AdvanceDeductionSummary();
         }
     }
 
-    /// <summary>
-    /// Reverse advance deductions (for payroll deletion/modification)
-    /// </summary>
     public async Task ReverseAdvanceDeductionsAsync(int payrollId)
     {
         try
@@ -330,15 +306,11 @@ public class PayrollService : IPayrollService
         }
         catch (Exception ex)
         {
-            // Log error
             Console.WriteLine($"Error reversing advance deductions: {ex.Message}");
             throw;
         }
     }
 
-    /// <summary>
-    /// Get deductions for a specific payroll (used by AdvanceService)
-    /// </summary>
     public List<AdvanceDeduction> GetDeductionsForPayroll(int payrollId)
     {
         return _context.AdvanceDeductions
@@ -346,17 +318,13 @@ public class PayrollService : IPayrollService
             .ToList();
     }
 
-
-/// <summary>
-/// Summary of advance deductions for display purposes
-/// </summary>
-public class AdvanceDeductionSummary
-{
-    public List<Advance> ActiveAdvances { get; set; } = new List<Advance>();
-    public decimal TotalActiveAmount { get; set; }
-    public decimal MaximumDeductionAllowed { get; set; }
-    public decimal ProposedDeduction { get; set; }
-    public bool HasActiveAdvances => ActiveAdvances.Any();
-    public bool CanDeductFully => TotalActiveAmount <= MaximumDeductionAllowed;
-}
+    public class AdvanceDeductionSummary
+    {
+        public List<Advance> ActiveAdvances { get; set; } = new();
+        public decimal TotalActiveAmount { get; set; }
+        public decimal MaximumDeductionAllowed { get; set; }
+        public decimal ProposedDeduction { get; set; }
+        public bool HasActiveAdvances => ActiveAdvances.Any();
+        public bool CanDeductFully => TotalActiveAmount <= MaximumDeductionAllowed;
+    }
 }

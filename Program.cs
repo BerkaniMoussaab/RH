@@ -70,13 +70,16 @@ builder.Services.AddScoped<JobTitleService>();
 builder.Services.AddScoped<IPayrollAdjustmentRuleService, PayrollAdjustmentRuleService>();
 builder.Services.AddScoped<ILeavePolicyService, LeavePolicyService>();
 builder.Services.AddScoped<ILeaveRequestService, LeaveRequestService>();
-builder.Services.AddScoped<PayrollService>();
+
 builder.Services.AddScoped<EmployeeService>();
-builder.Services.AddScoped<IPayrollService , PayrollService>();
+
 builder.Services.AddScoped<AbsenceService>();
 builder.Services.AddScoped<RecoveryDayService>();
 builder.Services.AddScoped<WorkedDaysOffService>();
 builder.Services.AddScoped<CompanyInfoService>();
+builder.Services.AddScoped<IPayrollService, PayrollService>();
+builder.Services.AddScoped<IAdvanceService, AdvanceService>();
+builder.Services.AddScoped<PayrollService>();
 
 builder.Services.AddAntiforgery(options =>
 {

@@ -1,4 +1,6 @@
-﻿namespace RH.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace RH.Models
 {
     public class Advance
     {
@@ -8,7 +10,10 @@
         public decimal Amount { get; set; }
         public DateTime Date { get; set; }
         public decimal RemainingAmount { get; set; }
-        public string Reason { get; set; }
+        [Required(ErrorMessage = "La raison de l'avance est obligatoire.")]
+        [MaxLength(500, ErrorMessage = "La raison ne peut pas dépasser 500 caractères.")]
+        public string Reason { get; set; } = string.Empty;
+        
         public AdvanceStatus Status { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? CompletedAt { get; set; }

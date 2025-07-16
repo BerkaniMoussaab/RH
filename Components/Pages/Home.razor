@@ -1,5 +1,8 @@
 ﻿@page "/"
 @using Microsoft.AspNetCore.Authorization
+@using RH.Components.Pages.Advance
+@using RH.Components.Pages.AbsenceRecords
+@using RH.Components.Pages.PayrollAdjustments
 @using RH.Models
 @using RH.Services
 @inject IEmployeeService EmployeeService
@@ -9,8 +12,6 @@
 @inject IJobTitleService JobTitleService
 @inject NavigationManager Navigation
 @attribute [Authorize]
-@using RH.Components.Pages.AbsenceRecords
-@using RH.Components.Pages.PayrollAdjustments
 
 <PageTitle>Dashboard</PageTitle>
 
@@ -60,8 +61,16 @@
         <button class="btn btn-outline-primary" @onclick="() => ShowAddAbsenceModal = true">
             <i class="bi bi-plus-circle me-1"></i>Ajouter une absence
         </button>
+        <button class="btn btn-outline-warning" @onclick="() => showModal = true">
+            <i class="bi bi-cash me-1"></i>Ajouter une avance
+        </button>
     </div>
 </div>
+
+<AdvanceModal IsVisible="showModal"
+              OnClose="CloseModal"
+              OnAdvanceCreated="OnAdvanceCreated"
+              PreselectedEmployeeId="employeeId" />
 
 @if (ShowAddAbsenceModal)
 {
@@ -89,11 +98,13 @@
     private int PayrollsCount;
     private int AbsencesCount;
 
-    private bool ShowAddAbsenceModal;
-
-    // Payroll Modal State
+    private bool ShowAddAbsenceModal = false;
     private bool ShowPayrollModal = false;
     private bool IsEditPayrollMode = false;
+    private bool showModal = false; // Added for AdvanceModal
+
+    private int employeeId = 0; // Optional: used to preselect employee
+
     private PayrollAdjustmentRule NewPayrollAdjustment = new() { Type = AdjustmentType.Bonus };
     private List<int> SelectedPayrollJobTitleIds = new();
 
@@ -103,7 +114,7 @@
         JobTitlesCount = await EmployeeService.GetJobTitleCountAsync();
         PayrollsCount = await PayrollService.GetPayrollCountAsync();
         AbsencesCount = await AbsenceService.GetTotalAbsenceCountAsync();
-        AllJobTitles = await JobTitleService.GetAllAsync(); // Load job titles for modal
+        AllJobTitles = await JobTitleService.GetAllAsync();
     }
 
     private async Task ReloadAbsenceCount()
@@ -126,11 +137,8 @@
 
     private async Task HandlePayrollSave(PayrollAdjustmentRule adjustment)
     {
-        // Save to database
-        await RuleService.AddAsync(adjustment); // You must implement this method
+        await RuleService.AddAsync(adjustment);
         ShowPayrollModal = false;
-
-        // Optionally refresh data
         PayrollsCount = await PayrollService.GetPayrollCountAsync();
         StateHasChanged();
     }
@@ -139,5 +147,16 @@
     {
         ShowPayrollModal = false;
         return Task.CompletedTask;
+    }
+
+    private void CloseModal()
+    {
+        showModal = false;
+    }
+
+    private void OnAdvanceCreated()
+    {
+        showModal = false;
+        // Optionally refresh advances
     }
 }

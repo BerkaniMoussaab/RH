@@ -1,0 +1,543 @@
+﻿@inject EmployeeService EmployeeService
+@inject IAdvanceService AdvanceService
+@inject IJSRuntime JSRuntime
+@using RH.Models
+@using RH.Services
+
+<!-- Add Advance Modal -->
+<div class="modal fade @(IsVisible ? "show" : "")" style="display: @(IsVisible ? "block" : "none")" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-hand-holding-usd me-2"></i>
+                    Nouvelle Avance sur Salaire
+                </h5>
+                <button type="button" class="btn-close btn-close-white" @onclick="CloseModal"></button>
+            </div>
+            
+            <div class="modal-body">
+                @if (isLoading)
+                {
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Chargement des employés...</p>
+                    </div>
+                }
+                else
+                {
+                    <EditForm Model="newAdvance" OnValidSubmit="HandleValidSubmit">
+                        <DataAnnotationsValidator />
+
+                        <!-- Employee Selection -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-user text-primary me-2"></i>
+                                Employé <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select" @bind="BoundEmployeeId">
+
+
+                                <option value="0">-- Sélectionner un employé --</option>
+                                @foreach (var employee in employees)
+                                {
+                                    <option value="@employee.Id">
+                                        @employee.FullName @(!string.IsNullOrEmpty(employee.JobTitle?.Title) ? $"- {employee.JobTitle.Title}" : "")
+                                    </option>
+                                }
+                            </select>
+                            <ValidationMessage For="@(() => newAdvance.EmployeeId)" class="text-danger small" />
+                        </div>
+
+                        <!-- Employee Info Display -->
+                        @if (selectedEmployee != null)
+                        {
+                            <div class="alert alert-info mb-3">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <strong><i class="fas fa-user me-1"></i> @selectedEmployee.FullName</strong><br>
+                                        <small class="text-muted">
+                                            @(selectedEmployee.JobTitle?.Title ?? "Poste non spécifié") • ID: @selectedEmployee.Id
+                                        </small>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        @if (existingAdvances.Any())
+                                        {
+                                            <span class="badge bg-warning text-dark">
+                                                @existingAdvances.Count avance(s) active(s)
+                                            </span><br>
+                                            <small class="text-muted">Total: @totalActiveAmount.ToString("C")</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">Aucune avance active</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Amount and Date Row -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-euro-sign text-success me-2"></i>
+                                    Montant <span class="text-danger">*</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">€</span>
+                                    <input type="number" 
+                                           step="0.01" 
+                                           min="0.01" 
+                                           max="10000"
+                                           class="form-control" 
+                                           @bind="newAdvance.Amount" 
+                                           placeholder="0.00" />
+                                </div>
+                                <ValidationMessage For="@(() => newAdvance.Amount)" class="text-danger small" />
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Entre 0.01€ et 10,000€
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">
+                                    <i class="fas fa-calendar text-info me-2"></i>
+                                    Date <span class="text-danger">*</span>
+                                </label>
+                                <input type="date" 
+                                       class="form-control" 
+                                       @bind="newAdvance.Date" 
+                                       max="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                                <ValidationMessage For="@(() => newAdvance.Date)" class="text-danger small" />
+                                <div class="form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Ne peut pas être dans le futur
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reason -->
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                <i class="fas fa-comment-alt text-warning me-2"></i>
+                                Raison de l'avance <span class="text-danger">*</span>
+                            </label>
+                            <textarea class="form-control"
+                                      @bind="newAdvance.Reason"
+                                      rows="3"
+                                      maxlength="500"
+                                      placeholder="Décrivez la raison de cette avance..."></textarea>
+                            <ValidationMessage For="@(() => newAdvance.Reason)" class="text-danger small" />
+                            <div class="form-text">
+                                <i class="fas fa-info-circle me-1"></i>
+                                @(newAdvance.Reason?.Length ?? 0)/500 caractères
+                            </div>
+                        </div>
+
+
+                        <!-- Validation Errors -->
+                        @if (validationErrors.Any())
+                        {
+                            <div class="alert alert-danger mb-3">
+                                <h6 class="alert-heading">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    Erreurs de validation
+                                </h6>
+                                <ul class="mb-0">
+                                    @foreach (var error in validationErrors)
+                                    {
+                                        <li>@error</li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+
+                        <!-- Summary Preview -->
+                        @if (newAdvance.EmployeeId > 0 && newAdvance.Amount > 0)
+                        {
+                            <div class="card bg-light mb-3">
+                                <div class="card-body">
+                                    <h6 class="card-title">
+                                        <i class="fas fa-clipboard-list text-primary me-2"></i>
+                                        Aperçu de l'avance
+                                    </h6>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <strong>Employé:</strong> @selectedEmployee?.FullName<br>
+                                            <strong>Montant:</strong> @newAdvance.Amount.ToString("C")
+                                        </div>
+                                        <div class="col-6">
+                                            <strong>Date:</strong> @newAdvance.Date.ToString("dd/MM/yyyy")<br>
+                                            <strong>Statut:</strong> <span class="badge bg-success">Actif</span>
+                                        </div>
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(newAdvance.Reason))
+                                    {
+                                        <div class="mt-2">
+                                            <strong>Raison:</strong> @newAdvance.Reason
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </EditForm>
+                }
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseModal">
+                    <i class="fas fa-times me-2"></i>
+                    Annuler
+                </button>
+                <button type="button" class="btn btn-outline-primary" @onclick="ResetForm">
+                    <i class="fas fa-undo me-2"></i>
+                    Réinitialiser
+                </button>
+                <button type="button" 
+                        class="btn btn-primary" 
+                        @onclick="HandleValidSubmit"
+                        disabled="@(isSubmitting || !IsFormValid())">
+                    @if (isSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        <span>Création...</span>
+                    }
+                    else
+                    {
+                        <i class="fas fa-save me-2"></i>
+                        <span>Créer l'avance</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (IsVisible)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<Advance> OnAdvanceCreated { get; set; }
+    [Parameter] public int? PreselectedEmployeeId { get; set; }
+
+    private List<Employee> employees = new();
+    private List<Advance> existingAdvances = new();
+    private Advance newAdvance = new();
+    private Employee? selectedEmployee;
+    
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+    private List<string> validationErrors = new();
+    private decimal totalActiveAmount = 0;
+    private int _boundEmployeeId;
+    private int BoundEmployeeId
+    {
+        get => _boundEmployeeId;
+        set
+        {
+            if (_boundEmployeeId != value)
+            {
+                _boundEmployeeId = value;
+                newAdvance.EmployeeId = value;
+                _ = OnEmployeeChanged(value); // Fire-and-forget async call
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEmployees();
+        InitializeNewAdvance();
+        isLoading = false;
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsVisible && PreselectedEmployeeId.HasValue && PreselectedEmployeeId.Value > 0)
+        {
+            newAdvance.EmployeeId = PreselectedEmployeeId.Value;
+            selectedEmployee = employees.FirstOrDefault(e => e.Id == PreselectedEmployeeId.Value);
+            if (selectedEmployee != null)
+            {
+                await LoadExistingAdvances(PreselectedEmployeeId.Value);
+            }
+        }
+    }
+
+    private async Task LoadEmployees()
+    {
+        try
+        {
+            employees = await EmployeeService.GetAllAsync();
+        }
+        catch (Exception ex)
+        {
+            validationErrors.Add($"Erreur lors du chargement des employés: {ex.Message}");
+        }
+    }
+
+    private void InitializeNewAdvance()
+    {
+        newAdvance = new Advance
+        {
+            Date = DateTime.Today,
+            Status = AdvanceStatus.Active,
+            CreatedAt = DateTime.UtcNow,
+            EmployeeId = PreselectedEmployeeId ?? 0
+        };
+        ClearMessages();
+    }
+
+    private async Task OnEmployeeChanged(int employeeId)
+    {
+        if (employeeId > 0)
+        {
+            selectedEmployee = employees.FirstOrDefault(emp => emp.Id == employeeId);
+            if (selectedEmployee != null)
+            {
+                await LoadExistingAdvances(employeeId);
+            }
+        }
+        else
+        {
+            selectedEmployee = null;
+            existingAdvances.Clear();
+            totalActiveAmount = 0;
+        }
+
+        ClearMessages();
+        StateHasChanged();
+    }
+
+
+    private async Task LoadExistingAdvances(int employeeId)
+    {
+        try
+        {
+            existingAdvances = await AdvanceService.GetActiveAdvancesByEmployeeIdAsync(employeeId);
+            totalActiveAmount = existingAdvances.Sum(a => a.RemainingAmount);
+        }
+        catch (Exception ex)
+        {
+            validationErrors.Add($"Erreur lors du chargement des avances existantes: {ex.Message}");
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (!IsFormValid())
+        {
+            return;
+        }
+
+        isSubmitting = true;
+        ClearMessages();
+
+        try
+        {
+            // Validate business rules
+            if (!ValidateBusinessRules())
+            {
+                return;
+            }
+
+            // Set additional properties
+            newAdvance.RemainingAmount = newAdvance.Amount;
+            newAdvance.Status = AdvanceStatus.Active;
+            newAdvance.CreatedAt = DateTime.UtcNow;
+
+            // Create the advance
+            var createdAdvance = await AdvanceService.CreateAsync(newAdvance);
+            
+            // Notify parent component
+            await OnAdvanceCreated.InvokeAsync(createdAdvance);
+            
+            // Show success and close modal
+            await JSRuntime.InvokeVoidAsync("alert", $"Avance de {createdAdvance.Amount:C} créée avec succès pour {selectedEmployee?.FullName}!");
+            
+            await CloseModal();
+        }
+        catch (Exception ex)
+        {
+            validationErrors.Add($"Erreur lors de la création de l'avance: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+            StateHasChanged();
+        }
+    }
+
+    private bool ValidateBusinessRules()
+    {
+        validationErrors.Clear();
+
+        // Check if employee is selected
+        if (newAdvance.EmployeeId <= 0)
+        {
+            validationErrors.Add("Veuillez sélectionner un employé.");
+        }
+
+        // Check amount
+        if (newAdvance.Amount <= 0)
+        {
+            validationErrors.Add("Le montant doit être supérieur à 0.");
+        }
+
+        if (newAdvance.Amount > 10000)
+        {
+            validationErrors.Add("Le montant ne peut pas dépasser 10,000€.");
+        }
+
+        // Check date
+        if (newAdvance.Date > DateTime.Today)
+        {
+            validationErrors.Add("La date ne peut pas être dans le futur.");
+        }
+
+        if (newAdvance.Date < DateTime.Today.AddYears(-1))
+        {
+            validationErrors.Add("La date ne peut pas être antérieure à un an.");
+        }
+
+        // Check reason length
+        if (!string.IsNullOrEmpty(newAdvance.Reason) && newAdvance.Reason.Length > 500)
+        {
+            validationErrors.Add("La raison ne peut pas dépasser 500 caractères.");
+        }
+
+        return !validationErrors.Any();
+    }
+
+    private bool IsFormValid()
+    {
+        return newAdvance.EmployeeId > 0 && 
+               newAdvance.Amount > 0 && 
+               newAdvance.Amount <= 10000 &&
+               newAdvance.Date <= DateTime.Today &&
+               newAdvance.Date >= DateTime.Today.AddYears(-1) &&
+               (string.IsNullOrEmpty(newAdvance.Reason) || newAdvance.Reason.Length <= 500);
+    }
+
+    private void ResetForm()
+    {
+        InitializeNewAdvance();
+        selectedEmployee = null;
+        existingAdvances.Clear();
+        totalActiveAmount = 0;
+        StateHasChanged();
+    }
+
+    private void ClearMessages()
+    {
+        validationErrors.Clear();
+    }
+
+    private async Task CloseModal()
+    {
+        ResetForm();
+        await OnClose.InvokeAsync();
+    }
+}
+
+<style>
+    .modal.show {
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-backdrop {
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .form-control, .form-select {
+        border-radius: 6px;
+        border: 1px solid #ced4da;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    .input-group-text {
+        background-color: #f8f9fa;
+        border-color: #ced4da;
+        color: #6c757d;
+        font-weight: 600;
+    }
+
+    .btn {
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.15s ease-in-out;
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        border: none;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+        transform: translateY(-1px);
+    }
+
+    .alert {
+        border-radius: 6px;
+        border: none;
+    }
+
+    .alert-info {
+        background-color: #e7f3ff;
+        color: #0c5460;
+        border-left: 4px solid #17a2b8;
+    }
+
+    .alert-danger {
+        background-color: #ffe6e6;
+        color: #721c24;
+        border-left: 4px solid #dc3545;
+    }
+
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.5em 0.75em;
+    }
+
+    .spinner-border-sm {
+        width: 1rem;
+        height: 1rem;
+    }
+
+    .form-text {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+
+    .card {
+        border: none;
+        border-radius: 8px;
+    }
+
+    .bg-light {
+        background-color: #f8f9fa !important;
+    }
+
+    .fw-bold {
+        font-weight: bold !important;
+    }
+
+    .me-1 { margin-right: 0.25rem !important; }
+    .me-2 { margin-right: 0.5rem !important; }
+    .mb-0 { margin-bottom: 0 !important; }
+    .mt-2 { margin-top: 0.5rem !important; }
+</style>
+

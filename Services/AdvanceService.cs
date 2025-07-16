@@ -148,60 +148,63 @@ namespace RH.Services
 
         public async Task<List<AdvanceDeduction>> ProcessAdvanceDeductionsAsync(int employeeId, int payrollId, decimal maxDeductionAmount)
         {
-            var activeAdvances = await GetActiveAdvancesByEmployeeIdAsync(employeeId);
-            var deductions = new List<AdvanceDeduction>();
-            var remainingDeductionAmount = maxDeductionAmount;
+            var executionStrategy = _context.Database.CreateExecutionStrategy();
 
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            try
+            return await executionStrategy.ExecuteAsync(async () =>
             {
-                foreach (var advance in activeAdvances)
+                using var transaction = await _context.Database.BeginTransactionAsync();
+
+                try
                 {
-                    if (remainingDeductionAmount <= 0) break;
+                    var activeAdvances = await GetActiveAdvancesByEmployeeIdAsync(employeeId);
+                    var deductions = new List<AdvanceDeduction>();
+                    var remainingDeductionAmount = maxDeductionAmount;
 
-                    var deductionAmount = Math.Min(advance.RemainingAmount, remainingDeductionAmount);
-
-                    if (deductionAmount > 0)
+                    foreach (var advance in activeAdvances)
                     {
-                        // Create deduction record
-                        var deduction = new AdvanceDeduction
+                        if (remainingDeductionAmount <= 0) break;
+
+                        var deductionAmount = Math.Min(advance.RemainingAmount, remainingDeductionAmount);
+
+                        if (deductionAmount > 0)
                         {
-                            AdvanceId = advance.Id,
-                            PayrollId = payrollId,
-                            DeductedAmount = deductionAmount,
-                            DeductionDate = DateTime.UtcNow,
-                         
-                        };
+                            var deduction = new AdvanceDeduction
+                            {
+                                AdvanceId = advance.Id,
+                                PayrollId = payrollId,
+                                DeductedAmount = deductionAmount,
+                                DeductionDate = DateTime.UtcNow,
+                            };
 
-                        _context.AdvanceDeductions.Add(deduction);
-                        deductions.Add(deduction);
+                            _context.AdvanceDeductions.Add(deduction);
+                            deductions.Add(deduction);
 
-                        // Update advance remaining amount
-                        advance.RemainingAmount -= deductionAmount;
+                            advance.RemainingAmount -= deductionAmount;
 
-                        // Mark as completed if fully deducted
-                        if (advance.RemainingAmount <= 0)
-                        {
-                            advance.Status = AdvanceStatus.Completed;
-                            advance.CompletedAt = DateTime.UtcNow;
+                            if (advance.RemainingAmount <= 0)
+                            {
+                                advance.Status = AdvanceStatus.Completed;
+                                advance.CompletedAt = DateTime.UtcNow;
+                            }
+
+                            _context.Entry(advance).State = EntityState.Modified;
+                            remainingDeductionAmount -= deductionAmount;
                         }
-
-                        _context.Entry(advance).State = EntityState.Modified;
-                        remainingDeductionAmount -= deductionAmount;
                     }
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    return deductions;
                 }
-
-                await _context.SaveChangesAsync();
-                await transaction.CommitAsync();
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
-
-            return deductions;
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
         }
+
     }
 }
 

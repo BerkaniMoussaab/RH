@@ -63,13 +63,13 @@ namespace RH.Migrations
                         column: x => x.AdvanceId,
                         principalTable: "Advances",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Cascade); // Keep cascade here
                     table.ForeignKey(
                         name: "FK_AdvanceDeductions_Payrolls_PayrollId",
                         column: x => x.PayrollId,
                         principalTable: "Payrolls",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict); // ✅ Fixed here
                 });
 
             migrationBuilder.CreateIndex(
