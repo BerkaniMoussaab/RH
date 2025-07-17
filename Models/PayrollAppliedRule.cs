@@ -3,8 +3,9 @@
     public class PayrollAppliedRule
     {
         public int Id { get; set; }
-
-        public int PayrollId { get; set; }
+        public int? EmployeeId { get; set; }
+        public Employee Employee { get; set; }
+        public int? PayrollId { get; set; }
         public Payroll Payroll { get; set; }
 
         public int RuleId { get; set; }
@@ -18,6 +19,7 @@
 
         // ✅ Optional: Comment (e.g., reason or explanation)
         public string? Notes { get; set; }
+        public DateTime? Date { get; set; }
 
     }
 }

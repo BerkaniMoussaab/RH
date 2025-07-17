@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using RH.Data;
 using RH.Models;
 using RH.Services;
@@ -317,6 +318,26 @@ public class PayrollService : IPayrollService
             .Where(d => d.PayrollId == payrollId)
             .ToList();
     }
+    public async Task ApplyRulesAsync( int employeeId, List<PayrollAppliedRule> rules)
+    {
+        using var context = _context;
+
+        
+
+        var appliedEntities = rules.Select(r => new PayrollAppliedRule
+        {
+            EmployeeId = employeeId,
+            RuleId = r.RuleId,
+            Amount = r.Amount,
+            Quantity = r.Quantity,
+            Notes = r.Notes
+           
+        });
+
+        context.PayrollAppliedRules.AddRange(appliedEntities);
+        await context.SaveChangesAsync();
+    }
+
 
     public class AdvanceDeductionSummary
     {

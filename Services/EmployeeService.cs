@@ -3,6 +3,7 @@
     using System.Collections.Generic;
     using System.Threading.Tasks;
     using Microsoft.EntityFrameworkCore;
+    using Microsoft.EntityFrameworkCore.Internal;
     using RH.Data;
     using RH.Models;
 
@@ -21,13 +22,18 @@
             return await context.Employees.Include(j => j.JobTitle).ToListAsync();
         }
 
-        public async Task<Employee> GetByIdAsync(int id)
-        {
-            using var context = _contextFactory.CreateDbContext();
-            return await context.Employees.FindAsync(id);
-        }
+       
 
-        public async Task AddAsync(Employee employee)
+        public async Task<Employee> GetByIdAsync(int id)
+            {
+                using var context = _contextFactory.CreateDbContext();
+                return await context.Employees
+                    .Include(e => e.JobTitle) // Include the related JobTitle
+                    .FirstOrDefaultAsync(e => e.Id == id); // Use FirstOrDefaultAsync instead of FindAsync
+            }
+
+
+    public async Task AddAsync(Employee employee)
         {
             using var context = _contextFactory.CreateDbContext();
             context.Employees.Add(employee);

@@ -13,6 +13,7 @@ namespace RH.Services
         Task<Payroll> UpdateAsync(Payroll payroll);
         Task<Payroll?> GetLastPayrollForEmployeeAsync(int employeeId);
         Task<int> GetPayrollCountAsync();
+        Task ApplyRulesAsync(int payrollId, List<PayrollAppliedRule> rules);
     }
 
 }

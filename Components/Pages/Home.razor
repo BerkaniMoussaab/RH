@@ -64,8 +64,17 @@
         <button class="btn btn-outline-warning" @onclick="() => showModal = true">
             <i class="bi bi-cash me-1"></i>Ajouter une avance
         </button>
+       
+        <button class="btn btn-primary" @onclick="() => showApplyModal = true">Appliquer Règle</button>
     </div>
 </div>
+<ApplyRulesModal IsVisible="@showApplyModal" OnClose="@(() => showApplyModal = false)" />
+
+
+
+@code {
+    private bool showApplyModal = false;
+}
 
 <AdvanceModal IsVisible="showModal"
               OnClose="CloseModal"
@@ -91,6 +100,10 @@
 }
 
 @code {
+    
+
+   
+
     private List<Employee> Employees = new();
     private List<JobTitle> AllJobTitles = new();
 

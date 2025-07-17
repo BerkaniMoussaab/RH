@@ -852,6 +852,8 @@ else
     private List<PayrollAdjustmentRule> AllAdjustmentRules = new();
     private List<SelectableRule> SelectedBonusRules = new();
     private List<SelectableRule> SelectedDeductionRules = new();
+    private List<SelectableRule> PreSelectedBonusRules = new();
+    private List<SelectableRule> PreSelectedDeductionRules = new();
     private Payroll CurrentPayroll = new();
     public int workDaysPerMonth;
 
@@ -1430,7 +1432,7 @@ else
                 .Select(r => new SelectableRule(r, workDaysPerMonth, r.AutoApplied)) // Modified
                 .ToList();
         }
-
+       
         var lastPayroll = await PayrollService.GetLastPayrollForEmployeeAsync(employeeId);
         CurrentPayroll.BaseSalary = lastPayroll?.BaseSalary ?? 0;
 
