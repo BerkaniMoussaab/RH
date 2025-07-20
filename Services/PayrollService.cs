@@ -1,383 +1,234 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using RH.Data;
 using RH.Models;
-using RH.Services;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-public class PayrollService : IPayrollService
+namespace RH.Services
 {
-    private readonly ApplicationDbContext _context;
-    private readonly IAdvanceService _advanceService;
-
-    public PayrollService(ApplicationDbContext context, IAdvanceService advanceService)
+    public class PayrollService
     {
-        _context = context;
-        _advanceService = advanceService ?? throw new ArgumentNullException(nameof(advanceService));
-    }
+        private readonly ApplicationDbContext _context;
+        private readonly IAdvanceService _advanceService;
 
-    public async Task<Payroll> GeneratePayrollForEmployee(int employeeId, DateTime payDate)
-    {
-        var employee = await _context.Employees
-            .Include(e => e.JobTitle)
-            .FirstOrDefaultAsync(e => e.Id == employeeId);
-
-        if (employee == null)
-            throw new Exception("Employee not found");
-
-        var rules = await _context.PayrollAdjustmentRules
-            .Where(r => r.JobTitles.Any(j => j.Id == employee.JobTitleId))
-            .ToListAsync();
-
-        decimal bonus = 0, deduction = 0;
-
-        foreach (var rule in rules)
+        public PayrollService(ApplicationDbContext context, IAdvanceService advanceService)
         {
-            var value = rule.IsPercentage
-                ? employee.MonthlySalary * (rule.Amount / 100)
-                : rule.Amount;
-
-            if (rule.Type == AdjustmentType.Bonus)
-                bonus += value;
-            else
-                deduction += value;
+            _context = context;
+            _advanceService = advanceService;
         }
 
-        var payroll = new Payroll
+        public async Task<List<Payroll>> GetAllAsync(DateTime? startDate = null, DateTime? endDate = null)
         {
-            EmployeeId = employeeId,
-            PayDate = payDate,
-            BaseSalary = employee.MonthlySalary,
-            Bonus = bonus,
-            Deductions = deduction
-        };
+            var query = _context.Payrolls
+                .Include(p => p.Employee)
+                    .ThenInclude(e => e.JobTitle)
+                .Include(p => p.AppliedRules)
+                    .ThenInclude(ar => ar.Rule)
+                .AsQueryable();
 
-        _context.Payrolls.Add(payroll);
-        await _context.SaveChangesAsync();
-        return payroll;
-    }
-
-    public async Task<List<Payroll>> GetAllAsync(DateTime? startDate, DateTime? endDate)
-    {
-        var query = _context.Payrolls
-            .Include(p => p.Employee)
-            .ThenInclude(e => e.JobTitle)
-            .Include(p => p.AppliedRules)
-            .ThenInclude(ar => ar.Rule)
-            .AsQueryable();
-
-        if (startDate.HasValue)
-            query = query.Where(p => p.PayDate >= startDate.Value);
-
-        if (endDate.HasValue)
-            query = query.Where(p => p.PayDate <= endDate.Value.AddDays(1));
-
-        return await query.OrderByDescending(d=>d.PayDate).ToListAsync();
-    }
-
-
-
-    public async Task<Payroll?> GetByIdAsync(int id)
-    {
-        return await _context.Payrolls
-            .Include(p => p.AppliedRules)
-                .ThenInclude(ar => ar.Rule)
-            .FirstOrDefaultAsync(p => p.Id == id);
-    }
-
-    // CORRIGÉ : Utilisation directe de _context
-    public async Task CreateAsync(Payroll payroll)
-    {
-        var freshPayroll = new Payroll
-        {
-            EmployeeId = payroll.EmployeeId,
-            BaseSalary = payroll.BaseSalary,
-            DeductionPerAbsenceDay = payroll.DeductionPerAbsenceDay,
-            AdvanceDeductionsAmounts = payroll.AdvanceDeductionsAmounts,
-            Bonus = payroll.Bonus,
-            Deductions = payroll.Deductions,
-            Cash = payroll.Cash,
-            Transaction = payroll.Transaction,
-            PayDate = DateTime.Now,
-            
-            AbsenceDays = payroll.AbsenceDays,
-            AbsenceDeduction = payroll.AbsenceDeduction,
-            ManualAbsenceDays = payroll.ManualAbsenceDays,
-           TransactionIsManual = payroll.TransactionIsManual,
-           PayrollEndDate = payroll.PayrollEndDate,
-           PayrollStartDate = payroll.PayrollStartDate,
-           AppliedRules = payroll.AppliedRules
-
-
-                .Select(r => new PayrollAppliedRule
-                {
-                    RuleId = r.RuleId,
-                    Amount = r.Amount,
-                    Quantity = r.Quantity,
-                    EmployeeId = r.EmployeeId,
-                    PayrollId = r.PayrollId
-                }).ToList()
-        };
-
-        _context.Payrolls.Add(freshPayroll);
-        await _context.SaveChangesAsync();
-    }
-
-    public async Task<Payroll> UpdateAsync(Payroll payroll)
-    {
-        var existing = await _context.Payrolls
-            .Include(p => p.AppliedRules)
-            .FirstOrDefaultAsync(p => p.Id == payroll.Id);
-
-        if (existing == null)
-            throw new Exception("Payroll not found");
-
-        existing.EmployeeId = payroll.EmployeeId;
-        existing.PayDate = payroll.PayDate;
-        existing.BaseSalary = payroll.BaseSalary;
-        existing.Bonus = payroll.Bonus;
-        existing.Deductions = payroll.Deductions;
-        existing.AbsenceDays = payroll.AbsenceDays;
-        existing.AbsenceDeduction = payroll.AbsenceDeduction;
-        existing.ManualAbsenceDays = payroll.ManualAbsenceDays;
-        existing.DeductionPerAbsenceDay = payroll.DeductionPerAbsenceDay;
-        existing.Cash = payroll.Cash;
-        existing.Transaction = payroll.Transaction;
-        existing.PayrollStartDate = payroll.PayrollStartDate;
-        existing.PayrollEndDate = payroll.PayrollEndDate;
-
-        _context.PayrollAppliedRules.RemoveRange(existing.AppliedRules);
-
-        foreach (var rule in payroll.AppliedRules)
-        {
-            existing.AppliedRules.Add(new PayrollAppliedRule
+            if (startDate.HasValue)
             {
-                RuleId = rule.RuleId,
-                Amount = rule.Amount,
-                Quantity = rule.Quantity
-            });
+                query = query.Where(p => p.PayDate >= startDate.Value);
+            }
+
+            if (endDate.HasValue)
+            {
+                query = query.Where(p => p.PayDate <= endDate.Value);
+            }
+
+            return await query.OrderByDescending(p => p.PayDate).ToListAsync();
         }
 
-        await _context.SaveChangesAsync();
-        return existing;
-    }
-
-    public async Task DeleteAsync(int id)
-    {
-        var payroll = await _context.Payrolls.FindAsync(id);
-        if (payroll != null)
+        public async Task<Payroll> GetByIdAsync(int id)
         {
-            _context.Payrolls.Remove(payroll);
+            return await _context.Payrolls
+                .Include(p => p.Employee)
+                    .ThenInclude(e => e.JobTitle)
+                .Include(p => p.AppliedRules)
+                    .ThenInclude(ar => ar.Rule)
+                .FirstOrDefaultAsync(p => p.Id == id);
+        }
+
+        public async Task<Payroll> CreateAsync(Payroll payroll)
+        {
+            // Ensure that AppliedRules are correctly linked to the new payroll
+            foreach (var rule in payroll.AppliedRules)
+            {
+                rule.PayrollId = payroll.Id; // This will be 0 for new payrolls, will be updated by EF Core
+                _context.Entry(rule).State = EntityState.Added;
+            }
+
+            _context.Payrolls.Add(payroll);
             await _context.SaveChangesAsync();
-        }
-    }
 
-    public async Task<Payroll?> GetLastPayrollForEmployeeAsync(int employeeId)
-    {
-        return await _context.Payrolls
-            .Where(p => p.EmployeeId == employeeId)
-            .OrderByDescending(p => p.PayDate)
-            .FirstOrDefaultAsync();
-    }
-
-    public async Task<int> GetPayrollCountAsync()
-    {
-        return await _context.Payrolls.CountAsync();
-    }
-
-    
-
-    // CORRIGÉ : Utilisation directe de _context
-    public async Task<List<PayrollAppliedRule>> GetAppliedRulesForEmployeeAsync(int employeeId)
-    {
-        return await _context.PayrollAppliedRules
-            .Include(r => r.Rule)
-            .Where(r => r.EmployeeId == employeeId && r.PayrollId == null)
-            .ToListAsync();
-    }
-
-    public async Task<List<Payroll>> GetEmployeePayrollsByDateRangeAsync(int employeeId, DateTime startDate, DateTime endDate)
-    {
-        var allPayrolls = await GetAllAsync(null,null);
-        return allPayrolls
-            .Where(p => p.EmployeeId == employeeId &&
-                        p.PayrollStartDate.HasValue && p.PayrollEndDate.HasValue &&
-                        p.PayrollStartDate.Value <= endDate &&
-                        p.PayrollEndDate.Value >= startDate)
-            .OrderByDescending(p => p.PayrollStartDate)
-            .ToList();
-    }
-
-    public async Task<bool> ValidatePayrollPeriodAsync(int employeeId, DateTime startDate, DateTime endDate, int? excludePayrollId = null)
-    {
-        var existingPayrolls = await GetEmployeePayrollsByDateRangeAsync(employeeId, startDate, endDate);
-
-        if (excludePayrollId.HasValue)
-        {
-            existingPayrolls = existingPayrolls
-                .Where(p => p.Id != excludePayrollId.Value)
-                .ToList();
-        }
-
-        return !existingPayrolls.Any();
-    }
-
-    public async Task<Payroll?> GetLastPayrollBeforeDateAsync(int employeeId, DateTime beforeDate)
-    {
-        var allPayrolls = await GetAllAsync(null,null);
-        return allPayrolls
-            .Where(p => p.EmployeeId == employeeId &&
-                        p.PayrollEndDate.HasValue &&
-                        p.PayrollEndDate.Value < beforeDate)
-            .OrderByDescending(p => p.PayrollEndDate)
-            .FirstOrDefault();
-    }
-
-    public async Task<(DateTime StartDate, DateTime EndDate)> GetSuggestedPayrollPeriodAsync(int employeeId)
-    {
-        var lastPayroll = await GetLastPayrollForEmployeeAsync(employeeId);
-
-        if (lastPayroll?.PayrollEndDate.HasValue == true)
-        {
-            var startDate = lastPayroll.PayrollEndDate.Value.AddDays(1);
-            var endDate = startDate.AddMonths(1).AddDays(-1);
-            return (startDate, endDate);
-        }
-        else
-        {
-            var today = DateTime.Today;
-            var startDate = new DateTime(today.Year, today.Month, 1);
-            var endDate = startDate.AddMonths(1).AddDays(-1);
-            return (startDate, endDate);
-        }
-    }
-
-    public async Task<decimal> CalculateAdvanceDeductionsAsync(int employeeId, decimal preliminaryNetPay)
-    {
-        try
-        {
-            var maxDeductionAmount = await _advanceService.CalculateMaximumDeductionAsync(employeeId, preliminaryNetPay);
-            var activeAdvances = await _advanceService.GetActiveAdvancesByEmployeeIdAsync(employeeId);
-            var totalPossibleDeduction = activeAdvances.Sum(a => a.RemainingAmount);
-            return Math.Min(totalPossibleDeduction, maxDeductionAmount);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error calculating advance deductions: {ex.Message}");
-            return 0;
-        }
-    }
-
-    public async Task<List<AdvanceDeduction>> ProcessAdvanceDeductionsForPayrollAsync(Payroll payroll)
-    {
-        try
-        {
-            if (payroll.AdvanceDeductionsAmounts <= 0)
-                return new List<AdvanceDeduction>();
-
-            var deductions = await _advanceService.ProcessAdvanceDeductionsAsync(
-                payroll.EmployeeId,
-                payroll.Id,
-                payroll.AdvanceDeductionsAmounts);
-
-            return deductions;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error processing advance deductions: {ex.Message}");
-            throw;
-        }
-    }
-
-    public async Task<AdvanceDeductionSummary> GetAdvanceDeductionSummaryAsync(int employeeId, decimal preliminaryNetPay)
-    {
-        try
-        {
-            var activeAdvances = await _advanceService.GetActiveAdvancesByEmployeeIdAsync(employeeId) ?? new List<Advance>();
-            var maxDeductionAmount = await _advanceService.CalculateMaximumDeductionAsync(employeeId, preliminaryNetPay);
-            var totalActiveAmount = activeAdvances.Sum(a => a.RemainingAmount);
-
-            return new AdvanceDeductionSummary
+            // After saving, the payroll.Id will be populated, update applied rules with the correct PayrollId
+            foreach (var rule in payroll.AppliedRules)
             {
-                ActiveAdvances = activeAdvances,
-                TotalActiveAmount = totalActiveAmount,
-                MaximumDeductionAllowed = maxDeductionAmount,
-                ProposedDeduction = Math.Min(totalActiveAmount, maxDeductionAmount)
-            };
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error getting advance deduction summary: {ex.Message}");
-            return new AdvanceDeductionSummary();
-        }
-    }
+                rule.PayrollId = payroll.Id;
+                _context.Entry(rule).State = EntityState.Modified;
+            }
+            await _context.SaveChangesAsync();
 
-    public async Task ReverseAdvanceDeductionsAsync(int payrollId)
-    {
-        try
-        {
-            var deductions = await _context.AdvanceDeductions
-                .Where(d => d.PayrollId == payrollId)
-                .ToListAsync();
+            return payroll;
+        }
 
-            foreach (var deduction in deductions)
+        public async Task<Payroll> UpdateAsync(Payroll payroll)
+        {
+            var existingPayroll = await _context.Payrolls
+                .Include(p => p.AppliedRules)
+                .FirstOrDefaultAsync(p => p.Id == payroll.Id);
+
+            if (existingPayroll == null)
             {
-                var advance = await _advanceService.GetByIdAsync(deduction.AdvanceId);
-                if (advance != null)
+                throw new KeyNotFoundException($"Payroll with ID {payroll.Id} not found.");
+            }
+
+            // Update scalar properties
+            _context.Entry(existingPayroll).CurrentValues.SetValues(payroll);
+
+            // Handle AppliedRules: Delete, Add, Update
+            var existingRuleIds = existingPayroll.AppliedRules.Select(ar => ar.Id).ToList();
+            var newRuleIds = payroll.AppliedRules.Select(ar => ar.Id).ToList();
+
+            // Rules to remove
+            foreach (var existingRule in existingPayroll.AppliedRules.ToList())
+            {
+                if (!newRuleIds.Contains(existingRule.Id))
                 {
-                    advance.RemainingAmount += deduction.DeductedAmount;
-                    if (advance.Status == AdvanceStatus.Completed)
-                    {
-                        advance.Status = AdvanceStatus.Active;
-                        advance.CompletedAt = null;
-                    }
-                    await _advanceService.UpdateAsync(advance);
+                    _context.PayrollAppliedRules.Remove(existingRule);
                 }
             }
 
-            _context.AdvanceDeductions.RemoveRange(deductions);
+            // Rules to add or update
+            foreach (var newRule in payroll.AppliedRules)
+            {
+                var existingRule = existingPayroll.AppliedRules.FirstOrDefault(ar => ar.Id == newRule.Id);
+                if (existingRule == null) // New rule
+                {
+                    newRule.PayrollId = payroll.Id;
+                    _context.PayrollAppliedRules.Add(newRule);
+                }
+                else // Existing rule, update properties
+                {
+                    _context.Entry(existingRule).CurrentValues.SetValues(newRule);
+                }
+            }
+
             await _context.SaveChangesAsync();
+            return payroll;
         }
-        catch (Exception ex)
+
+        public async Task DeleteAsync(int id)
         {
-            Console.WriteLine($"Error reversing advance deductions: {ex.Message}");
-            throw;
+            var payroll = await _context.Payrolls.FindAsync(id);
+            if (payroll != null)
+            {
+                _context.Payrolls.Remove(payroll);
+                await _context.SaveChangesAsync();
+            }
         }
-    }
 
-    public List<AdvanceDeduction> GetDeductionsForPayroll(int payrollId)
-    {
-        return _context.AdvanceDeductions
-            .Where(d => d.PayrollId == payrollId)
-            .ToList();
-    }
-
-    // CORRIGÉ : Utilisation directe de _context
-    public async Task ApplyRulesAsync(int employeeId, List<PayrollAppliedRule> rules)
-    {
-        var appliedEntities = rules.Select(r => new PayrollAppliedRule
+        public async Task<Payroll> GetLastPayrollForEmployeeAsync(int employeeId)
         {
-            EmployeeId = employeeId,
-            RuleId = r.RuleId,
-            Amount = r.Amount,
-            Quantity = r.Quantity,
-            Notes = r.Notes
-        });
+            return await _context.Payrolls
+                .Where(p => p.EmployeeId == employeeId)
+                .OrderByDescending(p => p.PayDate)
+                .FirstOrDefaultAsync();
+        }
 
-        _context.PayrollAppliedRules.AddRange(appliedEntities);
-        await _context.SaveChangesAsync();
-    }
+        public async Task<List<PayrollAppliedRule>> GetAppliedRulesForPayrollAsync(int payrollId)
+        {
+            return await _context.PayrollAppliedRules
+                .Include(ar => ar.Rule)
+                .Where(ar => ar.PayrollId == payrollId)
+                .ToListAsync();
+        }
 
-    public class AdvanceDeductionSummary
-    {
-        public List<Advance> ActiveAdvances { get; set; } = new();
-        public decimal TotalActiveAmount { get; set; }
-        public decimal MaximumDeductionAllowed { get; set; }
-        public decimal ProposedDeduction { get; set; }
-        public bool HasActiveAdvances => ActiveAdvances.Any();
-        public bool CanDeductFully => TotalActiveAmount <= MaximumDeductionAllowed;
+        // REVISED: GetAppliedRulesForEmployeeAsync to include rules from last payroll AND unassigned rules
+        public async Task<List<PayrollAppliedRule>> GetAppliedRulesForEmployeeAsync(int employeeId)
+        {
+            var rules = new List<PayrollAppliedRule>();
+
+            // 1. Get rules from the last saved payroll for this employee
+            var lastPayroll = await GetLastPayrollForEmployeeAsync(employeeId);
+            if (lastPayroll != null)
+            {
+                var lastPayrollRules = await _context.PayrollAppliedRules
+                    .Include(r => r.Rule)
+                    .Where(r => r.EmployeeId == employeeId && r.PayrollId == lastPayroll.Id)
+                    .ToListAsync();
+                rules.AddRange(lastPayrollRules);
+            }
+
+            // 2. Get rules that are applied but not yet linked to any payroll (PayrollId is null)
+            // These are typically rules added in the UI for a new payroll before saving
+            var unassignedRules = await _context.PayrollAppliedRules
+                .Include(r => r.Rule)
+                .Where(r => r.EmployeeId == employeeId && r.PayrollId == null)
+                .ToListAsync();
+            rules.AddRange(unassignedRules);
+
+            // Order for consistent display
+            return rules.OrderBy(r => r.Rule.Name).ThenBy(r => r.Id).ToList();
+        }
+
+        public async Task ProcessAdvanceDeductionsForPayrollAsync(Payroll payroll)
+        {
+            if (payroll.AdvanceDeductionsAmounts > 0 && payroll.EmployeeId > 0)
+            {
+                await _advanceService.ApplyDeductionToAdvancesAsync(payroll.EmployeeId, payroll.AdvanceDeductionsAmounts);
+            }
+        }
+
+        public async Task ReverseAdvanceDeductionsAsync(int payrollId)
+        {
+            var payroll = await _context.Payrolls
+                .Include(p => p.AppliedAdvances)
+                .FirstOrDefaultAsync(p => p.Id == payrollId);
+
+            if (payroll != null && payroll.AppliedAdvances != null)
+            {
+                foreach (var appliedAdvance in payroll.AppliedAdvances)
+                {
+                    var advance = await _advanceService.GetByIdAsync(appliedAdvance.AdvanceId);
+                    if (advance != null)
+                    {
+                        advance.RemainingAmount += appliedAdvance.DeductedAmount;
+                        await _advanceService.UpdateAsync(advance);
+                    }
+                }
+                _context.Advances.RemoveRange(payroll.AppliedAdvances);
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        public class AdvanceDeductionSummary
+        {
+            public List<Advance> ActiveAdvances { get; set; } = new List<Advance>();
+            public decimal TotalActiveAmount => ActiveAdvances.Sum(a => a.RemainingAmount);
+            public decimal MaximumDeductionAllowed { get; set; }
+            public decimal ProposedDeduction { get; set; }
+            public bool CanDeductFully => TotalActiveAmount <= MaximumDeductionAllowed;
+            public bool HasActiveAdvances => ActiveAdvances.Any();
+        }
+
+        public async Task<AdvanceDeductionSummary> GetAdvanceDeductionSummaryAsync(int employeeId, decimal preliminaryNetPay)
+        {
+            var summary = new AdvanceDeductionSummary();
+            summary.ActiveAdvances = await _advanceService.GetActiveAdvancesForEmployeeAsync(employeeId);
+
+            // Calculate maximum allowed deduction (e.g., 30% of preliminary net pay)
+            // This is a business rule, adjust as needed
+            summary.MaximumDeductionAllowed = preliminaryNetPay * 0.3m; // Example: 30% of net pay
+
+            // Proposed deduction is the minimum of total active advances and maximum allowed deduction
+            summary.ProposedDeduction = Math.Min(summary.TotalActiveAmount, summary.MaximumDeductionAllowed);
+
+            return summary;
+        }
     }
 }
+
+
