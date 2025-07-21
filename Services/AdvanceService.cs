@@ -1,10 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RH.Data;
 using RH.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace RH.Services
 {

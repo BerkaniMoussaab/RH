@@ -88,7 +88,7 @@ builder.Services.AddAntiforgery(options =>
 
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Listen(System.Net.IPAddress.Any, 70); 
+    options.Listen(System.Net.IPAddress.Any, 70);
 });
 
 builder.Services.AddRazorComponents()
@@ -135,7 +135,7 @@ using (var scope = app.Services.CreateScope())
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-   /* await dbContext.Database.MigrateAsync(); */// Optional but good for dev
+    /* await dbContext.Database.MigrateAsync(); */// Optional but good for dev
 
     if (!dbContext.Users.Any())
     {

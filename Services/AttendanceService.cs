@@ -1,6 +1,6 @@
-﻿using RH.Models;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using RH.Data;
+using RH.Models;
 
 namespace RH.Services
 {

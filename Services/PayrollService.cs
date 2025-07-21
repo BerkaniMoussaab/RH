@@ -1,12 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
 using RH.Data;
 using RH.Models;
 using RH.Services;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 public class PayrollService : IPayrollService
 {
@@ -75,7 +70,7 @@ public class PayrollService : IPayrollService
         if (endDate.HasValue)
             query = query.Where(p => p.PayDate <= endDate.Value.AddDays(1));
 
-        return await query.OrderByDescending(d=>d.PayDate).ToListAsync();
+        return await query.OrderByDescending(d => d.PayDate).ToListAsync();
     }
 
 
@@ -89,7 +84,7 @@ public class PayrollService : IPayrollService
     }
 
     // CORRIGÉ : Utilisation directe de _context
-    public async Task CreateAsync(Payroll payroll)
+    public async Task<Payroll> CreateAsync(Payroll payroll)
     {
         var freshPayroll = new Payroll
         {
@@ -102,29 +97,59 @@ public class PayrollService : IPayrollService
             Cash = payroll.Cash,
             Transaction = payroll.Transaction,
             PayDate = DateTime.Now,
-            
             AbsenceDays = payroll.AbsenceDays,
             AbsenceDeduction = payroll.AbsenceDeduction,
             ManualAbsenceDays = payroll.ManualAbsenceDays,
-           TransactionIsManual = payroll.TransactionIsManual,
-           PayrollEndDate = payroll.PayrollEndDate,
-           PayrollStartDate = payroll.PayrollStartDate,
-           AppliedRules = payroll.AppliedRules
-
-
-                .Select(r => new PayrollAppliedRule
-                {
-                    RuleId = r.RuleId,
-                    Amount = r.Amount,
-                    Quantity = r.Quantity,
-                    EmployeeId = r.EmployeeId,
-                    PayrollId = r.PayrollId
-                }).ToList()
+            TransactionIsManual = payroll.TransactionIsManual,
+            PayrollEndDate = payroll.PayrollEndDate,
+            PayrollStartDate = payroll.PayrollStartDate,
         };
 
+        // Add the payroll first so it gets an ID
         _context.Payrolls.Add(freshPayroll);
+        await _context.SaveChangesAsync(); // freshPayroll.Id is now available
+
+        // Now attach applied rules (existing or new)
+        foreach (var rule in payroll.AppliedRules)
+        {
+            // Get all matching applied rules not yet attached to a payroll
+            var existingRules = await _context.PayrollAppliedRules
+                .Where(r =>
+                    r.EmployeeId == rule.EmployeeId &&
+                    r.RuleId == rule.RuleId &&
+                    r.PayrollId == null)
+                .ToListAsync();
+
+            if (existingRules.Any())
+            {
+                // Attach all existing matching rules to the new payroll
+                foreach (var existing in existingRules)
+                {
+                    existing.PayrollId = freshPayroll.Id;
+                }
+            }
+            else
+            {
+                // No match found: create a new applied rule
+                var newRule = new PayrollAppliedRule
+                {
+                    RuleId = rule.RuleId,
+                    Amount = rule.Amount,
+                    Quantity = rule.Quantity,
+                    EmployeeId = rule.EmployeeId,
+                    PayrollId = freshPayroll.Id,
+                    Date = DateTime.Now,
+                    Notes = rule.Notes
+                };
+                _context.PayrollAppliedRules.Add(newRule);
+            }
+        }
+
+
         await _context.SaveChangesAsync();
+        return freshPayroll;
     }
+
 
     public async Task<Payroll> UpdateAsync(Payroll payroll)
     {
@@ -157,7 +182,9 @@ public class PayrollService : IPayrollService
             {
                 RuleId = rule.RuleId,
                 Amount = rule.Amount,
-                Quantity = rule.Quantity
+                Quantity = rule.Quantity,
+                Date = rule.Date,
+                Notes = rule.Notes
             });
         }
 
@@ -188,7 +215,7 @@ public class PayrollService : IPayrollService
         return await _context.Payrolls.CountAsync();
     }
 
-    
+
 
     // CORRIGÉ : Utilisation directe de _context
     public async Task<List<PayrollAppliedRule>> GetAppliedRulesForEmployeeAsync(int employeeId)
@@ -201,7 +228,7 @@ public class PayrollService : IPayrollService
 
     public async Task<List<Payroll>> GetEmployeePayrollsByDateRangeAsync(int employeeId, DateTime startDate, DateTime endDate)
     {
-        var allPayrolls = await GetAllAsync(null,null);
+        var allPayrolls = await GetAllAsync(null, null);
         return allPayrolls
             .Where(p => p.EmployeeId == employeeId &&
                         p.PayrollStartDate.HasValue && p.PayrollEndDate.HasValue &&
@@ -227,7 +254,7 @@ public class PayrollService : IPayrollService
 
     public async Task<Payroll?> GetLastPayrollBeforeDateAsync(int employeeId, DateTime beforeDate)
     {
-        var allPayrolls = await GetAllAsync(null,null);
+        var allPayrolls = await GetAllAsync(null, null);
         return allPayrolls
             .Where(p => p.EmployeeId == employeeId &&
                         p.PayrollEndDate.HasValue &&
@@ -364,7 +391,9 @@ public class PayrollService : IPayrollService
             RuleId = r.RuleId,
             Amount = r.Amount,
             Quantity = r.Quantity,
-            Notes = r.Notes
+            Notes = r.Notes,
+            Date = DateTime.Now
+
         });
 
         _context.PayrollAppliedRules.AddRange(appliedEntities);

@@ -151,8 +151,8 @@ else
                                 <h5 class="modal-title mb-1 fw-bold">
                                     <i class="bi bi-cash-coin me-2"></i>
                                     @((CurrentPayroll.Id == 0)
-                                                ? "Ajouter une fiche de paie"
-                                                : $"Modifier la fiche de paie (ID: {CurrentPayroll.Id})")
+                                                    ? "Ajouter une fiche de paie"
+                                                    : $"Modifier la fiche de paie (ID: {CurrentPayroll.Id})")
                                 </h5>
                             </div>
                         </div>
@@ -166,7 +166,7 @@ else
                                 <div class="info-section">
                                     <div class="section-title">
                                         <i class="bi bi-person-badge text-primary me-2"></i>
-                                        <span>Informations de l'employé et période de paie</span>
+                                        <span>Informations de l\'employé et période de paie</span>
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-md-4">
@@ -303,7 +303,7 @@ else
                                 </div>
                             </div>
 
-                            <!-- Section Mode d'absence -->
+                            <!-- Section Mode d\'absence -->
                             <div class="col-md-6">
                                 <div class="absence-mode-section">
                                     <div class="section-title">
@@ -332,7 +332,7 @@ else
                                 <div class="deduction-info">
                                     <div class="section-title">
                                         <i class="bi bi-calculator text-info me-2"></i>
-                                        <span>Retenue par jour d'absence</span>
+                                        <span>Retenue par jour d\'absence</span>
                                         <i class="bi bi-info-circle ms-1 text-muted"
                                         title="Montant appliqué automatiquement : salaire de base / jours ouvrables de la période."></i>
                                     </div>
@@ -364,7 +364,7 @@ else
                                     @if (UseManualAbsences || CurrentPayroll.ManualAbsenceDays != 0)
                                     {
                                         <div class="enhanced-form-group">
-                                            <label class="form-label">Nombre de jours d'absence (manuel)</label>
+                                            <label class="form-label">Nombre de jours d\'absence (manuel)</label>
                                             <InputNumber TValue="int"
                                             class="form-control enhanced-input"
                                             Value="CurrentPayroll.ManualAbsenceDays"
@@ -502,20 +502,15 @@ else
                                                 <i class="bi bi-cash-stack me-1"></i>Montant de déduction des avances
                                             </label>
                                             <InputNumber @bind-Value="CurrentPayroll.AdvanceDeductionsAmounts"
-                                                         class="form-control"
-                                                         step="0.01"
-                                                         Min="0"
-                                                         Max="@CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString(System.Globalization.CultureInfo.InvariantCulture)"
-                                                         @oninput="MarkAdvanceAsManuallySet" />
-
-
-
-
-
+                                            class="form-control"
+                                            step="0.01"
+                                            Min="0"
+                                            Max="@CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString(System.Globalization.CultureInfo.InvariantCulture)"
+                                            @oninput="MarkAdvanceAsManuallySet" />
 
                                             <small class="text-muted">
                                                 Maximum autorisé: @CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString("C")
-                                                
+
                                             </small>
                                         </div>
                                     }
@@ -528,6 +523,175 @@ else
                                     }
                                 </div>
                             </div>
+
+                            @if (PreappliedBonusRules.Any() || PreappliedDeductionRules.Any())
+                            {
+                                <div class="col-12">
+                                    <div class="preapplied-rules-section">
+                                        <div class="section-title">
+                                            <i class="bi bi-bookmark-star text-info me-2"></i>
+                                            <span>Règles pré-appliquées</span>
+                                            <small class="text-muted ms-2">(Règles appliquées par défaut pour cet employé)</small>
+                                        </div>
+
+                                        <div class="row g-3">
+                                            @if (PreappliedBonusRules.Any())
+                                            {
+                                                <div class="col-md-6">
+                                                    <div class="preapplied-bonus-section">
+                                                        <div class="subsection-title">
+                                                            <i class="bi bi-plus-circle text-success me-2"></i>
+                                                            <span>Primes pré-appliquées</span>
+                                                            <span class="badge bg-success ms-auto">+@PreappliedBonusRules.Where(r => r.IsApplied).Sum(r => r.CalculatedAmount).ToString() DA</span>
+                                                        </div>
+
+                                                        <div class="preapplied-rules-container">
+                                                            @foreach (var rule in PreappliedBonusRules)
+                                                            {
+                                                                <div class="preapplied-rule-item @(rule.IsApplied ? "active" : "")">
+                                                                    <div class="d-flex flex-column">
+                                                                        <div class="d-flex align-items-center justify-content-between">
+                                                                            <div class="d-flex align-items-center flex-grow-1 me-2">
+                                                                                <InputCheckbox class="form-check-input enhanced-checkbox me-2"
+                                                                                Value="rule.IsApplied"
+                                                                                ValueChanged="val => OnPreappliedBonusRuleChanged(rule, val)"
+                                                                                ValueExpression="@(() => rule.IsApplied)" />
+                                                                                <label class="form-check-label mb-0 rule-label">
+                                                                                    @rule.Name
+                                                                                    @if (!rule.IsPercentage && rule.Amount > 0)
+                                                                                    {
+                                                                                        <span class="text-muted ms-1">(@rule.Amount.ToString("C"))</span>
+                                                                                    }
+                                                                                    else if (rule.IsPercentage)
+                                                                                    {
+                                                                                        <span class="text-muted ms-1">(@rule.Amount %)</span>
+                                                                                    }
+                                                                                    <span class="badge badge-preapplied ms-1">Pré-appliquée</span>
+                                                                                </label>
+                                                                            </div>
+
+                                                                            @if (rule.IsApplied)
+                                                                            {
+                                                                                <div class="rule-controls">
+                                                                                    @if (rule.IsEditable)
+                                                                                    {
+                                                                                        <InputNumber TValue="decimal" class="form-control form-control-sm enhanced-input-sm"
+                                                                                        Value="rule.Amount"
+                                                                                        ValueChanged="val => OnPreappliedAmountChanged(rule, val)"
+                                                                                        ValueExpression="@(() => rule.Amount)" />
+                                                                                    }
+
+                                                                                    @if (rule.IsCountable)
+                                                                                    {
+                                                                                        <InputNumber TValue="decimal" class="form-control form-control-sm enhanced-input-sm"
+                                                                                        Value="rule.Quantity"
+                                                                                        ValueChanged="val => OnPreappliedQuantityChanged(rule, val)"
+                                                                                        ValueExpression="@(() => rule.Quantity)" />
+                                                                                    }
+
+                                                                                    <div class="calculated-amount success">
+                                                                                        @rule.CalculatedAmount.ToString() DA
+                                                                                    </div>
+                                                                                </div>
+                                                                            }
+                                                                        </div>
+
+                                                                        @if (rule.IsApplied)
+                                                                        {
+                                                                            <InputTextArea class="form-control form-control-sm mt-2"
+                                                                            placeholder="Ajouter une note..."
+                                                                            Value="@rule.note"
+                                                                            ValueChanged="val => rule.note = val"
+                                                                            ValueExpression="@(() => rule.note)" />
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+
+                                            @if (PreappliedDeductionRules.Any())
+                                            {
+                                                <div class="col-md-6">
+                                                    <div class="preapplied-deduction-section">
+                                                        <div class="subsection-title">
+                                                            <i class="bi bi-dash-circle text-danger me-2"></i>
+                                                            <span>Retenues pré-appliquées</span>
+                                                            <span class="badge bg-danger ms-auto">-@PreappliedDeductionRules.Where(r => r.IsApplied).Sum(r => r.CalculatedAmount).ToString() DA</span>
+                                                        </div>
+
+                                                        <div class="preapplied-rules-container">
+                                                            @foreach (var rule in PreappliedDeductionRules)
+                                                            {
+                                                                <div class="preapplied-rule-item @(rule.IsApplied ? "active" : "")">
+                                                                    <div class="d-flex flex-column">
+                                                                        <div class="d-flex align-items-center justify-content-between">
+                                                                            <div class="d-flex align-items-center flex-grow-1 me-2">
+                                                                                <InputCheckbox class="form-check-input enhanced-checkbox me-2"
+                                                                                Value="rule.IsApplied"
+                                                                                ValueChanged="val => OnPreappliedDeductionRuleChanged(rule, val)"
+                                                                                ValueExpression="@(() => rule.IsApplied)" />
+                                                                                <label class="form-check-label mb-0 rule-label">
+                                                                                    @rule.Name
+                                                                                    @if (!rule.IsPercentage && rule.Amount > 0)
+                                                                                    {
+                                                                                        <span class="text-muted ms-1">(@rule.Amount : DA)</span>
+                                                                                    }
+                                                                                    else if (rule.IsPercentage)
+                                                                                    {
+                                                                                        <span class="text-muted ms-1">(@rule.Amount %)</span>
+                                                                                    }
+                                                                                    <span class="badge badge-preapplied ms-1">Pré-appliquée</span>
+                                                                                </label>
+                                                                            </div>
+
+                                                                            @if (rule.IsApplied)
+                                                                            {
+                                                                                <div class="rule-controls">
+                                                                                    @if (rule.IsEditable)
+                                                                                    {
+                                                                                        <InputNumber TValue="decimal" class="form-control form-control-sm enhanced-input-sm"
+                                                                                        Value="rule.Amount"
+                                                                                        ValueChanged="val => OnPreappliedAmountChanged(rule, val)"
+                                                                                        ValueExpression="@(() => rule.Amount)" />
+                                                                                    }
+
+                                                                                    @if (rule.IsCountable)
+                                                                                    {
+                                                                                        <InputNumber TValue="decimal" class="form-control form-control-sm enhanced-input-sm"
+                                                                                        Value="rule.Quantity"
+                                                                                        ValueChanged="val => OnPreappliedQuantityChanged(rule, val)"
+                                                                                        ValueExpression="@(() => rule.Quantity)" />
+                                                                                    }
+
+                                                                                    <div class="calculated-amount danger">
+                                                                                        @rule.CalculatedAmount.ToString() DA
+                                                                                    </div>
+                                                                                </div>
+                                                                            }
+                                                                        </div>
+
+                                                                        @if (rule.IsApplied)
+                                                                        {
+                                                                            <InputTextArea class="form-control form-control-sm mt-2"
+                                                                            placeholder="Ajouter une note..."
+                                                                            Value="@rule.note"
+                                                                            ValueChanged="val => rule.note = val"
+                                                                            ValueExpression="@(() => rule.note)" />
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
 
                             <!-- Section PRIMES -->
                             <div class="col-md-6">
@@ -542,59 +706,68 @@ else
                                         @foreach (var rule in SelectedBonusRules)
                                         {
                                             <div class="bonus-rule-item @(rule.IsApplied ? "active" : "")">
-                                                <div class="d-flex align-items-center justify-content-between">
-                                                    <div class="d-flex align-items-center flex-grow-1 me-2">
-                                                        <InputCheckbox class="form-check-input enhanced-checkbox me-2"
-                                                        Value="rule.IsApplied"
-                                                        ValueChanged="val => OnBonusRuleChanged(rule, val)"
-                                                        ValueExpression="@(() => rule.IsApplied)" />
-                                                        <label class="form-check-label mb-0 rule-label">
-                                                            @rule.Name
-                                                            @if (!rule.IsPercentage && rule.Amount > 0)
-                                                            {
-                                                                <span class="text-muted ms-1">(@rule.Amount.ToString("C"))</span>
-                                                            }
-                                                            else if (rule.IsPercentage)
-                                                            {
-                                                                <span class="text-muted ms-1">(@rule.Amount %)</span>
-                                                            }
-                                                            @if (rule.AutoApplied)
-                                                            {
-                                                                <span class="text-muted ms-1 fst-italic" title="Règle appliquée automatiquement">(Auto)</span>
-                                                            }
-                                                        </label>
+                                                <div class="d-flex flex-column">
+                                                    <div class="d-flex align-items-center justify-content-between">
+                                                        <div class="d-flex align-items-center flex-grow-1 me-2">
+                                                            <InputCheckbox class="form-check-input enhanced-checkbox me-2"
+                                                            Value="rule.IsApplied"
+                                                            ValueChanged="val => OnBonusRuleChanged(rule, val)"
+                                                            ValueExpression="@(() => rule.IsApplied)" />
+                                                            <label class="form-check-label mb-0 rule-label">
+                                                                @rule.Name
+                                                                @if (!rule.IsPercentage && rule.Amount > 0)
+                                                                {
+                                                                    <span class="text-muted ms-1">(@rule.Amount.ToString("C"))</span>
+                                                                }
+                                                                else if (rule.IsPercentage)
+                                                                {
+                                                                    <span class="text-muted ms-1">(@rule.Amount %)</span>
+                                                                }
+                                                                @if (rule.AutoApplied)
+                                                                {
+                                                                    <span class="text-muted ms-1 fst-italic" title="Règle appliquée automatiquement">(Auto)</span>
+                                                                }
+                                                            </label>
+                                                        </div>
+
+                                                        @if (rule.IsApplied)
+                                                        {
+                                                            <div class="rule-controls">
+                                                                @if (rule.IsEditable)
+                                                                {
+                                                                    <InputNumber TValue="decimal" class="form-control form-control-sm enhanced-input-sm"
+                                                                    Value="rule.Amount"
+                                                                    ValueChanged="val => OnAmountChanged(rule, val)"
+                                                                    ValueExpression="@(() => rule.Amount)" />
+                                                                }
+
+                                                                @if (rule.IsCountable)
+                                                                {
+                                                                    <InputNumber TValue="decimal" class="form-control form-control-sm enhanced-input-sm"
+                                                                    Value="rule.Quantity"
+                                                                    ValueChanged="val => OnCountableQuantityChanged(rule, val)"
+                                                                    ValueExpression="@(() => rule.Quantity)" />
+                                                                }
+
+                                                                <div class="calculated-amount success">
+                                                                    @rule.CalculatedAmount.ToString() DA
+                                                                </div>
+
+                                                                @if (!rule.IsEditable && !rule.IsCountable)
+                                                                {
+                                                                    <small class="text-muted ms-1 fst-italic">Montant fixe</small>
+                                                                }
+                                                            </div>
+                                                        }
                                                     </div>
 
                                                     @if (rule.IsApplied)
                                                     {
-                                                        <div class="rule-controls">
-                                                            @if (rule.IsEditable)
-                                                            {
-                                                                <InputNumber TValue="decimal"
-                                                                class="form-control form-control-sm enhanced-input-sm"
-                                                                Value="rule.Amount"
-                                                                ValueChanged="val => OnAmountChanged(rule, val)"
-                                                                ValueExpression="@(() => rule.Amount)" />
-                                                            }
-
-                                                            @if (rule.IsCountable)
-                                                            {
-                                                                <InputNumber TValue="decimal"
-                                                                class="form-control form-control-sm enhanced-input-sm"
-                                                                Value="rule.Quantity"
-                                                                ValueChanged="val => OnCountableQuantityChanged(rule, val)"
-                                                                ValueExpression="@(() => rule.Quantity)" />
-                                                            }
-
-                                                            <div class="calculated-amount success">
-                                                                @rule.CalculatedAmount.ToString() DA
-                                                            </div>
-
-                                                            @if (!rule.IsEditable && !rule.IsCountable)
-                                                            {
-                                                                <small class="text-muted ms-1 fst-italic">Montant fixe</small>
-                                                            }
-                                                        </div>
+                                                        <InputTextArea class="form-control form-control-sm mt-2"
+                                                        placeholder="Ajouter une note..."
+                                                        Value="@rule.note"
+                                                        ValueChanged="val => rule.note = val"
+                                                        ValueExpression="@(() => rule.note)" />
                                                     }
                                                 </div>
                                             </div>
@@ -616,101 +789,72 @@ else
                                         @foreach (var rule in SelectedDeductionRules)
                                         {
                                             <div class="deduction-rule-item @(rule.IsApplied ? "active" : "")">
-                                                <div class="d-flex align-items-center justify-content-between">
-                                                    <div class="d-flex align-items-center flex-grow-1 me-2">
-                                                        <InputCheckbox class="form-check-input enhanced-checkbox me-2"
-                                                        Value="rule.IsApplied"
-                                                        ValueChanged="val => OnDeductionRuleChanged(rule, val)"
-                                                        ValueExpression="@(() => rule.IsApplied)" />
-                                                        <label class="form-check-label mb-0 rule-label">
-                                                            @rule.Name
-                                                            @if (!rule.IsPercentage && rule.Amount > 0)
-                                                            {
-                                                                <span class="text-muted ms-1">(@rule.Amount : DA)</span>
-                                                            }
-                                                            else if (rule.IsPercentage)
-                                                            {
-                                                                <span class="text-muted ms-1">(@rule.Amount %)</span>
-                                                            }
-                                                            @if (rule.AutoApplied)
-                                                            {
-                                                                <span class="text-muted ms-1 fst-italic" title="Règle appliquée automatiquement">(Auto)</span>
-                                                            }
-                                                        </label>
+                                                <div class="d-flex flex-column">
+                                                    <div class="d-flex align-items-center justify-content-between">
+                                                        <div class="d-flex align-items-center flex-grow-1 me-2">
+                                                            <InputCheckbox class="form-check-input enhanced-checkbox me-2"
+                                                            Value="rule.IsApplied"
+                                                            ValueChanged="val => OnDeductionRuleChanged(rule, val)"
+                                                            ValueExpression="@(() => rule.IsApplied)" />
+                                                            <label class="form-check-label mb-0 rule-label">
+                                                                @rule.Name
+                                                                @if (!rule.IsPercentage && rule.Amount > 0)
+                                                                {
+                                                                    <span class="text-muted ms-1">(@rule.Amount : DA)</span>
+                                                                }
+                                                                else if (rule.IsPercentage)
+                                                                {
+                                                                    <span class="text-muted ms-1">(@rule.Amount %)</span>
+                                                                }
+                                                                @if (rule.AutoApplied)
+                                                                {
+                                                                    <span class="text-muted ms-1 fst-italic" title="Règle appliquée automatiquement">(Auto)</span>
+                                                                }
+                                                            </label>
+                                                        </div>
+
+                                                        @if (rule.IsApplied)
+                                                        {
+                                                            <div class="rule-controls">
+                                                                @if (rule.IsEditable)
+                                                                {
+                                                                    <InputNumber TValue="decimal" class="form-control form-control-sm enhanced-input-sm"
+                                                                    Value="rule.Amount"
+                                                                    ValueChanged="val => OnAmountChanged(rule, val)"
+                                                                    ValueExpression="@(() => rule.Amount)" />
+                                                                }
+
+                                                                @if (rule.IsCountable)
+                                                                {
+                                                                    <InputNumber TValue="decimal" class="form-control form-control-sm enhanced-input-sm"
+                                                                    Value="rule.Quantity"
+                                                                    ValueChanged="val => OnCountableQuantityChanged(rule, val)"
+                                                                    ValueExpression="@(() => rule.Quantity)" />
+                                                                }
+
+                                                                <div class="calculated-amount danger">
+                                                                    @rule.CalculatedAmount.ToString() DA
+                                                                </div>
+
+                                                                @if (!rule.IsEditable && !rule.IsCountable)
+                                                                {
+                                                                    <small class="text-muted ms-1 fst-italic">Montant fixe</small>
+                                                                }
+                                                            </div>
+                                                        }
                                                     </div>
 
                                                     @if (rule.IsApplied)
                                                     {
-                                                        <div class="rule-controls">
-                                                            @if (rule.IsEditable)
-                                                            {
-                                                                <InputNumber TValue="decimal"
-                                                                class="form-control form-control-sm enhanced-input-sm"
-                                                                Value="rule.Amount"
-                                                                ValueChanged="val => OnAmountChanged(rule, val)"
-                                                                ValueExpression="@(() => rule.Amount)" />
-                                                            }
-
-                                                            @if (rule.IsCountable)
-                                                            {
-                                                                <InputNumber TValue="decimal"
-                                                                class="form-control form-control-sm enhanced-input-sm"
-                                                                Value="rule.Quantity"
-                                                                ValueChanged="val => OnCountableQuantityChanged(rule, val)"
-                                                                ValueExpression="@(() => rule.Quantity)" />
-                                                            }
-
-                                                            <div class="calculated-amount danger">
-                                                                @rule.CalculatedAmount.ToString() DA
-                                                            </div>
-
-                                                            @if (!rule.IsEditable && !rule.IsCountable)
-                                                            {
-                                                                <small class="text-muted ms-1 fst-italic">Montant fixe</small>
-                                                            }
-                                                        </div>
+                                                        <InputTextArea class="form-control form-control-sm mt-2"
+                                                        placeholder="Ajouter une note..."
+                                                        Value="@rule.note"
+                                                        ValueChanged="val => rule.note = val"
+                                                        ValueExpression="@(() => rule.note)" />
                                                     }
                                                 </div>
                                             </div>
                                         }
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Section Résumé -->
-                            <div class="col-12">
-                                <div class="summary-section">
-                                    <div class="section-title">
-                                        <i class="bi bi-calculator text-info me-2"></i>
-                                        <span>Résumé des calculs</span>
-                                    </div>
-                                    <div class="row g-3">
-                                        <div class="col-md-3">
-                                            <div class="summary-card">
-                                                <label class="form-label fw-semibold">Total primes</label>
-                                                <InputNumber class="form-control enhanced-input summary-input success" @bind-Value="CurrentPayroll.Bonus" Disabled />
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="summary-card">
-                                                <label class="form-label fw-semibold">Total retenues</label>
-                                                <InputNumber class="form-control enhanced-input summary-input danger" @bind-Value="CurrentPayroll.Deductions" Disabled />
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="summary-card">
-                                                <label class="form-label fw-semibold">Avances déduites</label>
-                                                <InputNumber class="form-control enhanced-input summary-input warning" @bind-Value="CurrentPayroll.AdvanceDeductionsAmounts" Disabled />
-                                            </div>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <div class="summary-card">
-                                                <label class="form-label fw-semibold">Net à payer</label>
-                                                <div class="form-control enhanced-input summary-input primary fw-bold">
-                                                    @CurrentPayroll.NetPay.ToString("C")
-                                                </div>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -801,15 +945,17 @@ else
                                     </div>
                                 </div>
                             </div>
+
                         </div>
                     </div>
+
 
                     <!-- Enhanced Footer -->
                     <div class="modal-footer enhanced-footer">
                         <button type="submit" class="btn btn-success enhanced-btn primary-action">
                             <i class="bi bi-save me-2"></i> Enregistrer
                         </button>
-                    @if (CurrentPayroll != null && CurrentPayroll.Id > 0)
+                        @if (CurrentPayroll != null && CurrentPayroll.Id > 0)
                         {
                             <button class="btn btn-outline-primary enhanced-btn" @onclick="ShowPrintModal">
                                 <i class="bi bi-printer me-2"></i> Aperçu impression
@@ -822,8 +968,11 @@ else
                 </div>
             </div>
         </div>
+
     </EditForm>
 }
+
+
 
 @if (IsPrintModalOpen)
 {
@@ -860,7 +1009,7 @@ else
 
     private async Task ShowPrintModal()
     {
-       
+
         IsPrintModalOpen = true;
         StateHasChanged();
     }
@@ -893,6 +1042,11 @@ else
     private List<SelectableRule> SelectedDeductionRules = new();
     private List<SelectableRule> PreSelectedBonusRules = new();
     private List<SelectableRule> PreSelectedDeductionRules = new();
+
+    // NEW: Preapplied rules lists
+    private List<SelectableRule> PreappliedBonusRules = new();
+    private List<SelectableRule> PreappliedDeductionRules = new();
+
     private Payroll CurrentPayroll = new();
     public int workDaysPerMonth;
 
@@ -983,7 +1137,7 @@ else
             }
             else
             {
-                // If manually set, ensure it doesn't exceed the new maximum allowed.
+                // If manually set, ensure it doesn\'t exceed the new maximum allowed.
                 if (CurrentPayroll.AdvanceDeductionsAmounts > CurrentAdvanceDeductionSummary.MaximumDeductionAllowed)
                 {
                     CurrentPayroll.AdvanceDeductionsAmounts = CurrentAdvanceDeductionSummary.MaximumDeductionAllowed;
@@ -1106,9 +1260,64 @@ else
         return workingDays;
     }
 
+    // NEW: Methods to handle preapplied rules
+    private void OnPreappliedBonusRuleChanged(SelectableRule rule, bool isApplied)
+    {
+        rule.IsApplied = isApplied;
+        if (isApplied && rule.IsCountable)
+        {
+            OnPreappliedQuantityChanged(rule, rule.Quantity > 0 ? rule.Quantity : 1);
+        }
+        else
+        {
+            RecalculateBonusesAndDeductions();
+        }
+    }
+
+    private void OnPreappliedDeductionRuleChanged(SelectableRule rule, bool isApplied)
+    {
+        rule.IsApplied = isApplied;
+        if (isApplied && rule.IsCountable)
+        {
+            OnPreappliedQuantityChanged(rule, rule.Quantity > 0 ? rule.Quantity : 1);
+        }
+        else
+        {
+            RecalculateBonusesAndDeductions();
+        }
+    }
+
+    private void OnPreappliedAmountChanged(SelectableRule rule, decimal? newAmount)
+    {
+        rule.Amount = newAmount ?? 0;
+        if (!rule.IsCountable)
+        {
+            rule.Quantity = 1;
+        }
+        OnPreappliedQuantityChanged(rule, rule.Quantity);
+    }
+
+    private void OnPreappliedQuantityChanged(SelectableRule rule, decimal? quantity)
+    {
+        var finalQuantity = quantity ?? 1;
+        rule.Quantity = finalQuantity;
+
+        if (rule.IsCountable)
+        {
+            var unitAmount = rule.IsPercentage ? CurrentPayroll.BaseSalary * rule.Amount / 100 : rule.Amount;
+            rule.CalculatedAmount = unitAmount * finalQuantity;
+        }
+        else
+        {
+            rule.CalculatedAmount = rule.IsPercentage ? CurrentPayroll.BaseSalary * rule.Amount / 100 : rule.Amount;
+        }
+
+        RecalculateBonusesAndDeductions();
+    }
+
     private void OnBonusRuleChanged(SelectableRule rule, bool isApplied)
     {
-        Console.WriteLine($"OnBonusRuleChanged: Rule '{rule.Name}', IsApplied changed from {rule.IsApplied} to {isApplied}");
+        Console.WriteLine($"OnBonusRuleChanged: Rule \'{rule.Name}\", IsApplied changed from {rule.IsApplied} to {isApplied}");
         rule.IsApplied = isApplied;
 
         if (isApplied && rule.IsCountable)
@@ -1119,12 +1328,12 @@ else
         {
             RecalculateBonusesAndDeductions();
         }
-        Console.WriteLine($"After update: Rule '{rule.Name}', IsApplied: {rule.IsApplied}");
+        Console.WriteLine($"After update: Rule \'{rule.Name}\", IsApplied: {rule.IsApplied}");
     }
 
     private void OnDeductionRuleChanged(SelectableRule rule, bool isApplied)
     {
-        Console.WriteLine($"OnDeductionRuleChanged: Rule '{rule.Name}', IsApplied changed from {rule.IsApplied} to {isApplied}");
+        Console.WriteLine($"OnDeductionRuleChanged: Rule \'{rule.Name}\", IsApplied changed from {rule.IsApplied} to {isApplied}");
         rule.IsApplied = isApplied;
 
         if (isApplied && rule.IsCountable)
@@ -1135,7 +1344,7 @@ else
         {
             RecalculateBonusesAndDeductions();
         }
-        Console.WriteLine($"After update: Rule '{rule.Name}', IsApplied: {rule.IsApplied}");
+        Console.WriteLine($"After update: Rule \'{rule.Name}\", IsApplied: {rule.IsApplied}");
     }
 
     private void OnCountedChanged(AbsenceRecord record, bool val)
@@ -1179,8 +1388,8 @@ else
     {
         Console.WriteLine("--- Recalculating Bonuses and Deductions ---");
 
-        // Calculate Bonuses
-        CurrentPayroll.Bonus = SelectedBonusRules
+        // Calculate Bonuses (including preapplied)
+        var regularBonuses = SelectedBonusRules
             .Where(r => r.IsApplied)
             .Sum(r =>
             {
@@ -1200,15 +1409,21 @@ else
                 Console.WriteLine($"  Bonus Rule: {r.Name}, Applied: {r.IsApplied}, Amount: {r.Amount}, IsPercentage: {r.IsPercentage}, IsCountable: {r.IsCountable}, Quantity: {r.Quantity}, CalculatedValue: {calculatedValue}");
                 return calculatedValue;
             });
-        Console.WriteLine($"Total Bonus: {CurrentPayroll.Bonus}");
+
+        var preappliedBonuses = PreappliedBonusRules
+            .Where(r => r.IsApplied)
+            .Sum(r => r.CalculatedAmount);
+
+        CurrentPayroll.Bonus = regularBonuses + preappliedBonuses;
+        Console.WriteLine($"Total Bonus (Regular: {regularBonuses} + Preapplied: {preappliedBonuses}): {CurrentPayroll.Bonus}");
 
         // Calculate Absences Deduction
         var absenceDays = UseManualAbsences ? CurrentPayroll.ManualAbsenceDays : EmployeeAbsences.Count(a => a.Counted);
         var absenceDeduction = absenceDays * CurrentPayroll.DeductionPerAbsenceDay;
         Console.WriteLine($"Absence Days: {absenceDays}, Deduction Per Day: {CurrentPayroll.DeductionPerAbsenceDay}, Absence Deduction: {absenceDeduction}");
 
-        // Calculate Rule-Based Deductions
-        var ruleBasedDeductions = SelectedDeductionRules
+        // Calculate Rule-Based Deductions (including preapplied)
+        var regularDeductions = SelectedDeductionRules
             .Where(r => r.IsApplied)
             .Sum(r =>
             {
@@ -1228,9 +1443,14 @@ else
                 Console.WriteLine($"  Deduction Rule: {r.Name}, Applied: {r.IsApplied}, Amount: {r.Amount}, IsPercentage: {r.IsPercentage}, IsCountable: {r.IsCountable}, Quantity: {r.Quantity}, CalculatedValue: {calculatedValue}");
                 return calculatedValue;
             });
-        Console.WriteLine($"Total Rule-Based Deductions: {ruleBasedDeductions}");
 
-        CurrentPayroll.Deductions = ruleBasedDeductions + absenceDeduction;
+        var preappliedDeductions = PreappliedDeductionRules
+            .Where(r => r.IsApplied)
+            .Sum(r => r.CalculatedAmount);
+
+        Console.WriteLine($"Total Rule-Based Deductions (Regular: {regularDeductions} + Preapplied: {preappliedDeductions}): {regularDeductions + preappliedDeductions}");
+
+        CurrentPayroll.Deductions = regularDeductions + preappliedDeductions + absenceDeduction;
         Console.WriteLine($"Total Deductions (Rules + Absences): {CurrentPayroll.Deductions}");
 
         // Refresh advance deduction summary when other values change
@@ -1279,6 +1499,31 @@ else
         Payrolls = await PayrollService.GetAllAsync(FilterStartDate, FilterEndDate);
     }
 
+    // NEW: Method to load preapplied rules for an employee
+    private async Task LoadPreappliedRules(int employeeId)
+    {
+        try
+        {
+            // You\'ll need to add this method to your PayrollService
+            var preappliedRules = await PayrollService.GetAppliedRulesForEmployeeAsync(employeeId);
+
+            PreappliedBonusRules = preappliedRules
+                .Where(r => r.Rule.Type == AdjustmentType.Bonus)
+                .Select(r => new SelectableRule(r, workDaysPerMonth))
+                .ToList();
+
+            PreappliedDeductionRules = preappliedRules
+                .Where(r => r.Rule.Type == AdjustmentType.Deduction)
+                .Select(r => new SelectableRule(r, workDaysPerMonth))
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading preapplied rules: {ex.Message}");
+            PreappliedBonusRules = new List<SelectableRule>();
+            PreappliedDeductionRules = new List<SelectableRule>();
+        }
+    }
 
     private async Task AddPayroll()
     {
@@ -1292,6 +1537,8 @@ else
 
         SelectedBonusRules.Clear();
         SelectedDeductionRules.Clear();
+        PreappliedBonusRules.Clear();
+        PreappliedDeductionRules.Clear();
         CurrentAdvanceDeductionSummary = new PayrollService.AdvanceDeductionSummary(); // Reset advance summary
         _isAdvanceAmountManuallySet = false; // Reset flag for new payroll
 
@@ -1329,6 +1576,7 @@ else
 
     private async Task EditPayroll(Payroll payroll)
     {
+        // Clone basic payroll data
         CurrentPayroll = new Payroll
             {
                 Id = payroll.Id,
@@ -1346,7 +1594,7 @@ else
                 Employee = payroll.Employee,
                 Transaction = payroll.Transaction,
                 Cash = payroll.Cash,
-                AdvanceDeductionsAmounts = payroll.AdvanceDeductionsAmounts // UPDATED property name
+                AdvanceDeductionsAmounts = payroll.AdvanceDeductionsAmounts
             };
 
         var employee = Employees.FirstOrDefault(e => e.Id == payroll.EmployeeId);
@@ -1357,26 +1605,42 @@ else
             var appliedRules = payroll.AppliedRules ?? new List<PayrollAppliedRule>();
 
             var bonusRules = AllAdjustmentRules
-                .Where(r => r.Type == AdjustmentType.Bonus && r.JobTitles.Any(j => j.Id == jobTitleId));
+                .Where(r => r.Type == AdjustmentType.Bonus && r.JobTitles.Any(j => j.Id == jobTitleId))
+                .ToList();
+
             var deductionRules = AllAdjustmentRules
-                .Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId));
+                .Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId))
+                .ToList();
 
-            SelectedBonusRules = bonusRules.Select(rule =>
-            {
-                var applied = appliedRules.FirstOrDefault(a => a.RuleId == rule.Id);
-                return applied != null
-                ? new SelectableRule(applied, workDaysPerMonth)
-                : new SelectableRule(rule, workDaysPerMonth, rule.AutoApplied);
-            }).ToList();
+            // --- BONUS RULES ---
+            SelectedBonusRules = appliedRules
+                .Where(r => r.Rule.Type == AdjustmentType.Bonus)
+                .Select(r => new SelectableRule(r, workDaysPerMonth))
+                .ToList();
 
-            SelectedDeductionRules = deductionRules.Select(rule =>
-            {
-                var applied = appliedRules.FirstOrDefault(a => a.RuleId == rule.Id);
-                return applied != null
-                    ? new SelectableRule(applied, workDaysPerMonth)
-                    : new SelectableRule(rule, workDaysPerMonth, rule.AutoApplied);
-            }).ToList();
+            var usedBonusRuleIds = SelectedBonusRules.Select(r => r.RuleId).ToHashSet();
 
+            // Only include non-applied and NOT auto-applied rules
+            SelectedBonusRules.AddRange(
+                bonusRules
+                    .Where(r => !usedBonusRuleIds.Contains(r.Id) && !r.AutoApplied)
+                    .Select(r => new SelectableRule(r, workDaysPerMonth, false))
+            );
+
+            // --- DEDUCTION RULES ---
+            SelectedDeductionRules = appliedRules
+                .Where(r => r.Rule.Type == AdjustmentType.Deduction)
+                .Select(r => new SelectableRule(r, workDaysPerMonth))
+                .ToList();
+
+            var usedDeductionRuleIds = SelectedDeductionRules.Select(r => r.RuleId).ToHashSet();
+
+            // Only include non-applied and NOT auto-applied rules
+            SelectedDeductionRules.AddRange(
+                deductionRules
+                    .Where(r => !usedDeductionRuleIds.Contains(r.Id) && !r.AutoApplied)
+                    .Select(r => new SelectableRule(r, workDaysPerMonth, false))
+            );
         }
         else
         {
@@ -1385,67 +1649,50 @@ else
             SelectedDeductionRules = new List<SelectableRule>();
         }
 
+        await LoadPreappliedRules(payroll.EmployeeId);
         await LoadPayrollAbsences(CurrentPayroll.Id);
-
-        // Load advance deduction summary for editing
         await RefreshAdvanceDeductionSummary();
-        _isAdvanceAmountManuallySet = false; // Reset flag when loading an existing payroll
+        _isAdvanceAmountManuallySet = false;
 
         IsPrintModalOpen = false;
         IsModalOpen = true;
     }
 
+
+
     private async Task SavePayroll()
     {
-        var existingAppliedRules = CurrentPayroll.AppliedRules?.ToList() ?? new List<PayrollAppliedRule>();
-
         var updatedRules = SelectedBonusRules
             .Where(r => r.IsApplied)
             .Concat(SelectedDeductionRules.Where(r => r.IsApplied))
+            .Concat(PreappliedBonusRules.Where(r => r.IsApplied))
+            .Concat(PreappliedDeductionRules.Where(r => r.IsApplied))
             .ToList();
 
         var finalAppliedRules = new List<PayrollAppliedRule>();
 
         foreach (var rule in updatedRules)
         {
-            var existing = existingAppliedRules.FirstOrDefault(ar => ar.RuleId == rule.RuleId);
-
-            if (existing != null)
-            {
-                // ✅ Update values if necessary
-                if (existing.Amount != rule.Amount || existing.Quantity != (rule.IsCountable ? rule.Quantity : null))
-                {
-                    existing.Amount = rule.Amount;
-                    existing.Quantity = rule.IsCountable ? rule.Quantity : null;
-                }
-
-                // ✅ Always assign PayrollId in case it's not set yet
-                existing.PayrollId = CurrentPayroll.Id;
-                finalAppliedRules.Add(existing);
-            }
-            else
-            {
-                // ✅ Add new applied rule
-                finalAppliedRules.Add(new PayrollAppliedRule
+            finalAppliedRules.Add(new PayrollAppliedRule
                 {
                     RuleId = rule.RuleId,
                     Amount = rule.Amount,
-                    Quantity = rule.IsCountable ? rule.Quantity : null,
+                    Quantity =  rule.Quantity ,
                     EmployeeId = CurrentPayroll.EmployeeId,
-                    PayrollId = CurrentPayroll.Id, // ✅ Assign new Payroll ID
-                    Date = DateTime.Now // Optional: can help for audits
+                    PayrollId = CurrentPayroll.Id,
+                    Date = rule.Date, // Optional, useful for distinguishing instances
+                    Notes = rule.note
                 });
-            }
         }
 
-        // ✅ Apply updated rules to the payroll
+        // Apply all rules — allow multiple instances of same rule
         CurrentPayroll.AppliedRules = finalAppliedRules;
 
         CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workDaysPerMonth, 2);
 
         if (CurrentPayroll.Id == 0)
         {
-            await PayrollService.CreateAsync(CurrentPayroll);
+            CurrentPayroll = await PayrollService.CreateAsync(CurrentPayroll);
         }
         else
         {
@@ -1470,8 +1717,11 @@ else
         await LoadPayrolls();
     }
 
+}
 
 
+
+@code {
     private void OnAbsenceModeChanged(ChangeEventArgs e)
     {
         if (bool.TryParse(e.Value?.ToString(), out var result))
@@ -1492,9 +1742,11 @@ else
     {
         SelectedBonusRules.Clear();
         SelectedDeductionRules.Clear();
+        PreappliedBonusRules.Clear();
+        PreappliedDeductionRules.Clear();
         CurrentPayroll.BaseSalary = 0;
-        CurrentAdvanceDeductionSummary = new AdvanceDeductionSummary(); // Reset advance summary
-        _isAdvanceAmountManuallySet = false; // Reset flag when employee changes
+        CurrentAdvanceDeductionSummary = new AdvanceDeductionSummary();
+        _isAdvanceAmountManuallySet = false;
 
         var employee = Employees.FirstOrDefault(e => e.Id == employeeId);
         if (employee == null) return;
@@ -1502,35 +1754,30 @@ else
         CurrentPayroll.EmployeeId = employeeId;
         CurrentPayroll.Employee = employee;
 
-        // 🔻 Fetch last payroll early so we can use its base salary in SelectableRule
         var lastPayroll = await PayrollService.GetLastPayrollForEmployeeAsync(employeeId);
         var lastBaseSalary = lastPayroll?.BaseSalary ?? 0;
         CurrentPayroll.BaseSalary = lastBaseSalary;
         CurrentPayroll.Transaction = lastPayroll?.Transaction ?? 0;
+
+        // Load preapplied rules for the selected employee
+        await LoadPreappliedRules(employeeId);
+
         if (employee.JobTitleId is int jobTitleId)
         {
-            var allJobTitleBonusRules = AllAdjustmentRules
+            var applicableBonusRules = AllAdjustmentRules
                 .Where(r => r.Type == AdjustmentType.Bonus && r.JobTitles.Any(j => j.Id == jobTitleId));
-            var allJobTitleDeductionRules = AllAdjustmentRules
+
+            var applicableDeductionRules = AllAdjustmentRules
                 .Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId));
 
-            var appliedRules = await PayrollService.GetAppliedRulesForEmployeeAsync(employeeId);
+            // ❌ Ignore applied rules, just convert all rules into SelectableRule
+            SelectedBonusRules = applicableBonusRules
+                .Select(rule => new SelectableRule(rule, workDaysPerMonth, rule.AutoApplied))
+                .ToList();
 
-            SelectedBonusRules = allJobTitleBonusRules.Select(rule =>
-            {
-                var applied = appliedRules.FirstOrDefault(a => a.RuleId == rule.Id);
-                return applied != null
-                    ? new SelectableRule(applied, workDaysPerMonth, lastBaseSalary)
-                    : new SelectableRule(rule, workDaysPerMonth, rule.AutoApplied);
-            }).ToList();
-
-            SelectedDeductionRules = allJobTitleDeductionRules.Select(rule =>
-            {
-                var applied = appliedRules.FirstOrDefault(a => a.RuleId == rule.Id);
-                return applied != null
-                    ? new SelectableRule(applied, workDaysPerMonth, lastBaseSalary)
-                    : new SelectableRule(rule, workDaysPerMonth, rule.AutoApplied);
-            }).ToList();
+            SelectedDeductionRules = applicableDeductionRules
+                .Select(rule => new SelectableRule(rule, workDaysPerMonth, rule.AutoApplied))
+                .ToList();
         }
 
         if (CurrentPayroll.BaseSalary != 0)
@@ -1549,8 +1796,6 @@ else
         StateHasChanged();
     }
 
-
-
     private void OnAbsenceDeductionChanged()
     {
         RecalculateBonusesAndDeductions();
@@ -1558,7 +1803,7 @@ else
 
     private void OnCountableQuantityChanged(SelectableRule rule, decimal? quantity)
     {
-        Console.WriteLine($"OnCountableQuantityChanged: Rule '{rule.Name}', Old Quantity: {rule.Quantity}, New Quantity: {quantity}");
+        Console.WriteLine($"OnCountableQuantityChanged: Rule \'{rule.Name}\", Old Quantity: {rule.Quantity}, New Quantity: {quantity}");
         var finalQuantity = quantity ?? 1;
         rule.Quantity = finalQuantity;
 
@@ -1571,14 +1816,14 @@ else
         {
             rule.CalculatedAmount = rule.IsPercentage ? CurrentPayroll.BaseSalary * rule.Amount / 100 : rule.Amount;
         }
-        Console.WriteLine($"  Rule '{rule.Name}' - Amount: {rule.Amount}, Quantity: {rule.Quantity}, CalculatedAmount: {rule.CalculatedAmount}");
+        Console.WriteLine($"  Rule \'{rule.Name}\' - Amount: {rule.Amount}, Quantity: {rule.Quantity}, CalculatedAmount: {rule.CalculatedAmount}");
 
         RecalculateBonusesAndDeductions();
     }
 
     private void OnAmountChanged(SelectableRule rule, decimal? newAmount)
     {
-        Console.WriteLine($"OnAmountChanged: Rule '{rule.Name}', Old Amount: {rule.Amount}, New Amount: {newAmount}");
+        Console.WriteLine($"OnAmountChanged: Rule \'{rule.Name}\", Old Amount: {rule.Amount}, New Amount: {newAmount}");
         rule.Amount = newAmount ?? 0;
 
         if (!rule.IsCountable)
@@ -1587,7 +1832,7 @@ else
         }
 
         OnCountableQuantityChanged(rule, rule.Quantity);
-        Console.WriteLine($"After OnAmountChanged: Rule '{rule.Name}' - Amount: {rule.Amount}, Quantity: {rule.Quantity}, CalculatedAmount: {rule.CalculatedAmount}");
+        Console.WriteLine($"After OnAmountChanged: Rule \'{rule.Name}\' - Amount: {rule.Amount}, Quantity: {rule.Quantity}, CalculatedAmount: {rule.CalculatedAmount}");
     }
     private async Task ApplyTriggeredRules()
     {
@@ -1647,6 +1892,9 @@ else
         private DateTime? SelectedEndDate { get; set; }
         public RuleTrigger Trigger { get; set; } = RuleTrigger.Manual;
         public bool AutoApplied { get; set; }
+        public string note { get; set; }
+        public DateTime? Date { get; set; }
+       
 
         /// <summary>
         /// Constructor for applied rule (with optional fallback base salary if Payroll is null).
@@ -1664,7 +1912,9 @@ else
             Quantity = appliedRule.Quantity ?? 1;
             Trigger = appliedRule.Rule.Trigger;
             WorkDays = workDaysPerMonth;
-
+            note = appliedRule.Notes;
+            Date = appliedRule.Date;
+          
             // ✅ Safely get the base salary
             decimal baseSalary = appliedRule.Payroll?.BaseSalary ?? lastPayrollBaseSalary ?? 0;
 
@@ -1690,6 +1940,7 @@ else
             WorkDays = workDaysPerMonth;
             Trigger = rule.Trigger;
             AutoApplied = rule.AutoApplied;
+            
 
             CalculatedAmount = IsCountable
                 ? Amount * Quantity
@@ -1720,7 +1971,7 @@ else
     {
         FilterStartDate = null;
         FilterEndDate = null;
-       
+
     }
 
 }
@@ -1804,6 +2055,99 @@ else
         color: #ff9800;
         font-weight: bold;
     }
+
+    /* NEW: Preapplied rules section styles */
+    .preapplied-rules-section {
+        background: #e8f4fd;
+        border: 1px solid #b3d9ff;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 0.5rem;
+    }
+
+    .preapplied-bonus-section,
+    .preapplied-deduction-section {
+        background: #ffffff;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 0.75rem;
+    }
+
+    .subsection-title {
+        font-weight: 600;
+        color: #495057;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 0.5rem;
+    }
+
+    .preapplied-rules-container {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+
+    .preapplied-rule-item {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        background: #f8f9fa;
+        transition: all 0.2s ease;
+    }
+
+        .preapplied-rule-item.active {
+            background: #e7f3ff;
+            border-color: #b3d9ff;
+        }
+
+        .preapplied-rule-item:hover {
+            background: #e9ecef;
+        }
+
+        .preapplied-rule-item.active:hover {
+            background: #d1ecf1;
+        }
+
+    .badge-preapplied {
+        background-color: #17a2b8 !important;
+        color: white;
+        font-size: 0.7em;
+        padding: 0.2em 0.4em;
+        border-radius: 0.25rem;
+    }
+
+    .rule-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .enhanced-input-sm {
+        width: 80px;
+        font-size: 0.875rem;
+    }
+
+    .calculated-amount {
+        font-weight: bold;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+        min-width: 80px;
+        text-align: center;
+    }
+
+        .calculated-amount.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .calculated-amount.danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
 </style>
-
-

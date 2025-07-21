@@ -42,7 +42,7 @@ public class AbsenceService
         using var context = _contextFactory.CreateDbContext();
 
         return await context.AbsenceRecords
-            .Where(a => a.PayrollId == payrollId )
+            .Where(a => a.PayrollId == payrollId)
             .ToListAsync();
     }
 

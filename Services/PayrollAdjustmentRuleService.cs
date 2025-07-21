@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RH.Data;
-using RH.Models;
-using System;
 
 public class PayrollAdjustmentRuleService : IPayrollAdjustmentRuleService
 {

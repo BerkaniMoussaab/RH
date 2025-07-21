@@ -1,6 +1,4 @@
 ﻿// Interfaces/IPayrollAdjustmentRuleService.cs
-using RH.Models;
-
 public interface IPayrollAdjustmentRuleService
 {
     Task<List<PayrollAdjustmentRule>> GetAllAsync();

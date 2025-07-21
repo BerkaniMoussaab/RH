@@ -130,7 +130,7 @@ namespace RH.Data
                     .HasColumnType("decimal(18,2)")
                     .IsRequired();
 
-               
+
 
                 entity.Property(e => e.DeductionDate)
                     .IsRequired();

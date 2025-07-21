@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace RH.Models
+﻿namespace RH.Models
 {
     public class RecoveryDay
     {

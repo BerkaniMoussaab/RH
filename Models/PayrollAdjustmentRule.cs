@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Components.Web;
-using RH.Models;
+﻿using RH.Models;
 using System.ComponentModel.DataAnnotations;
 
 public class PayrollAdjustmentRule
