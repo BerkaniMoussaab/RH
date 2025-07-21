@@ -5,6 +5,7 @@ namespace RH.Services
     public interface IPayrollService
     {
         Task<List<Payroll>> GetAllAsync(DateTime? startDate, DateTime? endDate);
+        
 
         Task<Payroll?> GetByIdAsync(int id);
         Task DeleteAsync(int id);

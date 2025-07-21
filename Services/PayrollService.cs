@@ -287,7 +287,7 @@ public class PayrollService : IPayrollService
         try
         {
             var maxDeductionAmount = await _advanceService.CalculateMaximumDeductionAsync(employeeId, preliminaryNetPay);
-            var activeAdvances = await _advanceService.GetActiveAdvancesByEmployeeIdAsync(employeeId);
+            var activeAdvances = await _advanceService.GetActiveAdvancesForEmployeeAsync(employeeId);
             var totalPossibleDeduction = activeAdvances.Sum(a => a.RemainingAmount);
             return Math.Min(totalPossibleDeduction, maxDeductionAmount);
         }
@@ -323,7 +323,7 @@ public class PayrollService : IPayrollService
     {
         try
         {
-            var activeAdvances = await _advanceService.GetActiveAdvancesByEmployeeIdAsync(employeeId) ?? new List<Advance>();
+            var activeAdvances = await _advanceService.GetActiveAdvancesForEmployeeAsync(employeeId) ?? new List<Advance>();
             var maxDeductionAmount = await _advanceService.CalculateMaximumDeductionAsync(employeeId, preliminaryNetPay);
             var totalActiveAmount = activeAdvances.Sum(a => a.RemainingAmount);
 

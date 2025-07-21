@@ -237,5 +237,18 @@ namespace RH.Services
                 }
             });
         }
+        public async Task<List<Advance>> GetActiveAdvancesByEmployeeIdAsync(int employeeId)
+        {
+            return await _context.Advances
+                .Include(a => a.Employee)
+                .Include(a => a.Deductions)
+                .Where(a => a.EmployeeId == employeeId &&
+                           a.Status == AdvanceStatus.Active &&
+                           a.RemainingAmount > 0)
+                .OrderBy(a => a.Date)
+                .ToListAsync();
+        }
+
     }
+
 }
