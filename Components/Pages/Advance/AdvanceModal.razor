@@ -15,7 +15,7 @@
                 </h5>
                 <button type="button" class="btn-close btn-close-white" @onclick="CloseModal"></button>
             </div>
-            
+
             <div class="modal-body">
                 @if (isLoading)
                 {
@@ -67,7 +67,9 @@
                                         {
                                             <span class="badge bg-warning text-dark">
                                                 @existingAdvances.Count avance(s) active(s)
-                                            </span><br>
+                                            </span>
+
+                                            <br>
                                             <small class="text-muted">Total: @totalActiveAmount.ToString("C")</small>
                                         }
                                         else
@@ -88,12 +90,12 @@
                                 </label>
                                 <div class="input-group">
                                     <span class="input-group-text">€</span>
-                                    <input type="number" 
-                                           step="0.01" 
-                                           min="0.01" 
+                                    <input type="number"
+                                           step="0.01"
+                                           min="0.01"
                                            max="10000"
-                                           class="form-control" 
-                                           @bind="newAdvance.Amount" 
+                                           class="form-control"
+                                           @bind="newAdvance.Amount"
                                            placeholder="0.00" />
                                 </div>
                                 <ValidationMessage For="@(() => newAdvance.Amount)" class="text-danger small" />
@@ -107,9 +109,9 @@
                                     <i class="fas fa-calendar text-info me-2"></i>
                                     Date <span class="text-danger">*</span>
                                 </label>
-                                <input type="date" 
-                                       class="form-control" 
-                                       @bind="newAdvance.Date" 
+                                <input type="date"
+                                       class="form-control"
+                                       @bind="newAdvance.Date"
                                        max="@DateTime.Today.ToString("yyyy-MM-dd")" />
                                 <ValidationMessage For="@(() => newAdvance.Date)" class="text-danger small" />
                                 <div class="form-text">
@@ -186,7 +188,7 @@
                     </EditForm>
                 }
             </div>
-            
+
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" @onclick="CloseModal">
                     <i class="fas fa-times me-2"></i>
@@ -196,8 +198,8 @@
                     <i class="fas fa-undo me-2"></i>
                     Réinitialiser
                 </button>
-                <button type="button" 
-                        class="btn btn-primary" 
+                <button type="button"
+                        class="btn btn-primary"
                         @onclick="HandleValidSubmit"
                         disabled="@(isSubmitting || !IsFormValid())">
                     @if (isSubmitting)
@@ -231,7 +233,7 @@
     private List<Advance> existingAdvances = new();
     private Advance newAdvance = new();
     private Employee? selectedEmployee;
-    
+
     private bool isLoading = true;
     private bool isSubmitting = false;
     private List<string> validationErrors = new();
@@ -286,12 +288,12 @@
     private void InitializeNewAdvance()
     {
         newAdvance = new Advance
-        {
-            Date = DateTime.Today,
-            Status = AdvanceStatus.Active,
-            CreatedAt = DateTime.UtcNow,
-            EmployeeId = PreselectedEmployeeId ?? 0
-        };
+            {
+                Date = DateTime.Today,
+                Status = AdvanceStatus.Active,
+                CreatedAt = DateTime.UtcNow,
+                EmployeeId = PreselectedEmployeeId ?? 0
+            };
         ClearMessages();
     }
 
@@ -321,7 +323,7 @@
     {
         try
         {
-            existingAdvances = await AdvanceService.GetActiveAdvancesByEmployeeIdAsync(employeeId);
+            existingAdvances = await AdvanceService.GetActiveAdvancesForEmployeeAsync(employeeId);
             totalActiveAmount = existingAdvances.Sum(a => a.RemainingAmount);
         }
         catch (Exception ex)
@@ -355,13 +357,13 @@
 
             // Create the advance
             var createdAdvance = await AdvanceService.CreateAsync(newAdvance);
-            
+
             // Notify parent component
             await OnAdvanceCreated.InvokeAsync(createdAdvance);
-            
+
             // Show success and close modal
             await JSRuntime.InvokeVoidAsync("alert", $"Avance de {createdAdvance.Amount:C} créée avec succès pour {selectedEmployee?.FullName}!");
-            
+
             await CloseModal();
         }
         catch (Exception ex)
@@ -418,8 +420,8 @@
 
     private bool IsFormValid()
     {
-        return newAdvance.EmployeeId > 0 && 
-               newAdvance.Amount > 0 && 
+        return newAdvance.EmployeeId > 0 &&
+               newAdvance.Amount > 0 &&
                newAdvance.Amount <= 10000 &&
                newAdvance.Date <= DateTime.Today &&
                newAdvance.Date >= DateTime.Today.AddYears(-1) &&
@@ -462,10 +464,10 @@
         transition: all 0.15s ease-in-out;
     }
 
-    .form-control:focus, .form-select:focus {
-        border-color: #80bdff;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-    }
+        .form-control:focus, .form-select:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
 
     .input-group-text {
         background-color: #f8f9fa;
@@ -485,10 +487,10 @@
         border: none;
     }
 
-    .btn-primary:hover:not(:disabled) {
-        background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
-        transform: translateY(-1px);
-    }
+        .btn-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+            transform: translateY(-1px);
+        }
 
     .alert {
         border-radius: 6px;
@@ -535,9 +537,19 @@
         font-weight: bold !important;
     }
 
-    .me-1 { margin-right: 0.25rem !important; }
-    .me-2 { margin-right: 0.5rem !important; }
-    .mb-0 { margin-bottom: 0 !important; }
-    .mt-2 { margin-top: 0.5rem !important; }
-</style>
+    .me-1 {
+        margin-right: 0.25rem !important;
+    }
 
+    .me-2 {
+        margin-right: 0.5rem !important;
+    }
+
+    .mb-0 {
+        margin-bottom: 0 !important;
+    }
+
+    .mt-2 {
+        margin-top: 0.5rem !important;
+    }
+</style>

@@ -210,7 +210,8 @@
                 RuleId = r.RuleId,
                 Amount = r.Amount,
                 Quantity = r.Quantity ?? 1,
-                Notes = r.Notes
+                Notes = r.Notes,
+                Date=DateTime.Now
             }).ToList();
 
         await PayrollService.ApplyRulesAsync(SelectedEmployeeId, appliedRules);

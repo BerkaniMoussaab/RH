@@ -8,7 +8,7 @@ namespace RH.Services
     {
         Task<List<Advance>> GetAllAsync();
         Task<List<Advance>> GetByEmployeeIdAsync(int employeeId);
-        Task<List<Advance>> GetActiveAdvancesByEmployeeIdAsync(int employeeId);
+        Task<List<Advance>> GetActiveAdvancesForEmployeeAsync(int employeeId);
         Task<Advance> GetByIdAsync(int id);
         Task<Advance> CreateAsync(Advance advance);
         Task<Advance> UpdateAsync(Advance advance);
@@ -18,6 +18,7 @@ namespace RH.Services
         Task<List<AdvanceDeduction>> GetDeductionHistoryAsync(int advanceId);
         Task<decimal> CalculateMaximumDeductionAsync(int employeeId, decimal preliminaryNetPay);
         Task<List<AdvanceDeduction>> ProcessAdvanceDeductionsAsync(int employeeId, int payrollId, decimal maxDeductionAmount);
+        Task ApplyDeductionToAdvancesAsync(int employeeId, decimal deductionAmount);
     }
 
     public class AdvanceService : IAdvanceService
@@ -48,7 +49,7 @@ namespace RH.Services
                 .ToListAsync();
         }
 
-        public async Task<List<Advance>> GetActiveAdvancesByEmployeeIdAsync(int employeeId)
+        public async Task<List<Advance>> GetActiveAdvancesForEmployeeAsync(int employeeId)
         {
             return await _context.Advances
                 .Include(a => a.Employee)
@@ -56,7 +57,7 @@ namespace RH.Services
                 .Where(a => a.EmployeeId == employeeId &&
                            a.Status == AdvanceStatus.Active &&
                            a.RemainingAmount > 0)
-                .OrderBy(a => a.Date) // Oldest first for deduction priority
+                .OrderBy(a => a.Date)
                 .ToListAsync();
         }
 
@@ -92,7 +93,6 @@ namespace RH.Services
             var advance = await _context.Advances.FindAsync(id);
             if (advance == null) return false;
 
-            // Only allow deletion if no deductions have been made
             var hasDeductions = await _context.AdvanceDeductions
                 .AnyAsync(d => d.AdvanceId == id);
 
@@ -137,7 +137,6 @@ namespace RH.Services
 
         public async Task<decimal> CalculateMaximumDeductionAsync(int employeeId, decimal preliminaryNetPay)
         {
-            // Maximum 50% of net pay can be deducted for advances
             const decimal maxDeductionPercentage = 0.5m;
             return Math.Max(0, preliminaryNetPay * maxDeductionPercentage);
         }
@@ -152,7 +151,7 @@ namespace RH.Services
 
                 try
                 {
-                    var activeAdvances = await GetActiveAdvancesByEmployeeIdAsync(employeeId);
+                    var activeAdvances = await GetActiveAdvancesForEmployeeAsync(employeeId);
                     var deductions = new List<AdvanceDeduction>();
                     var remainingDeductionAmount = maxDeductionAmount;
 
@@ -201,6 +200,42 @@ namespace RH.Services
             });
         }
 
+        public async Task ApplyDeductionToAdvancesAsync(int employeeId, decimal deductionAmount)
+        {
+            var executionStrategy = _context.Database.CreateExecutionStrategy();
+
+            await executionStrategy.ExecuteAsync(async () =>
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                try
+                {
+                    var activeAdvances = await GetActiveAdvancesForEmployeeAsync(employeeId);
+                    decimal remainingDeduction = deductionAmount;
+
+                    foreach (var advance in activeAdvances)
+                    {
+                        if (remainingDeduction <= 0) break;
+
+                        decimal amountToDeduct = Math.Min(advance.RemainingAmount, remainingDeduction);
+                        advance.RemainingAmount -= amountToDeduct;
+
+                        if (advance.RemainingAmount <= 0)
+                        {
+                            advance.Status = AdvanceStatus.Completed;
+                            advance.CompletedAt = DateTime.UtcNow;
+                        }
+                        _context.Entry(advance).State = EntityState.Modified;
+                        remainingDeduction -= amountToDeduct;
+                    }
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                }
+                catch (Exception)
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
+            });
+        }
     }
 }
-
