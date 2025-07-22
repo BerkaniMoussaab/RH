@@ -108,17 +108,17 @@ else
                             }
                         </td>
                         <td class="text-center">@payroll.PayDate.ToString("dd/MM/yyyy")</td>
-                        <td class="text-end">@payroll.BaseSalary.ToString("C") DA</td>
+                        <td class="text-end">@payroll.BaseSalary.ToString() DA</td>
                         <td class="text-end text-success">
-                            <span class="fw-semibold">+@payroll.Bonus.ToString("C") DA</span>
+                            <span class="fw-semibold">+@payroll.Bonus.ToString() DA</span>
                         </td>
                         <td class="text-end text-danger">
-                            <span class="fw-semibold">-@payroll.Deductions.ToString("C") DA</span>
+                            <span class="fw-semibold">-@payroll.Deductions.ToString() DA</span>
                         </td>
                         <td class="text-end text-warning">
-                            <span class="fw-semibold">-@payroll.AdvanceDeductionsAmounts.ToString("C") DA</span>
+                            <span class="fw-semibold">-@payroll.AdvanceDeductionsAmounts.ToString() DA</span>
                         </td>
-                        <td class="text-end fw-bold text-primary">@payroll.NetPay.ToString("C") DA</td>
+                        <td class="text-end fw-bold text-primary">@payroll.NetPay.ToString() DA</td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-outline-secondary me-1" title="Modifier"
                             @onclick="() => EditPayroll(payroll)">
@@ -408,7 +408,7 @@ else
                                     <div class="section-title">
                                         <i class="bi bi-credit-card-2-front text-warning me-2"></i>
                                         <span>Avances sur salaire</span>
-                                        <span class="badge bg-warning ms-auto">-@CurrentAdvanceDeductionSummary.ProposedDeduction.ToString("C") DA</span>
+                                        <span class="badge bg-warning ms-auto">-@CurrentAdvanceDeductionSummary.ProposedDeduction.ToString() DA</span>
                                     </div>
 
                                     @if (CurrentAdvanceDeductionSummary.HasActiveAdvances)
@@ -421,15 +421,15 @@ else
                                                 </div>
                                                 <div class="col-md-3">
                                                     <strong>Montant total:</strong><br>
-                                                    <span class="text-warning">@CurrentAdvanceDeductionSummary.TotalActiveAmount.ToString("C") DA</span>
+                                                    <span class="text-warning">@CurrentAdvanceDeductionSummary.TotalActiveAmount.ToString() DA</span>
                                                 </div>
                                                 <div class="col-md-3">
                                                     <strong>Déduction max autorisée:</strong><br>
-                                                    <span class="text-success">@CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString("C") DA</span>
+                                                    <span class="text-success">@CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString() DA</span>
                                                 </div>
                                                 <div class="col-md-3">
                                                     <strong>Déduction proposée:</strong><br>
-                                                    <span class="text-primary fw-bold">@CurrentAdvanceDeductionSummary.ProposedDeduction.ToString("C") DA</span>
+                                                    <span class="text-primary fw-bold">@CurrentAdvanceDeductionSummary.ProposedDeduction.ToString() DA</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -451,8 +451,8 @@ else
                                                         {
                                                             <tr>
                                                                 <td class="fw-medium">@advance.Date.ToString("dd/MM/yyyy")</td>
-                                                                <td class="text-end">@advance.Amount.ToString("C") DA</td>
-                                                                <td class="text-end text-warning fw-semibold">@advance.RemainingAmount.ToString("C") DA</td>
+                                                                <td class="text-end">@advance.Amount.ToString() DA</td>
+                                                                <td class="text-end text-warning fw-semibold">@advance.RemainingAmount.ToString() DA</td>
                                                                 <td>@(advance.Reason ?? "Non spécifié")</td>
                                                                 <td>
                                                                     <span class="badge bg-success">@advance.Status</span>
@@ -468,9 +468,9 @@ else
                                         {
                                             <div class="alert alert-warning mt-3">
                                                 <i class="bi bi-exclamation-triangle me-2"></i>
-                                                <strong>Attention:</strong> Le montant total des avances (@CurrentAdvanceDeductionSummary.TotalActiveAmount.ToString("C") DA)
-                                                dépasse la déduction maximale autorisée (@CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString("C") DA).
-                                                Seuls @CurrentAdvanceDeductionSummary.ProposedDeduction.ToString("C") DA seront déduits ce mois-ci.
+                                                <strong>Attention:</strong> Le montant total des avances (@CurrentAdvanceDeductionSummary.TotalActiveAmount.ToString() DA)
+                                                dépasse la déduction maximale autorisée (@CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString() DA).
+                                                Seuls @CurrentAdvanceDeductionSummary.ProposedDeduction.ToString() DA seront déduits ce mois-ci.
                                             </div>
                                         }
 
@@ -486,7 +486,7 @@ else
                                             @oninput="MarkAdvanceAsManuallySet" />
 
                                             <small class="text-muted">
-                                                Maximum autorisé: @CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString("C") DA
+                                                Maximum autorisé: @CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString() DA
 
                                             </small>
                                         </div>
@@ -537,7 +537,7 @@ else
                                                                                     @rule.Name
                                                                                     @if (!rule.IsPercentage && rule.Amount > 0)
                                                                                     {
-                                                                                        <span class="text-muted ms-1">(@rule.Amount.ToString("C") DA)</span>
+                                                                                        <span class="text-muted ms-1">(@rule.Amount.ToString() DA)</span>
                                                                                     }
                                                                                     else if (rule.IsPercentage)
                                                                                     {
@@ -694,7 +694,7 @@ else
                                                                 @rule.Name
                                                                 @if (!rule.IsPercentage && rule.Amount > 0)
                                                                 {
-                                                                    <span class="text-muted ms-1">(@rule.Amount.ToString("C") DA)</span>
+                                                                    <span class="text-muted ms-1">(@rule.Amount.ToString() DA)</span>
                                                                 }
                                                                 else if (rule.IsPercentage)
                                                                 {
@@ -859,7 +859,7 @@ else
                                             </div>
                                             <div class="col-sm-3">
                                                 <label class="form-label small mb-1">Cash (calculé)</label>
-                                                <div class="form-control-plaintext small">@CurrentPayroll.Cash.ToString("C") DA</div>
+                                                <div class="form-control-plaintext small">@CurrentPayroll.Cash.ToString() DA</div>
                                             </div>
                                         }
                                         else
@@ -870,14 +870,14 @@ else
                                             </div>
                                             <div class="col-sm-3">
                                                 <label class="form-label small mb-1">Transaction (calculé)</label>
-                                                <div class="form-control-plaintext small">@CurrentPayroll.Transaction.ToString("C") DA</div>
+                                                <div class="form-control-plaintext small">@CurrentPayroll.Transaction.ToString() DA</div>
                                             </div>
                                         }
 
                                         <div class="col-sm-3">
                                             <label class="form-label small mb-1">Net à payer</label>
                                             <div class="form-control-plaintext fw-bold small text-success">
-                                                @CurrentPayroll.NetPay.ToString("C") DA
+                                                @CurrentPayroll.NetPay.ToString() DA
                                             </div>
                                         </div>
                                     </div>
