@@ -241,7 +241,7 @@ else
 
 @if (ShowModal)
 {
-    <PayrollModal ShowModal="@ShowModal"
+    <RuleModal ShowModal="@ShowModal"
                   ShowModalChanged="@(value => ShowModal = value)"
                   NewAdjustment="@NewAdjustment"
                   NewAdjustmentChanged="@(value => NewAdjustment = value)"
@@ -300,7 +300,10 @@ else
                 IsPercentage = adjustment.IsPercentage,
                 Type = adjustment.Type,
                 IsCountable = adjustment.IsCountable,
-                JobTitles = new List<JobTitle>(adjustment.JobTitles)
+                JobTitles = new List<JobTitle>(adjustment.JobTitles),
+                AutoApplied =adjustment.AutoApplied,
+                IsEditable = adjustment.IsEditable
+
             };
         SelectedJobTitleIds = adjustment.JobTitles.Select(j => j.Id).ToList();
         ShowModal = true;

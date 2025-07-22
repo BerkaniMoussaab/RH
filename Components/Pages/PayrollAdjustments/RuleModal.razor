@@ -138,9 +138,8 @@
                                             </div>
                                             <div class="form-check">
                                                 <InputCheckbox class="form-check-input"
-                                                               Value="NewAdjustment.AutoApplied"
-                                                              
-                                                               ValueExpression="@(() => NewAdjustment.AutoApplied)" />
+                                                               @bind-Value="NewAdjustment.AutoApplied" />
+
                                                 <label class="form-check-label ms-2">
                                                     <div class="fw-semibold">Automatiquement appliqué</div>
                                                     <div class="text-muted small">La règle sera automatiquement appliqué chaque paie</div>
@@ -302,6 +301,7 @@
             StateHasChanged(); // refresh form
         }
     }
+    
 
     private async Task HandleSave()
     {

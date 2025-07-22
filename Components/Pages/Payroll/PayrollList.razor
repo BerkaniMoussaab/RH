@@ -108,17 +108,17 @@ else
                             }
                         </td>
                         <td class="text-center">@payroll.PayDate.ToString("dd/MM/yyyy")</td>
-                        <td class="text-end">@payroll.BaseSalary.ToString("C")</td>
+                        <td class="text-end">@payroll.BaseSalary.ToString("C") DA</td>
                         <td class="text-end text-success">
-                            <span class="fw-semibold">+@payroll.Bonus.ToString("C")</span>
+                            <span class="fw-semibold">+@payroll.Bonus.ToString("C") DA</span>
                         </td>
                         <td class="text-end text-danger">
-                            <span class="fw-semibold">-@payroll.Deductions.ToString("C")</span>
+                            <span class="fw-semibold">-@payroll.Deductions.ToString("C") DA</span>
                         </td>
                         <td class="text-end text-warning">
-                            <span class="fw-semibold">-@payroll.AdvanceDeductionsAmounts.ToString("C")</span>
+                            <span class="fw-semibold">-@payroll.AdvanceDeductionsAmounts.ToString("C") DA</span>
                         </td>
-                        <td class="text-end fw-bold text-primary">@payroll.NetPay.ToString("C")</td>
+                        <td class="text-end fw-bold text-primary">@payroll.NetPay.ToString("C") DA</td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-outline-secondary me-1" title="Modifier"
                             @onclick="() => EditPayroll(payroll)">
@@ -151,8 +151,8 @@ else
                                 <h5 class="modal-title mb-1 fw-bold">
                                     <i class="bi bi-cash-coin me-2"></i>
                                     @((CurrentPayroll.Id == 0)
-                                                    ? "Ajouter une fiche de paie"
-                                                    : $"Modifier la fiche de paie (ID: {CurrentPayroll.Id})")
+                                                        ? "Ajouter une fiche de paie"
+                                                        : $"Modifier la fiche de paie (ID: {CurrentPayroll.Id})")
                                 </h5>
                             </div>
                         </div>
@@ -281,149 +281,126 @@ else
                                 </div>
                             </div>
 
-                            <!-- Section Salaire -->
+                            <!-- 💰 Salaire & Retenue Section -->
                             <div class="col-md-6">
-                                <div class="salary-section">
-                                    <div class="section-title">
-                                        <i class="bi bi-currency-dollar text-success me-2"></i>
-                                        <span>Salaire de base</span>
-                                    </div>
-                                    <div class="enhanced-form-group">
-                                        <InputNumber TValue="decimal"
-                                        class="form-control enhanced-input salary-input"
-                                        Value="CurrentPayroll.BaseSalary"
-                                        ValueChanged="@(value => OnBaseSalaryChanged(value, workDaysPerMonth))"
-                                        ValueExpression="@(() => CurrentPayroll.BaseSalary)" />
-
-                                        <small class="text-muted mt-1 d-flex align-items-center">
-                                            <i class="bi bi-info-circle me-1"></i>
-                                            Récupéré depuis la dernière fiche de paie
-                                        </small>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Section Mode d\'absence -->
-                            <div class="col-md-6">
-                                <div class="absence-mode-section">
-                                    <div class="section-title">
-                                        <i class="bi bi-gear text-warning me-2"></i>
-                                        <span>Mode de saisie des absences</span>
-                                    </div>
-                                    <div class="enhanced-form-group">
-                                        <select class="form-select enhanced-select" @onchange="OnAbsenceModeChanged">
-                                            @if (CurrentPayroll.ManualAbsenceDays != 0)
-                                            {
-                                                <option value="true">Saisie manuelle</option>
-                                                <option value="false">Utiliser les absences enregistrées</option>
-                                            }
-                                            else
-                                            {
-                                                <option value="false">Utiliser les absences enregistrées</option>
-                                                <option value="true">Saisie manuelle</option>
-                                            }
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Section Retenue par jour -->
-                            <div class="col-md-6">
-                                <div class="deduction-info">
-                                    <div class="section-title">
-                                        <i class="bi bi-calculator text-info me-2"></i>
-                                        <span>Retenue par jour d\'absence</span>
-                                        <i class="bi bi-info-circle ms-1 text-muted"
-                                        title="Montant appliqué automatiquement : salaire de base / jours ouvrables de la période."></i>
-                                    </div>
-                                    <div class="enhanced-form-group">
-                                        <InputNumber TValue="decimal"
-                                        class="form-control enhanced-input"
-                                        Value="CurrentPayroll.DeductionPerAbsenceDay"
-                                        ValueExpression="@(() => CurrentPayroll.DeductionPerAbsenceDay)"
-                                        Disabled="true" />
-                                        <small class="text-muted">Calculé automatiquement</small>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Section Absences -->
-                            <div class="col-md-6">
-                                <div class="absence-section">
-                                    <div class="section-title">
-                                        <i class="bi bi-calendar-x text-warning me-2"></i>
-                                        <span>Absences</span>
-                                        @if (CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue)
-                                        {
-                                            <small class="text-muted ms-2">
-                                                (Période: @CurrentPayroll.PayrollStartDate.Value.ToString("dd/MM") - @CurrentPayroll.PayrollEndDate.Value.ToString("dd/MM"))
-                                            </small>
-                                        }
-                                    </div>
-
-                                    @if (UseManualAbsences || CurrentPayroll.ManualAbsenceDays != 0)
-                                    {
-                                        <div class="enhanced-form-group">
-                                            <label class="form-label">Nombre de jours d\'absence (manuel)</label>
-                                            <InputNumber TValue="int"
-                                            class="form-control enhanced-input"
-                                            Value="CurrentPayroll.ManualAbsenceDays"
-                                            ValueChanged="OnManualAbsenceDaysChanged"
-                                            ValueExpression="@(() =>CurrentPayroll.ManualAbsenceDays)" />
+                                <div class="card shadow-sm border-0 mb-3">
+                                    <div class="card-body py-2">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="mb-0 text-primary"><i class="bi bi-cash-coin me-2"></i>Salaire & Retenue</h6>
                                         </div>
-                                    }
 
-                                    @if (EmployeeAbsences.Any())
-                                    {
-                                        <div class="absence-table-wrapper mb-3">
-                                            <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
-                                                <table class="table table-bordered table-sm enhanced-table">
+                                        <div class="row g-2">
+                                            <div class="col-6">
+                                                <label class="form-label mb-1">Salaire de base</label>
+                                                <InputNumber TValue="decimal" class="form-control form-control-sm"
+                                                             Value="CurrentPayroll.BaseSalary"
+                                                             ValueChanged="@(value => OnBaseSalaryChanged(value, workDaysPerMonth))"
+                                                             ValueExpression="@(() => CurrentPayroll.BaseSalary)" />
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label mb-1 d-flex align-items-center">
+                                                    Retenue / jour
+                                                    <i class="bi bi-info-circle ms-1 text-muted"
+                                                       title="Calculé automatiquement à partir du salaire de base et du nombre de jours ouvrables."></i>
+                                                </label>
+                                                <InputNumber TValue="decimal" class="form-control form-control-sm"
+                                                             Value="CurrentPayroll.DeductionPerAbsenceDay"
+                                                             ValueExpression="@(() => CurrentPayroll.DeductionPerAbsenceDay)"
+                                                             Disabled />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 📅 Absence Section -->
+                            <div class="col-md-6">
+                                <div class="card shadow-sm border-0 mb-3">
+                                    <div class="card-body py-2">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="mb-0 text-danger"><i class="bi bi-calendar-x me-2"></i>Absences</h6>
+
+                                            <!-- Switch mode -->
+                                            <div class="form-check form-switch d-flex align-items-center">
+                                                <input class="form-check-input" type="checkbox"
+                                                       @onchange="OnAbsenceModeChanged"
+                                                       checked="@UseManualAbsences" />
+                                                <label class="form-check-label ms-2 small text-muted">
+                                                    @if (UseManualAbsences)
+                                                    {
+                                                        <text>Manuel</text>
+                                                    }
+                                                    else
+                                                    {
+                                                        <text>Automatique</text>
+                                                    }
+                                                </label>
+                                            </div>
+                                        </div>
+
+                                        @if (UseManualAbsences || CurrentPayroll.ManualAbsenceDays != 0)
+                                        {
+                                            <div class="mb-2">
+                                                <label class="form-label small">Jours d'absence (manuel)</label>
+                                                <InputNumber TValue="int" class="form-control form-control-sm"
+                                                             Value="CurrentPayroll.ManualAbsenceDays"
+                                                             ValueChanged="OnManualAbsenceDaysChanged"
+                                                             ValueExpression="@(() => CurrentPayroll.ManualAbsenceDays)" />
+                                            </div>
+                                        }
+
+                                        <!-- 🧾 Absence List -->
+                                        @if (EmployeeAbsences.Any())
+                                        {
+                                            <div class="table-responsive" style="max-height: 160px;">
+                                                <table class="table table-sm table-bordered align-middle mb-0">
                                                     <thead class="table-light">
                                                         <tr>
                                                             <th style="width: 25%;">Date</th>
                                                             <th>Motif</th>
-                                                            <th style="width: 100px;" class="text-center">Comptée</th>
+                                                            <th style="width: 90px;" class="text-center">Comptée</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         @foreach (var a in EmployeeAbsences)
                                                         {
                                                             <tr class="@(a.Counted ? "table-warning" : "")">
-                                                                <td class="fw-medium">@a.Date.ToString("dd/MM/yyyy")</td>
+                                                                <td>@a.Date.ToString("dd/MM/yyyy")</td>
                                                                 <td>
-                                                                    <InputText class="form-control form-control-sm border-0" @bind-Value="a.Reason" Disabled />
+                                                                    <InputText class="form-control form-control-sm border-0"
+                                                                               @bind-Value="a.Reason"
+                                                                               Disabled />
                                                                 </td>
                                                                 <td class="text-center">
-                                                                    <InputCheckbox class="form-check-input enhanced-checkbox"
-                                                                    Value="a.Counted"
-                                                                    ValueChanged="GetCountedChangedCallback(a)"
-                                                                    ValueExpression="@(() => a.Counted)" />
+                                                                    <InputCheckbox class="form-check-input"
+                                                                                   Value="a.Counted"
+                                                                                   ValueChanged="GetCountedChangedCallback(a)"
+                                                                                   ValueExpression="@(() => a.Counted)" />
                                                                 </td>
                                                             </tr>
                                                         }
                                                     </tbody>
                                                 </table>
                                             </div>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div class="empty-state">
-                                            <i class="bi bi-calendar-check text-muted"></i>
-                                            <span class="text-muted">
+                                        }
+                                        else
+                                        {
+                                            <div class="text-muted small mt-2">
+                                                <i class="bi bi-calendar-check me-1"></i>
                                                 @if (CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue)
                                                 {
                                                     <text>Aucune absence enregistrée pour cette période.</text>
                                                 }
                                                 else
                                                 {
-                                                    <text>Veuillez définir une période de paie pour voir les absences.</text>
+                                                    <text>Définissez une période de paie pour voir les absences.</text>
                                                 }
-                                            </span>
-                                        </div>
-                                    }
+                                            </div>
+                                        }
+                                    </div>
                                 </div>
                             </div>
+
 
                             <!-- UPDATED SECTION: Advance Payments with correct property name -->
                             <div class="col-12">
@@ -431,7 +408,7 @@ else
                                     <div class="section-title">
                                         <i class="bi bi-credit-card-2-front text-warning me-2"></i>
                                         <span>Avances sur salaire</span>
-                                        <span class="badge bg-warning ms-auto">-@CurrentAdvanceDeductionSummary.ProposedDeduction.ToString("C")</span>
+                                        <span class="badge bg-warning ms-auto">-@CurrentAdvanceDeductionSummary.ProposedDeduction.ToString("C") DA</span>
                                     </div>
 
                                     @if (CurrentAdvanceDeductionSummary.HasActiveAdvances)
@@ -444,15 +421,15 @@ else
                                                 </div>
                                                 <div class="col-md-3">
                                                     <strong>Montant total:</strong><br>
-                                                    <span class="text-warning">@CurrentAdvanceDeductionSummary.TotalActiveAmount.ToString("C")</span>
+                                                    <span class="text-warning">@CurrentAdvanceDeductionSummary.TotalActiveAmount.ToString("C") DA</span>
                                                 </div>
                                                 <div class="col-md-3">
                                                     <strong>Déduction max autorisée:</strong><br>
-                                                    <span class="text-success">@CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString("C")</span>
+                                                    <span class="text-success">@CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString("C") DA</span>
                                                 </div>
                                                 <div class="col-md-3">
                                                     <strong>Déduction proposée:</strong><br>
-                                                    <span class="text-primary fw-bold">@CurrentAdvanceDeductionSummary.ProposedDeduction.ToString("C")</span>
+                                                    <span class="text-primary fw-bold">@CurrentAdvanceDeductionSummary.ProposedDeduction.ToString("C") DA</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -474,8 +451,8 @@ else
                                                         {
                                                             <tr>
                                                                 <td class="fw-medium">@advance.Date.ToString("dd/MM/yyyy")</td>
-                                                                <td class="text-end">@advance.Amount.ToString("C")</td>
-                                                                <td class="text-end text-warning fw-semibold">@advance.RemainingAmount.ToString("C")</td>
+                                                                <td class="text-end">@advance.Amount.ToString("C") DA</td>
+                                                                <td class="text-end text-warning fw-semibold">@advance.RemainingAmount.ToString("C") DA</td>
                                                                 <td>@(advance.Reason ?? "Non spécifié")</td>
                                                                 <td>
                                                                     <span class="badge bg-success">@advance.Status</span>
@@ -491,9 +468,9 @@ else
                                         {
                                             <div class="alert alert-warning mt-3">
                                                 <i class="bi bi-exclamation-triangle me-2"></i>
-                                                <strong>Attention:</strong> Le montant total des avances (@CurrentAdvanceDeductionSummary.TotalActiveAmount.ToString("C"))
-                                                dépasse la déduction maximale autorisée (@CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString("C")).
-                                                Seuls @CurrentAdvanceDeductionSummary.ProposedDeduction.ToString("C") seront déduits ce mois-ci.
+                                                <strong>Attention:</strong> Le montant total des avances (@CurrentAdvanceDeductionSummary.TotalActiveAmount.ToString("C") DA)
+                                                dépasse la déduction maximale autorisée (@CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString("C") DA).
+                                                Seuls @CurrentAdvanceDeductionSummary.ProposedDeduction.ToString("C") DA seront déduits ce mois-ci.
                                             </div>
                                         }
 
@@ -509,7 +486,7 @@ else
                                             @oninput="MarkAdvanceAsManuallySet" />
 
                                             <small class="text-muted">
-                                                Maximum autorisé: @CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString("C")
+                                                Maximum autorisé: @CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString("C") DA
 
                                             </small>
                                         </div>
@@ -560,7 +537,7 @@ else
                                                                                     @rule.Name
                                                                                     @if (!rule.IsPercentage && rule.Amount > 0)
                                                                                     {
-                                                                                        <span class="text-muted ms-1">(@rule.Amount.ToString("C"))</span>
+                                                                                        <span class="text-muted ms-1">(@rule.Amount.ToString("C") DA)</span>
                                                                                     }
                                                                                     else if (rule.IsPercentage)
                                                                                     {
@@ -717,7 +694,7 @@ else
                                                                 @rule.Name
                                                                 @if (!rule.IsPercentage && rule.Amount > 0)
                                                                 {
-                                                                    <span class="text-muted ms-1">(@rule.Amount.ToString("C"))</span>
+                                                                    <span class="text-muted ms-1">(@rule.Amount.ToString("C") DA)</span>
                                                                 }
                                                                 else if (rule.IsPercentage)
                                                                 {
@@ -859,92 +836,59 @@ else
                                 </div>
                             </div>
 
-                            <!-- Section Mode de paiement -->
                             <div class="col-12">
-                                <div class="payment-section">
-                                    <div class="section-title">
-                                        <i class="bi bi-credit-card text-primary me-2"></i>
-                                        <span>Mode de paiement</span>
+                                <div class="border rounded p-2 bg-light">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="text-primary fw-semibold small">
+                                            <i class="bi bi-credit-card me-1"></i>Mode de paiement
+                                        </span>
+                                        <div class="form-check form-switch m-0">
+                                            <InputCheckbox @bind-Value="CurrentPayroll.TransactionIsManual" class="form-check-input form-check-sm" />
+                                            <label class="form-check-label small ms-1">
+                                                @(CurrentPayroll.TransactionIsManual ? "Transaction" : "Cash")
+                                            </label>
+                                        </div>
                                     </div>
 
-                                    <div class="payment-mode-wrapper">
-                                        <InputRadioGroup @bind-Value="CurrentPayroll.TransactionIsManual">
-                                            <div class="payment-options">
-                                                <div class="payment-option">
-                                                    <InputRadio class="form-check-input" Value="true" />
-                                                    <label class="form-check-label">
-                                                        <i class="bi bi-credit-card me-2"></i>
-                                                        Saisir Transaction
-                                                    </label>
-                                                </div>
-                                                <div class="payment-option">
-                                                    <InputRadio class="form-check-input" Value="false" />
-                                                    <label class="form-check-label">
-                                                        <i class="bi bi-cash me-2"></i>
-                                                        Saisir Cash
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </InputRadioGroup>
-                                    </div>
-
-                                    <div class="row g-3 mt-3">
+                                    <div class="row gx-2 gy-1 align-items-end">
                                         @if (CurrentPayroll.TransactionIsManual)
                                         {
-                                            <div class="col-md-6">
-                                                <div class="enhanced-form-group">
-                                                    <label class="form-label fw-semibold">
-                                                        <i class="bi bi-credit-card me-1"></i>Transaction
-                                                    </label>
-                                                    <InputNumber @bind-Value="CurrentPayroll.Transaction" class="form-control enhanced-input" />
-                                                </div>
+                                            <div class="col-sm-3">
+                                                <label class="form-label small mb-1">Transaction</label>
+                                                <InputNumber @bind-Value="CurrentPayroll.Transaction" class="form-control form-control-sm" />
                                             </div>
-                                            <div class="col-md-6">
-                                                <div class="calculated-field-wrapper">
-                                                    <label class="form-label fw-semibold">
-                                                        <i class="bi bi-cash me-1"></i>Cash (calculé)
-                                                    </label>
-                                                    <div class="form-control enhanced-input calculated-display">
-                                                        @CurrentPayroll.Cash.ToString("C")
-                                                    </div>
-                                                </div>
+                                            <div class="col-sm-3">
+                                                <label class="form-label small mb-1">Cash (calculé)</label>
+                                                <div class="form-control-plaintext small">@CurrentPayroll.Cash.ToString("C") DA</div>
                                             </div>
                                         }
                                         else
                                         {
-                                            <div class="col-md-6">
-                                                <div class="enhanced-form-group">
-                                                    <label class="form-label fw-semibold">
-                                                        <i class="bi bi-cash me-1"></i>Cash
-                                                    </label>
-                                                    <InputNumber @bind-Value="CurrentPayroll.Cash" class="form-control enhanced-input" />
-                                                </div>
+                                            <div class="col-sm-3">
+                                                <label class="form-label small mb-1">Cash</label>
+                                                <InputNumber @bind-Value="CurrentPayroll.Cash" class="form-control form-control-sm" />
                                             </div>
-                                            <div class="col-md-6">
-                                                <div class="calculated-field-wrapper">
-                                                    <label class="form-label fw-semibold">
-                                                        <i class="bi bi-credit-card me-1"></i>Transaction (calculé)
-                                                    </label>
-                                                    <div class="form-control enhanced-input calculated-display">
-                                                        @CurrentPayroll.Transaction.ToString("C")
-                                                    </div>
-                                                </div>
+                                            <div class="col-sm-3">
+                                                <label class="form-label small mb-1">Transaction (calculé)</label>
+                                                <div class="form-control-plaintext small">@CurrentPayroll.Transaction.ToString("C") DA</div>
                                             </div>
                                         }
 
-                                        <div class="col-md-6">
-                                            <div class="net-pay-wrapper">
-                                                <label class="form-label fw-semibold">
-                                                    <i class="bi bi-check-circle me-1"></i>Net à payer
-                                                </label>
-                                                <div class="form-control enhanced-input net-pay-display">
-                                                    @CurrentPayroll.NetPay.ToString("C")
-                                                </div>
+                                        <div class="col-sm-3">
+                                            <label class="form-label small mb-1">Net à payer</label>
+                                            <div class="form-control-plaintext fw-bold small text-success">
+                                                @CurrentPayroll.NetPay.ToString("C") DA
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+
+
+
+
+
+
 
                         </div>
                     </div>
@@ -1042,7 +986,7 @@ else
     private List<SelectableRule> SelectedDeductionRules = new();
     private List<SelectableRule> PreSelectedBonusRules = new();
     private List<SelectableRule> PreSelectedDeductionRules = new();
-
+    public decimal PreappliedBonuses { get; set; }
     // NEW: Preapplied rules lists
     private List<SelectableRule> PreappliedBonusRules = new();
     private List<SelectableRule> PreappliedDeductionRules = new();
@@ -1414,7 +1358,8 @@ else
             .Where(r => r.IsApplied)
             .Sum(r => r.CalculatedAmount);
 
-        CurrentPayroll.Bonus = regularBonuses + preappliedBonuses;
+        CurrentPayroll.Bonus = regularBonuses ;
+        PreappliedBonuses = preappliedBonuses;
         Console.WriteLine($"Total Bonus (Regular: {regularBonuses} + Preapplied: {preappliedBonuses}): {CurrentPayroll.Bonus}");
 
         // Calculate Absences Deduction
@@ -1450,7 +1395,7 @@ else
 
         Console.WriteLine($"Total Rule-Based Deductions (Regular: {regularDeductions} + Preapplied: {preappliedDeductions}): {regularDeductions + preappliedDeductions}");
 
-        CurrentPayroll.Deductions = regularDeductions + preappliedDeductions + absenceDeduction;
+        CurrentPayroll.Deductions = regularDeductions  + absenceDeduction;
         Console.WriteLine($"Total Deductions (Rules + Absences): {CurrentPayroll.Deductions}");
 
         // Refresh advance deduction summary when other values change

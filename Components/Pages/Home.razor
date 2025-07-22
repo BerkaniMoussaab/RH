@@ -55,9 +55,7 @@
 <div class="mt-5 d-flex justify-content-between align-items-center">
     <h5 class="mb-0">Actions rapides</h5>
     <div class="d-flex gap-2">
-        <button class="btn btn-outline-success" @onclick="OpenNewPayrollModal">
-            <i class="bi bi-currency-dollar me-1"></i>Ajouter une règle salaire
-        </button>
+       
         <button class="btn btn-outline-primary" @onclick="() => ShowAddAbsenceModal = true">
             <i class="bi bi-plus-circle me-1"></i>Ajouter une absence
         </button>
@@ -90,7 +88,7 @@
 
 @if (ShowPayrollModal)
 {
-    <PayrollModal @bind-ShowModal="ShowPayrollModal"
+    <RuleModal @bind-ShowModal="ShowPayrollModal"
                   @bind-NewAdjustment="NewPayrollAdjustment"
                   @bind-IsEditMode="IsEditPayrollMode"
                   @bind-SelectedJobTitleIds="SelectedPayrollJobTitleIds"

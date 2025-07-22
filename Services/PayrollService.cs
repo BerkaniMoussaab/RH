@@ -208,6 +208,7 @@ public class PayrollService : IPayrollService
 
 
     // CORRIGÉ : Utilisation directe de _context
+    // Existing one
     public async Task<List<PayrollAppliedRule>> GetAppliedRulesForEmployeeAsync(int employeeId)
     {
         return await _context.PayrollAppliedRules
@@ -215,6 +216,30 @@ public class PayrollService : IPayrollService
             .Where(r => r.EmployeeId == employeeId && r.PayrollId == null)
             .ToListAsync();
     }
+
+    // Overload with date range
+    public async Task<List<PayrollAppliedRule>> GetAppliedRulesForEmployeeAsync(
+        int employeeId, DateTime? fromDate, DateTime? toDate)
+    {
+        var query = _context.PayrollAppliedRules
+            .Include(r => r.Rule)
+            .Where(r => r.EmployeeId == employeeId );
+
+        if (fromDate.HasValue)
+        {
+            query = query.Where(r => r.Date != null && r.Date >= fromDate.Value);
+        }
+
+        if (toDate.HasValue)
+        {
+            query = query.Where(r => r.Date != null && r.Date <= toDate.Value);
+        }
+
+        return await query.OrderByDescending(d=>d.Date).ToListAsync();
+    }
+
+
+
 
     public async Task<List<Payroll>> GetEmployeePayrollsByDateRangeAsync(int employeeId, DateTime startDate, DateTime endDate)
     {
@@ -271,7 +296,11 @@ public class PayrollService : IPayrollService
             return (startDate, endDate);
         }
     }
-
+    public async Task RemoveAppliedRuleAsync (int AppliedRuleId)
+    {
+        _context.Remove(int.Parse(AppliedRuleId.ToString()));
+        await _context.SaveChangesAsync();
+    }
     public async Task<decimal> CalculateAdvanceDeductionsAsync(int employeeId, decimal preliminaryNetPay)
     {
         try
@@ -389,7 +418,16 @@ public class PayrollService : IPayrollService
         _context.PayrollAppliedRules.AddRange(appliedEntities);
         await _context.SaveChangesAsync();
     }
-
+    public async Task deleteAppliedRule(int Id)
+    {
+        var rule = _context.PayrollAppliedRules.Find(Id);
+        if (rule.PayrollId == null)
+        {
+            _context.PayrollAppliedRules.Remove(rule);
+            await _context.SaveChangesAsync();
+        }
+     
+    }
     public class AdvanceDeductionSummary
     {
         public List<Advance> ActiveAdvances { get; set; } = new();
