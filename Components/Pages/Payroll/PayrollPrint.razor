@@ -1,6 +1,7 @@
 ﻿@using RH.Models
 @using RH.Services
 @inject CompanyInfoService CompanyService
+@inject AdvanceService AdvanceService
 @code {
     [Parameter] public Payroll CurrentPayroll { get; set; }
     [Parameter] public Employee Employee { get; set; }
@@ -11,13 +12,15 @@
     [Parameter] public int? Transaction { get; set; }
     [Parameter] public int? Cash { get; set; }
     [Parameter] public PayrollService.AdvanceDeductionSummary AdvanceSummary { get; set; }
+    [Parameter] public AdvanceService advanceService { get; set; }
     private CompanyInfo? Company;
+
     protected override async Task OnInitializedAsync()
     {
         Company = await CompanyService.GetAsync();
+        CurrentPayroll.AdvanceDeductions = await AdvanceService.GetDeductionsForPayroll(CurrentPayroll.Id);
     }
 }
-
 <div id="printable-area" class="payroll-sheet">
     @if (Company != null)
     {
@@ -36,15 +39,10 @@
                         <small>RC : @Company.RC | NIF : @Company.NIF</small>
                     </div>
                 </div>
-
                 <div class="text-end mt-3 mt-md-0">
                     <h4 class="text-primary fw-bold mb-2">FICHE DE PAIE</h4>
-                    <p class="mb-1 text-muted">
-                        <strong>Période :</strong> @CurrentPayroll?.PayDate.ToString("MMMM yyyy")
-                    </p>
-                    <p class="mb-0 text-muted">
-                        <strong>Émission :</strong> @DateTime.Now.ToString("dd/MM/yyyy")
-                    </p>
+                    <p class="mb-1 text-muted"><strong>Période :</strong> @CurrentPayroll?.PayDate.ToString("MMMM yyyy")</p>
+                    <p class="mb-0 text-muted"><strong>Émission :</strong> @DateTime.Now.ToString("dd/MM/yyyy")</p>
                 </div>
             </div>
         </div>
@@ -88,7 +86,7 @@
         </div>
         <div class="net-pay-box mt-2">
             <p class="net-pay-label">NET À PAYER</p>
-            <p class="net-pay-value">@((CurrentPayroll.BaseSalary + CurrentPayroll.Bonus - CurrentPayroll.Deductions).ToString("N2")) DA</p>
+            <p class="net-pay-value">@CurrentPayroll.NetPay.ToString("N2") DA</p>
         </div>
 
         @if (CurrentPayroll.Cash != null || CurrentPayroll.Transaction != null)
@@ -116,7 +114,6 @@
         }
     </div>
 
-
     @if (Bonuses?.Any(b => b.IsApplied) == true)
     {
         <div class="details-section mb-3">
@@ -126,7 +123,7 @@
                     <thead class="table-light">
                         <tr>
                             <th>Description</th>
-                            <th>motif</th>
+                            <th>Motif</th>
                             <th class="text-end">Montant</th>
                         </tr>
                     </thead>
@@ -154,7 +151,7 @@
                     <thead class="table-light">
                         <tr>
                             <th>Description</th>
-                            <th>motif</th>
+                            <th>Motif</th>
                             <th class="text-end">Montant</th>
                         </tr>
                     </thead>
@@ -172,6 +169,55 @@
             </div>
         </div>
     }
+    @if (CurrentPayroll?.AdvanceDeductions?.Any() == true)
+    {
+        var deductions = CurrentPayroll.AdvanceDeductions
+        .Where(d => d.Advance != null)
+        .ToList();
+
+        if (deductions.Any())
+        {
+            <div class="details-section mt-4">
+                <div class="section-title">Avances et Déductions</div>
+                <div class="table-container">
+                    <table class="details-table">
+                        <thead>
+                            <tr>
+                                <th>Date Avance</th>
+                                <th>Montant Avance</th>
+                                <th>Montant Déduit</th>
+                                <th>Montant Restant</th>
+                                <th>Remarque</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var deduction in deductions)
+                            {
+                                var adv = deduction.Advance;
+                                var totalDeducted = CurrentPayroll.AdvanceDeductions
+                                .Where(d => d.AdvanceId == adv.Id)
+                                .Sum(d => d.DeductedAmount);
+
+                                var remaining = adv.Amount - totalDeducted;
+
+                                <tr>
+                                    <td>@adv.Date.ToString("dd/MM/yyyy")</td>
+                                    <td>@adv.Amount.ToString("0.00") DA</td>
+                                    <td>@deduction.DeductedAmount.ToString("0.00") DA</td>
+                                    <td>@remaining.ToString("0.00") DA</td>
+                                    <td>@adv.Reason</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    }
+
+
+
+
 
     @if (Absences?.Any() == true || ManualAbsences > 0)
     {
@@ -213,7 +259,6 @@
         </div>
     }
 
-
     <div class="footer-section">
         <div class="row">
             <div class="col-6">
@@ -229,6 +274,3 @@
         </div>
     </div>
 </div>
-
-
-

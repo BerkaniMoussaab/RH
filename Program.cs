@@ -79,6 +79,7 @@ builder.Services.AddScoped<WorkedDaysOffService>();
 builder.Services.AddScoped<CompanyInfoService>();
 builder.Services.AddScoped<IPayrollService, PayrollService>();
 builder.Services.AddScoped<IAdvanceService, AdvanceService>();
+builder.Services.AddScoped<AdvanceService>();
 builder.Services.AddScoped<PayrollService>();
 
 builder.Services.AddAntiforgery(options =>

@@ -45,7 +45,12 @@
                             <label class="form-label">Date d'embauche</label>
                             <InputDate class="form-control" @bind-Value="Employee.HireDate" />
                         </div>
-
+                        <div class="col-md-6">
+                            <label class="form-label">Salaire de base</label>
+                            <InputNumber class="form-control" @bind-Value="Employee.BaseSalary" />
+                            <ValidationMessage For="@(() => Employee.BaseSalary)" />
+                          
+                        </div>
                         <!-- Date d'inscription -->
                         <div class="col-md-6">
                             <label class="form-label">Date d'inscription dans le système</label>

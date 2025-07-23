@@ -1,4 +1,4 @@
-﻿@page "/payroll/employee-applied-rules-with-attached"
+﻿@page "/payroll/employee-applied-rules"
 @inject PayrollService PayrollService
 @inject EmployeeService EmployeeService
 
@@ -339,7 +339,7 @@
                                         Dernière règle: @(employeeData.AllAppliedRules.Max(r => r.Date)?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")
                                     </div>
                                     <div class="d-flex gap-2">
-                                        <button class="btn btn-outline-primary btn-sm rounded-pill"
+                                        @*    <button class="btn btn-outline-primary btn-sm rounded-pill"
                                         @onclick="() => ExportEmployeeRules(employeeData.Employee.Id)">
                                             <i class="bi bi-download me-1"></i>
                                             Exporter
@@ -354,9 +354,9 @@
                                         disabled="@(!employeeData.PendingRules.Any())">
                                             <i class="bi bi-arrow-right-circle me-1"></i>
                                             Intégrer à la paie (@employeeData.PendingRules.Count)
-                                        </button>
+                                        </button>*@
                                         <button class="btn btn-outline-info btn-sm rounded-pill"
-                                        @onclick="() => RefreshEmployeeData(employeeData.Employee.Id)">
+                                         onclick="() => RefreshEmployeeData(employeeData.Employee.Id)">
                                             <i class="bi bi-arrow-clockwise me-1"></i>
                                             Actualiser
                                         </button>
