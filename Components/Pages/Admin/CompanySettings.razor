@@ -17,34 +17,68 @@
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label class="form-label">Nom</label>
-                        <InputText @bind-Value="company.Name" class="form-control" placeholder="Entrer le nom de l'entreprise" />
+                        <InputText @bind-Value="company.Name" class="form-control" />
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Adresse</label>
-                        <InputText @bind-Value="company.Address" class="form-control" placeholder="Entrer l'adresse" />
+                        <InputText @bind-Value="company.Address" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">RC</label>
+                        <InputText @bind-Value="company.RC" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">NIF</label>
+                        <InputText @bind-Value="company.NIF" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Ville</label>
+                        <InputText @bind-Value="company.City" class="form-control" />
                     </div>
                 </div>
 
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label class="form-label">RC</label>
-                        <InputText @bind-Value="company.RC" class="form-control" placeholder="Entrer RC" />
+                        <label class="form-label">Nom du Directeur</label>
+                        <InputText @bind-Value="company.DirectorName" class="form-control" />
                     </div>
                     <div class="col-md-6">
-                        <label class="form-label">NIF</label>
-                        <InputText @bind-Value="company.NIF" class="form-control" placeholder="Entrer NIF" />
+                        <label class="form-label">Titre du Directeur</label>
+                        <InputText @bind-Value="company.DirectorTitle" class="form-control" />
                     </div>
                 </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Mobile</label>
+                        <InputText @bind-Value="company.Mobile" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Téléphone</label>
+                        <InputText @bind-Value="company.Phone" class="form-control" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Email</label>
+                        <InputText @bind-Value="company.Email" class="form-control" />
+                    </div>
+                </div>
+
                 <div class="row mb-3">
                     <div class="col-md-6">
+                        <label class="form-label">Matricule Fiscale</label>
+                        <InputText @bind-Value="company.RegistrationNumber" class="form-control" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Jours récupération/travail</label>
                         <InputNumber @bind-Value="company.RecoveryDaysPerWorkedDayOff" step="0.1" class="form-control" />
-                        <span class="text-muted">Nombre de jours de récupération par jour travaillé</span>
                     </div>
-                    <div class="col-md-6">
-                        <InputNumber @bind-Value="company.WorKdaysInMonth" step="0.1" class="form-control" />
-                        <span class="text-muted">Nombre de jours travaillé par mois</span>
+                    <div class="col-md-3">
+                        <label class="form-label">Jours/mois</label>
+                        <InputNumber @bind-Value="company.WorKdaysInMonth" step="1" class="form-control" />
                     </div>
-                 
                 </div>
 
                 <div class="mb-3">
@@ -58,7 +92,9 @@
                     }
                 </div>
 
-                <button type="submit" class="btn btn-success">Enregistrer</button>
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-success">Enregistrer</button>
+                </div>
             </EditForm>
         </div>
     </div>
@@ -80,7 +116,15 @@
     private async Task UploadLogo(InputFileChangeEventArgs e)
     {
         var file = e.File;
-        using var stream = file.OpenReadStream();
+
+        // Optional: Limit file size to 1MB
+        if (file.Size > 1024 * 1024)
+        {
+            // Optional: Show error message
+            return;
+        }
+
+        using var stream = file.OpenReadStream(maxAllowedSize: 1024 * 1024);
         using var ms = new MemoryStream();
         await stream.CopyToAsync(ms);
         company.LogoBytes = ms.ToArray();

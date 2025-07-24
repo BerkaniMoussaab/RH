@@ -1,8 +1,12 @@
 @page "/attestation-generator"
 @inject RH.Services.AttestationGeneratorService AttestationService
 @inject IJSRuntime JSRuntime
+@inject EmployeeService EmployeeService
 @using RH.Models
 @using RH.Services
+@implements IAsyncDisposable
+
+<link href="css/attestation.css" rel="stylesheet" />
 
 <div class="container mt-5">
     <div class="card shadow-sm p-4">
@@ -67,15 +71,25 @@
             <div class="alert alert-info mt-3">@message</div>
         }
 
-        @if (!string.IsNullOrEmpty(pdfBase64DataUrl))
+        @if (attestationData != null)
         {
             <div class="card mt-4 shadow-sm">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 text-secondary"><i class="bi bi-eye"></i> Aperçu</h5>
-                  
+                    <h5 class="mb-0 text-secondary"><i class="bi bi-eye"></i> Aperçu de l'Attestation</h5>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-info btn-sm" @onclick="PreviewAttestation">
+                            <i class="bi bi-eye-fill"></i> Aperçu
+                        </button>
+                        <button class="btn btn-outline-primary btn-sm" @onclick="PrintAttestation">
+                            <i class="bi bi-printer"></i> Imprimer
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="SaveAsPdf">
+                            <i class="bi bi-download"></i> Sauvegarder PDF
+                        </button>
+                    </div>
                 </div>
-                <div class="card-body p-0" style="height: 600px;">
-                    <iframe src="@pdfBase64DataUrl" width="100%" height="100%" style="border: none;"></iframe>
+                <div class="card-body p-4 printable-content">
+                    <AttestationDisplay AttestationData="attestationData" />
                 </div>
             </div>
         }
@@ -93,47 +107,59 @@
     private string message = string.Empty;
 
     private List<Employee> employees = new();
-    private string? pdfBase64DataUrl;
+    private AttestationData? attestationData;
     private string? generatedFileName;
 
-    [Inject] private EmployeeService EmployeeService { get; set; }
+    private IJSObjectReference? jsModule;
 
     protected override async Task OnInitializedAsync()
     {
         employees = await EmployeeService.GetAllAsync();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                jsModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "/js/attestation-utils.js");
+
+            }
+            catch (Exception ex)
+            {
+                message = $"Erreur lors du chargement du module JavaScript : {ex.Message}";
+                StateHasChanged();
+            }
+        }
+    }
+
     private async Task GenerateAttestation()
     {
         message = string.Empty;
+        attestationData = null;
+
         try
         {
-            byte[] pdfBytes;
-            string fileName;
-
             if (attestationType == AttestationType.Work)
             {
-                pdfBytes = await AttestationService.GenerateWorkAttestationPdfAsync(employeeId);
-                fileName = $"Attestation_Travail_{employeeId}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+                attestationData = await AttestationService.GenerateWorkAttestationAsync(employeeId);
+                generatedFileName = await AttestationService.GetAttestationFileNameAsync(employeeId, AttestationType.Work);
             }
             else
             {
-                if (string.IsNullOrEmpty(internshipDepartment) || string.IsNullOrEmpty(supervisorName) || string.IsNullOrEmpty(internshipObjectives))
+                if (string.IsNullOrWhiteSpace(internshipDepartment) || string.IsNullOrWhiteSpace(supervisorName) || string.IsNullOrWhiteSpace(internshipObjectives))
                 {
                     message = "Veuillez remplir tous les champs pour l'attestation de stage.";
                     return;
                 }
 
-                pdfBytes = await AttestationService.GenerateInternshipAttestationPdfAsync(
+                attestationData = await AttestationService.GenerateInternshipAttestationAsync(
                     employeeId, internshipStartDate, internshipEndDate, internshipDepartment, supervisorName, internshipObjectives);
-                fileName = $"Attestation_Stage_{employeeId}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
+                generatedFileName = await AttestationService.GetAttestationFileNameAsync(employeeId, AttestationType.Internship);
             }
 
-            var base64 = Convert.ToBase64String(pdfBytes);
-            pdfBase64DataUrl = $"data:application/pdf;base64,{base64}";
-            generatedFileName = fileName;
-
-            message = "Aperçu de l'attestation générée.";
+            message = "Attestation générée avec succès.";
         }
         catch (Exception ex)
         {
@@ -141,43 +167,35 @@
         }
     }
 
+    private async Task PreviewAttestation()
+    {
+        if (attestationData != null && jsModule != null)
+        {
+            await jsModule.InvokeVoidAsync("previewAttestation");
+        }
+    }
+
     private async Task PrintAttestation()
     {
-        if (!string.IsNullOrEmpty(pdfBase64DataUrl))
+        if (attestationData != null && jsModule != null)
         {
-            await JSRuntime.InvokeVoidAsync("printPdfFromDataUrl", pdfBase64DataUrl);
+            await jsModule.InvokeVoidAsync("printAttestationContent");
         }
     }
 
-    private async Task DownloadAttestation()
+    private async Task SaveAsPdf()
     {
-        if (!string.IsNullOrEmpty(pdfBase64DataUrl) && !string.IsNullOrEmpty(generatedFileName))
+        if (attestationData != null && !string.IsNullOrEmpty(generatedFileName) && jsModule != null)
         {
-            await JSRuntime.InvokeVoidAsync("downloadPdfFromDataUrl", pdfBase64DataUrl, generatedFileName);
+            await jsModule.InvokeVoidAsync("saveAttestationAsPdf", generatedFileName);
         }
     }
 
-    public enum AttestationType
+    public async ValueTask DisposeAsync()
     {
-        Work,
-        Internship
+        if (jsModule != null)
+        {
+            await jsModule.DisposeAsync();
+        }
     }
 }
-<script>
-    window.printPdfFromDataUrl = function (dataUrl) {
-        var win = window.open();
-        win.document.write('<iframe src="' + dataUrl + '" frameborder="0" style="border:0;width:100%;height:100%;" allowfullscreen></iframe>');
-        win.document.close();
-        win.focus();
-        win.print();
-    };
-
-    window.downloadPdfFromDataUrl = function (dataUrl, fileName) {
-        var a = document.createElement("a");
-        a.href = dataUrl;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    };
-</script>

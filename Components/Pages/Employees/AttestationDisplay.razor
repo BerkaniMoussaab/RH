@@ -1,0 +1,114 @@
+@using RH.Models
+<link href="css/attestation.css" rel="stylesheet" />
+<div id="attestation-content" class="attestation-container">
+    @if (AttestationData != null)
+    {
+        <!-- Company Header -->
+        <div class="company-header border-box">
+            <div class="logo-container">
+                @if (!string.IsNullOrEmpty(AttestationData.CompanyLogoDataUrl))
+                {
+                    <img src="@AttestationData.CompanyLogoDataUrl" alt="Logo" class="company-logo" />
+                }
+            </div>
+
+            <div class="company-info text-start">
+                <h1 class="company-name">@AttestationData.CompanyInfo.Name?.ToUpper()</h1>
+
+                @if (!string.IsNullOrWhiteSpace(AttestationData.CompanyInfo.DirectorName))
+                {
+                    <p class="director-name">Dr. @AttestationData.CompanyInfo.DirectorName</p>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(AttestationData.CompanyInfo.DirectorTitle))
+                {
+                    <p class="director-title">@AttestationData.CompanyInfo.DirectorTitle</p>
+                }
+
+                <div class="contact-info mt-2">
+                    @if (!string.IsNullOrWhiteSpace(AttestationData.CompanyInfo.Address))
+                    {
+                        <p><i class="bi bi-geo-alt"></i> @AttestationData.CompanyInfo.Address</p>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(AttestationData.CompanyInfo.Phone) || !string.IsNullOrWhiteSpace(AttestationData.CompanyInfo.Mobile))
+                    {
+                        <p><i class="bi bi-telephone"></i> Tél/Fax : @(AttestationData.CompanyInfo.Phone ?? "N/A")    |   Mob : @(AttestationData.CompanyInfo.Mobile ?? "N/A")</p>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(AttestationData.CompanyInfo.Email))
+                    {
+                        <p><i class="bi bi-envelope"></i> E-mail : @AttestationData.CompanyInfo.Email</p>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(AttestationData.CompanyInfo.RegistrationNumber))
+                    {
+                        <p><i class="bi bi-card-checklist"></i> N° Adhérent : @AttestationData.CompanyInfo.RegistrationNumber</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+
+
+
+        <!-- Attestation Title -->
+        <h1 class="attestation-title">
+            @(AttestationData.Type == AttestationType.Work ? "ATTESTATION DE TRAVAIL" : "ATTESTATION DE STAGE")
+        </h1>
+
+        <!-- Attestation Content -->
+        <div class="attestation-content">
+            @if (AttestationData.Type == AttestationType.Work)
+            {
+                <p>Nous soussigné, Etablissement <strong>@AttestationData.CompanyInfo.Name</strong>,</p>
+                <p>Sise à <strong>@AttestationData.CompanyInfo.Address</strong>,</p>
+                <br />
+                
+                <p>Attestons par la présente que: <strong>Mr/Mme @AttestationData.Employee.FullName</strong>,</p>
+                <p>Né le <strong>@AttestationData.FormattedBirthDate</strong> à <strong>@AttestationData.BirthPlace</strong>,</p>
+                <br />
+                
+                <p>Est employé dans notre Etablissement depuis le <strong>@AttestationData.FormattedHireDate</strong> à ce jour,</p>
+                <p>En qualité de <strong>@AttestationData.JobTitle</strong>.</p>
+                <br />
+                
+                <p class="closing-statement">
+                    <strong>EN FOI DE QUOI, LA PRESENTE ATTESTATION EST DELIVREE, SUR DEMANDE DE L'INTERESSE POUR SERVIR ET VALOIR CE QUE DE DROIT.</strong>
+                </p>
+            }
+            else
+            {
+                <p>Nous soussigné, Etablissement <strong>@AttestationData.CompanyInfo.Name</strong>,</p>
+                <p>Sise à <strong>@AttestationData.CompanyInfo.Address</strong>,</p>
+                <br />
+                
+                <p>Certifions que <strong>Mr/Mme @AttestationData.Employee.FullName</strong> a effectué un stage au sein de notre établissement.</p>
+                <p>Ce stage s'est déroulé du <strong>@AttestationData.FormattedInternshipStartDate</strong> au <strong>@AttestationData.FormattedInternshipEndDate</strong>,</p>
+                <p>au sein du département <strong>@AttestationData.InternshipDepartment</strong>, sous la supervision de <strong>@AttestationData.SupervisorName</strong>.</p>
+                <br />
+                
+                <p>Les objectifs du stage étaient : <strong>@AttestationData.InternshipObjectives</strong>.</p>
+                <br />
+                
+                <p class="closing-statement">
+                    <strong>La présente attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.</strong>
+                </p>
+            }
+        </div>
+
+        <!-- Signature Section -->
+        <div class="signature-section">
+            <p class="date-location">@AttestationData.City Le @AttestationData.FormattedGeneratedDate</p>
+            <p class="signature-label">Signature,</p>
+            <div class="signature-space"></div>
+        </div>
+    }
+</div>
+
+
+
+@code {
+    [Parameter] public AttestationData? AttestationData { get; set; }
+}
+

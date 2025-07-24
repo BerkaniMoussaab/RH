@@ -7,15 +7,17 @@ namespace RH.Models
         public int Id { get; set; }
 
         [Required]
+        [Display(Name = "Nom complet")]
         public string FullName { get; set; } = string.Empty;
 
-        // 👇 ADD THIS
         [Range(0, double.MaxValue)]
+        [Display(Name = "Salaire mensuel")]
         public decimal MonthlySalary { get; set; }
 
-
+        [EmailAddress]
         public string Email { get; set; } = string.Empty;
 
+        [Phone]
         public string? PhoneNumber { get; set; }
 
         public DateTime? HireDate { get; set; }
@@ -26,26 +28,33 @@ namespace RH.Models
         public JobTitle? JobTitle { get; set; }
 
         public EmployeeStatus Status { get; set; } = EmployeeStatus.Active;
+
         public ICollection<LeaveRequest> LeaveRequests { get; set; } = new List<LeaveRequest>();
         public ICollection<Payroll> Payrolls { get; set; } = new List<Payroll>();
         public ICollection<PerformanceReview> PerformanceReviews { get; set; } = new List<PerformanceReview>();
+
         public float? InitialRemainingDays { get; set; }
-        public DateTime? InscriptionDate { get; set; }   // date employee was added to system
-        public byte[]? ContractFile { get; set; }             // File content
-        public string? ContractFileName { get; set; }         // Original name
-        public string? ContractContentType { get; set; }      // MIME type (application/pdf, image/png, etc.)
+        public DateTime? InscriptionDate { get; set; }
+
+        public byte[]? ContractFile { get; set; }
+        public string? ContractFileName { get; set; }
+        public string? ContractContentType { get; set; }
+
         public DateTime? DateOfTermination { get; set; }
-        public decimal BaseSalary { get; set; }
+
+        [Range(0, double.MaxValue)]
+        public decimal BaseSalary { get; set; } = 0;
+
         public bool Deleted { get; set; }
 
+        public DateOnly? BirthDate { get; set; }
+        public string? BirthPlace { get; set; }
     }
+
     public enum EmployeeStatus
     {
         Active,
         Inactive,
         Terminated
     }
-
-
-
 }

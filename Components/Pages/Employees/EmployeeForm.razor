@@ -20,6 +20,7 @@
                 </div>
                 <div class="modal-body">
                     <div class="row g-3">
+
                         <!-- Nom complet -->
                         <div class="col-md-6">
                             <label class="form-label">Nom complet</label>
@@ -38,6 +39,19 @@
                         <div class="col-md-6">
                             <label class="form-label">Numéro de téléphone</label>
                             <InputText class="form-control" @bind-Value="Employee.PhoneNumber" />
+                            <ValidationMessage For="@(() => Employee.PhoneNumber)" />
+                        </div>
+
+                        <!-- Date de naissance -->
+                        <div class="col-md-6">
+                            <label class="form-label">Date de naissance</label>
+                            <InputDate class="form-control" @bind-Value="BirthDateWrapper" />
+                        </div>
+
+                        <!-- Lieu de naissance -->
+                        <div class="col-md-6">
+                            <label class="form-label">Lieu de naissance</label>
+                            <InputText class="form-control" @bind-Value="Employee.BirthPlace" />
                         </div>
 
                         <!-- Date d'embauche -->
@@ -45,12 +59,21 @@
                             <label class="form-label">Date d'embauche</label>
                             <InputDate class="form-control" @bind-Value="Employee.HireDate" />
                         </div>
+
+                        <!-- Salaire de base -->
                         <div class="col-md-6">
                             <label class="form-label">Salaire de base</label>
                             <InputNumber class="form-control" @bind-Value="Employee.BaseSalary" />
                             <ValidationMessage For="@(() => Employee.BaseSalary)" />
-                          
                         </div>
+
+                        <!-- Salaire mensuel -->
+                        <div class="col-md-6">
+                            <label class="form-label">Salaire mensuel</label>
+                            <InputNumber class="form-control" @bind-Value="Employee.MonthlySalary" />
+                            <ValidationMessage For="@(() => Employee.MonthlySalary)" />
+                        </div>
+
                         <!-- Date d'inscription -->
                         <div class="col-md-6">
                             <label class="form-label">Date d'inscription dans le système</label>
@@ -117,6 +140,7 @@
                                 </div>
                             }
                         </div>
+
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
@@ -175,6 +199,13 @@
     private JobTitle NewJobTitle = new();
     private bool ShowAddJobTitle = false;
 
+    // DateOnly <-> DateTime? conversion for InputDate
+    private DateTime? BirthDateWrapper
+    {
+        get => Employee.BirthDate.HasValue ? Employee.BirthDate.Value.ToDateTime(TimeOnly.MinValue) : null;
+        set => Employee.BirthDate = value.HasValue ? DateOnly.FromDateTime(value.Value) : null;
+    }
+
     protected override async Task OnInitializedAsync()
     {
         JobTitles = (await JobTitleService.GetAllAsync()).ToList();
@@ -208,7 +239,7 @@
         var file = e.File;
 
         using var ms = new MemoryStream();
-        await file.OpenReadStream(maxAllowedSize: 20_000_000).CopyToAsync(ms); // 20 MB max
+        await file.OpenReadStream(maxAllowedSize: 20_000_000).CopyToAsync(ms);
 
         Employee.ContractFile = ms.ToArray();
         Employee.ContractFileName = file.Name;
