@@ -1453,16 +1453,17 @@ else
         {
 
             // You\'ll need to add this method to your PayrollService
+            var employee = await EmployeeService.GetByIdAsync(employeeId);
             var preappliedRules = await PayrollService.GetAppliedRulesForEmployeeAsync(employeeId);
-            var lastPayroll = await PayrollService.GetLastPayrollForEmployeeAsync(employeeId);
+           
             PreappliedBonusRules = preappliedRules
                 .Where(r => r.Rule.Type == AdjustmentType.Bonus && r.PayrollId == null)
-                .Select(r => new SelectableRule(r, workDaysPerMonth, lastPayroll.Employee.BaseSalary))
+                .Select(r => new SelectableRule(r, workDaysPerMonth, employee.BaseSalary))
                 .ToList();
 
             PreappliedDeductionRules = preappliedRules
                 .Where(r => r.Rule.Type == AdjustmentType.Deduction)
-                .Select(r => new SelectableRule(r, workDaysPerMonth, lastPayroll.Employee.BaseSalary))
+                .Select(r => new SelectableRule(r, workDaysPerMonth, employee.BaseSalary))
                 .ToList();
         }
         catch (Exception ex)
@@ -1706,7 +1707,7 @@ else
 
         var lastPayroll = await PayrollService.GetLastPayrollForEmployeeAsync(employeeId);
         var lastBaseSalary = lastPayroll?.Employee?.BaseSalary ?? 0;
-        CurrentPayroll.Employee.BaseSalary = lastBaseSalary;
+      
         CurrentPayroll.Transaction = lastPayroll?.Transaction ?? 0;
 
         await LoadPreappliedRules(employeeId);

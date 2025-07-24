@@ -215,9 +215,11 @@ public class PayrollService : IPayrollService
     {
         return await _context.PayrollAppliedRules
             .Include(r => r.Rule)
+            .Include(r => r.Employee) // ✅ Inclure l'employé
             .Where(r => r.EmployeeId == employeeId && r.PayrollId == null)
             .ToListAsync();
     }
+
 
     // Overload with date range
     public async Task<List<PayrollAppliedRule>> GetAppliedRulesForEmployeeAsync(
