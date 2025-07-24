@@ -67,12 +67,40 @@
         {
             using var context = _contextFactory.CreateDbContext();
             var employee = await context.Employees.FindAsync(employeeId);
+
             if (employee?.ContractFile == null)
                 return (null, null, null);
 
             var stream = new MemoryStream(employee.ContractFile);
-            return (stream, $"contract_{employeeId}.pdf", "application/pdf");
+
+            // Use original filename if available, otherwise generate fallback
+            var fileName = !string.IsNullOrWhiteSpace(employee.ContractFileName)
+                ? employee.ContractFileName
+                : $"contract_{employeeId}";
+
+            // Ensure the file has an extension
+            if (!Path.HasExtension(fileName) && !string.IsNullOrWhiteSpace(employee.ContractContentType))
+            {
+                var extension = employee.ContractContentType switch
+                {
+                    "application/pdf" => ".pdf",
+                    "application/msword" => ".doc",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => ".docx",
+                    "image/png" => ".png",
+                    "image/jpeg" => ".jpg",
+                    _ => ".bin"
+                };
+
+                fileName += extension;
+            }
+
+            var contentType = !string.IsNullOrWhiteSpace(employee.ContractContentType)
+                ? employee.ContractContentType
+                : "application/octet-stream";
+
+            return (stream, fileName, contentType);
         }
+
 
     }
 }

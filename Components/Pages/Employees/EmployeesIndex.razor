@@ -215,8 +215,11 @@
             }
 
             var fileName = !string.IsNullOrEmpty(result.FileName)
-                ? result.FileName
-                : $"contrat_employe_{employeeId}.pdf";
+    ? result.FileName.Trim()
+    : $"contrat_employe_{employeeId}";
+
+            fileName = EnsureFileNameHasExtension(fileName, result.ContentType);
+
 
             var contentType = !string.IsNullOrEmpty(result.ContentType)
                 ? result.ContentType
@@ -257,6 +260,26 @@
             StateHasChanged();
             Console.WriteLine("=== Download process finished (finally block) ===");
         }
+    }
+    private string EnsureFileNameHasExtension(string fileName, string contentType)
+    {
+        if (Path.HasExtension(fileName))
+            return fileName;
+
+        var extension = contentType switch
+        {
+            "application/pdf" => ".pdf",
+            "application/msword" => ".doc",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => ".docx",
+            "image/png" => ".png",
+            "image/jpeg" => ".jpg",
+            "image/jpg" => ".jpg",
+            "image/gif" => ".gif",
+            "application/zip" => ".zip",
+            _ => ".bin" // fallback if unknown
+        };
+
+        return fileName + extension;
     }
 
     // MÉTHODES DE TEST
