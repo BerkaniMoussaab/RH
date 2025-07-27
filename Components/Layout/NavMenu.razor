@@ -50,10 +50,17 @@
 
     <AuthorizeView>
         <Authorized>
+            
             <div class="nav-item px-3 mt-3">
                 <NavLink class="nav-link d-flex align-items-center px-3 py-2" href="/">
                     <i class="bi bi-house me-2 fs-5"></i>
                     <span>Tableau de bord</span>
+                </NavLink>
+            </div>
+            <div class="nav-item px-3 mt-3">
+                <NavLink class="nav-link d-flex align-items-center px-3 py-2" href="/job-titles">
+                    <i class="bi bi-briefcase me-2 fs-5"></i>
+                    <span>Postes</span>
                 </NavLink>
             </div>
             <div class="nav-item px-3">
@@ -63,9 +70,15 @@
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link d-flex align-items-center px-3 py-2" href="/leaves">
-                    <i class="bi bi-calendar-check me-2 fs-5"></i>
-                    <span>Demandes de congé</span>
+                <NavLink class="nav-link d-flex align-items-center px-3 py-2" href="/payrollRules">
+                    <i class="bi bi-gear me-2 fs-5"></i>
+                    <span>Règles de paie</span>
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link d-flex align-items-center px-3 py-2" href="/advances">
+                    <i class="bi bi-currency-exchange me-2 fs-5"></i>
+                    <span>Avances</span>
                 </NavLink>
             </div>
             <div class="nav-item px-3">
@@ -81,16 +94,9 @@
                 </NavLink>
             </div>
             <div class="nav-item px-3">
-                <NavLink class="nav-link d-flex align-items-center px-3 py-2" href="/advances">
-                    <i class="bi bi-currency-exchange me-2 fs-5"></i>
-
-                    <span>Avances</span>
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link d-flex align-items-center px-3 py-2" href="/payrollRules">
-                    <i class="bi bi-gear me-2 fs-5"></i>
-                    <span>Règles de paie</span>
+                <NavLink class="nav-link d-flex align-items-center px-3 py-2" href="/leaves">
+                    <i class="bi bi-calendar-check me-2 fs-5"></i>
+                    <span>Demandes de congé</span>
                 </NavLink>
             </div>
             <div class="nav-item px-3">
@@ -105,24 +111,14 @@
                     <span>Paramètres</span>
                 </NavLink>
             </div>
-
-
-           
-            <div class="nav-item px-3">
-                <NavLink class="nav-link d-flex align-items-center px-3 py-2" href="/job-titles">
-                    <i class="bi bi-briefcase me-2 fs-5"></i>
-                    <span>Postes</span>
-                </NavLink>
-            </div>
-
-            <hr class="mx-3 my-2" />
-
             <div class="nav-item px-3">
                 <NavLink class="nav-link d-flex align-items-center px-3 py-2" href="/Account/register">
                     <i class="bi bi-person-plus me-2 fs-5"></i>
                     <span>Inscription</span>
                 </NavLink>
             </div>
+
+            <hr class="mx-3 my-2" />
 
             <div class="nav-item px-3 mb-3" id="Logout">
                 <form action="/Account/Logout" method="post" class="m-0">

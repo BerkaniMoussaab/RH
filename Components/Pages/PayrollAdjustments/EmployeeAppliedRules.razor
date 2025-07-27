@@ -10,114 +10,66 @@
 <PageTitle>Règles Appliquées par Employé</PageTitle>
 
 <div class="container-fluid">
-    <div class="row">
+    <!-- Header -->
+    <div class="row mb-4">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex justify-content-between align-items-center">
                 <h2>
                     <i class="bi bi-people-fill me-2"></i>
                     Règles Appliquées par Employé
                 </h2>
-                <div class="d-flex gap-2">
-                    <div class="badge bg-warning fs-6">
-                        <i class="bi bi-clock me-1"></i>
-                        Règles en attente
-                    </div>
-                    <div class="badge bg-success fs-6">
-                        <i class="bi bi-check-circle me-1"></i>
-                        Règles intégrées
-                    </div>
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="/">Accueil</a></li>
-                            <li class="breadcrumb-item"><a href="/payroll">Paie</a></li>
-                            <li class="breadcrumb-item active">Règles par Employé</li>
-                        </ol>
-                    </nav>
-                </div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+                        <li class="breadcrumb-item"><a href="/payroll">Paie</a></li>
+                        <li class="breadcrumb-item active">Règles par Employé</li>
+                    </ol>
+                </nav>
             </div>
         </div>
     </div>
 
-    <!-- Global Filters -->
+    <!-- Simplified Filters -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card shadow-lg border-0">
-                <div class="card-header bg-primary text-white d-flex align-items-center">
-                    <i class="bi bi-funnel-fill fs-4 me-2"></i>
-                    <h5 class="mb-0">Filtres Globaux</h5>
-                </div>
+            <div class="card">
                 <div class="card-body">
-                    <div class="row g-3">
+                    <div class="row g-3 align-items-end">
                         <!-- Employee Search -->
-                        <div class="col-md-3">
-                            <label class="form-label fw-semibold">👤 Rechercher un employé</label>
+                        <div class="col-md-4">
+                            <label class="form-label">Rechercher un employé</label>
                             <input type="text"
-                                   class="form-control rounded-pill px-3 shadow-sm"
+                                   class="form-control"
                                    placeholder="Nom de l'employé..."
                                    @bind="EmployeeSearchTerm"
                                    @oninput="FilterEmployees" />
                         </div>
 
-                        <!-- Department Filter -->
+                        
+
+                        <!-- Global Period Filter -->
                         <div class="col-md-2">
-                            <label class="form-label fw-semibold">🏢 Département</label>
-                            <div class="input-group shadow-sm">
-                                <select class="form-select" @bind="SelectedDepartment">
-                                    <option value="">Tous les départements</option>
-                                    @foreach (var dept in Departments)
-                                    {
-                                        <option value="@dept">@dept</option>
-                                    }
-                                </select>
-                                <button class="btn btn-outline-secondary"
-                                        type="button"
-                                        @onclick="FilterEmployees"
-                                        title="Filtrer">
-                                    <i class="bi bi-funnel"></i>
-                                </button>
-                            </div>
+                            <label class="form-label">Période</label>
+                            <select class="form-select" @bind="GlobalSelectedPeriod">
+                                @foreach (var period in AvailablePeriods)
+                                {
+                                    <option value="@period.Key">@period.Value</option>
+                                }
+                            </select>
                         </div>
 
-                        <!-- Display Mode Filter -->
+                        <!-- Filter Button -->
                         <div class="col-md-2">
-                            <label class="form-label fw-semibold">📊 Affichage</label>
-                            <div class="input-group shadow-sm">
-                                <select class="form-select" @bind="DisplayMode">
-                                    <option value="all">Tous les employés</option>
-                                    <option value="with_rules">Avec règles</option>
-                                    <option value="without_rules">Sans règles</option>
-                                </select>
-                                <button class="btn btn-outline-secondary"
-                                        type="button"
-                                        @onclick="FilterEmployees"
-                                        title="Filtrer">
-                                    <i class="bi bi-funnel"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Rule Type Filter -->
-                        <div class="col-md-3">
-                            <label class="form-label fw-semibold">🔍 Type de règles</label>
-                            <div class="input-group shadow-sm">
-                                <select class="form-select" @bind="RuleTypeFilter">
-                                    <option value="all">Toutes les règles</option>
-                                    <option value="pending">En attente</option>
-                                    <option value="attached">Intégrées</option>
-                                </select>
-                                <button class="btn btn-outline-secondary"
-                                        type="button"
-                                        @onclick="FilterEmployees"
-                                        title="Filtrer">
-                                    <i class="bi bi-funnel"></i>
-                                </button>
-                            </div>
+                            <button class="btn btn-success w-100" @onclick="ApplyFilters">
+                                <i class="bi bi-funnel me-1"></i>
+                                Filtrer
+                            </button>
                         </div>
 
                         <!-- Refresh Button -->
-                        <div class="col-md-2 d-flex align-items-end">
-                            <button class="btn btn-success w-100 rounded-pill shadow-sm" @onclick="RefreshAllData">
-                                <i class="bi bi-arrow-clockwise me-2"></i>
+                        <div class="col-md-2">
+                            <button class="btn btn-primary w-100" @onclick="RefreshAllData">
+                                <i class="bi bi-arrow-clockwise me-1"></i>
                                 Actualiser
                             </button>
                         </div>
@@ -127,58 +79,43 @@
         </div>
     </div>
 
-
-    <!-- Global Statistics -->
+    <!-- Summary Statistics -->
     @if (GlobalStatistics != null)
     {
         <div class="row mb-4">
-            <div class="col-12">
-                <div class="card bg-light">
-                    <div class="card-body">
-                        <div class="row text-center">
-                            <div class="col-md-2">
-                                <div class="text-info">
-                                    <i class="bi bi-people display-6"></i>
-                                    <h6 class="mt-2">Employés</h6>
-                                    <h4>@GlobalStatistics.TotalEmployees</h4>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="text-primary">
-                                    <i class="bi bi-list-check display-6"></i>
-                                    <h6 class="mt-2">Règles Totales</h6>
-                                    <h4>@GlobalStatistics.TotalRules</h4>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="text-warning">
-                                    <i class="bi bi-clock display-6"></i>
-                                    <h6 class="mt-2">En Attente</h6>
-                                    <h4>@GlobalStatistics.PendingRules</h4>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="text-success">
-                                    <i class="bi bi-check-circle display-6"></i>
-                                    <h6 class="mt-2">Intégrées</h6>
-                                    <h4>@GlobalStatistics.AttachedRules</h4>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="text-success">
-                                    <i class="bi bi-cash-coin display-6"></i>
-                                    <h6 class="mt-2">Total Primes</h6>
-                                    <h4>@GlobalStatistics.TotalBonuses.ToString("0.##") DZD</h4>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <div class="text-danger">
-                                    <i class="bi bi-dash-circle display-6"></i>
-                                    <h6 class="mt-2">Total Déductions</h6>
-                                    <h4>@GlobalStatistics.TotalDeductions.ToString("0.##") DZD</h4>
-                                </div>
-                            </div>
-                        </div>
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <i class="bi bi-people display-6"></i>
+                        <h4 class="mt-2">@GlobalStatistics.TotalEmployees</h4>
+                        <p class="mb-0">Employés</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <i class="bi bi-list-check display-6"></i>
+                        <h4 class="mt-2">@GlobalStatistics.TotalRules</h4>
+                        <p class="mb-0">Règles Totales</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <i class="bi bi-cash-coin display-6"></i>
+                        <h4 class="mt-2">@GlobalStatistics.TotalBonuses.ToString("N0") DZD</h4>
+                        <p class="mb-0">Total Primes</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-danger text-white">
+                    <div class="card-body text-center">
+                        <i class="bi bi-dash-circle display-6"></i>
+                        <h4 class="mt-2">@GlobalStatistics.TotalDeductions.ToString("N0") DZD</h4>
+                        <p class="mb-0">Total Déductions</p>
                     </div>
                 </div>
             </div>
@@ -200,63 +137,42 @@
         <div class="row">
             @foreach (var employeeData in FilteredEmployees)
             {
-                <div class="col-12 mb-4">
-                    <div class="card shadow-sm">
+                <div class="col-12 mb-3">
+                    <div class="card">
                         <!-- Employee Header -->
-                        <div class="card-header bg-light">
+                        <div class="card-header">
                             <div class="row align-items-center">
-                                <div class="col-md-4">
+                                <div class="col-md-6">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-person-circle me-3 text-primary" style="font-size: 2rem;"></i>
                                         <div>
                                             <h5 class="mb-0">@employeeData.Employee.FullName</h5>
                                             <small class="text-muted">@employeeData.Employee.JobTitle?.Title</small>
-
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-8">
-                                    <div class="row">
-                                        <!-- Date Filter for this Employee -->
-                                        <div class="col-md-4">
-                                            <label class="form-label fw-semibold small">📅 Période</label>
-                                            <select class="form-select form-select-sm rounded-pill"
-                                            @bind="employeeData.SelectedPeriod">
-                                                @foreach (var period in AvailablePeriods)
-                                                {
-                                                    <option value="@period.Key">@period.Value</option>
-                                                }
-                                            </select>
+                                <div class="col-md-6">
+                                    <div class="row text-center">
+                                        <div class="col-4">
+                                            <span class="badge bg-info">@employeeData.AllAppliedRules.Count règles</span>
                                         </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label fw-semibold small">📅 De</label>
-                                            <input type="date" class="form-control form-control-sm rounded-pill"
-                                            @bind="employeeData.CustomFromDate" />
+                                        <div class="col-4">
+                                            <span class="badge bg-success">+@employeeData.TotalBonuses.ToString("N0") DZD</span>
                                         </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label fw-semibold small">📅 À</label>
-                                            <input type="date" class="form-control form-control-sm rounded-pill"
-                                            @bind="employeeData.CustomToDate" />
-                                        </div>
-                                        <div class="col-md-2 d-flex align-items-end">
-                                            <button class="btn btn-primary btn-sm rounded-pill w-100"
-                                            @onclick="() => ApplyEmployeeFilter(employeeData.Employee.Id)">
-                                                <i class="bi bi-check2"></i>
-                                            </button>
+                                        <div class="col-4">
+                                            <span class="badge bg-danger">-@employeeData.TotalDeductions.ToString("N0") DZD</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Employee Summary -->
+                        <!-- Employee Rules -->
                         <div class="card-body">
                             @if (employeeData.IsLoading)
                             {
                                 <div class="text-center py-3">
-                                    <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                        <span class="visually-hidden">Chargement...</span>
-                                    </div>
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
                                     <span class="ms-2 text-muted">Chargement des règles...</span>
                                 </div>
                             }
@@ -264,121 +180,152 @@
                             {
                                 <div class="text-center py-4 text-muted">
                                     <i class="bi bi-inbox display-4"></i>
-                                    <p class="mt-2 mb-0">Aucune règle appliquée dans cette période</p>
-                                    <small class="text-muted">Aucune règle n'a été appliquée pour cet employé dans la période sélectionnée</small>
+                                    <p class="mt-2 mb-0">Aucune règle appliquée</p>
+                                    <small class="text-muted">Aucune règle pour la période sélectionnée</small>
                                 </div>
                             }
                             else
                             {
-                                <!-- Summary Cards for this Employee -->
-                                <div class="row mb-3">
-                                    <div class="col-md-2">
-                                        <div class="card bg-info text-white">
-                                            <div class="card-body text-center py-2">
-                                                <i class="bi bi-list-check"></i>
-                                                <span class="ms-2">@employeeData.AllAppliedRules.Count règles</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <div class="card bg-warning text-white">
-                                            <div class="card-body text-center py-2">
-                                                <i class="bi bi-clock"></i>
-                                                <span class="ms-2">@employeeData.PendingRules.Count en attente</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <div class="card bg-success text-white">
-                                            <div class="card-body text-center py-2">
-                                                <i class="bi bi-check-circle"></i>
-                                                <span class="ms-2">@employeeData.AttachedRules.Count intégrées</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <div class="card bg-success text-white">
-                                            <div class="card-body text-center py-2">
-                                                <i class="bi bi-cash-coin"></i>
-                                                <span class="ms-2">@employeeData.TotalBonuses.ToString("0.##") DZD</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <div class="card bg-danger text-white">
-                                            <div class="card-body text-center py-2">
-                                                <i class="bi bi-dash-circle"></i>
-                                                <span class="ms-2">@employeeData.TotalDeductions.ToString("0.##") DZD</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-2">
-                                        <div class="card @(employeeData.NetAdjustment >= 0 ? "bg-primary" : "bg-warning") text-white">
-                                            <div class="card-body text-center py-2">
-                                                <i class="bi bi-calculator"></i>
-                                                <span class="ms-2">@employeeData.NetAdjustment.ToString("0.##") DZD</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <!-- Simplified Rules Table -->
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Règle</th>
+                                                <th class="text-end">Montant</th>
+                                                <th class="text-center">Date</th>
+                                                <th class="text-center">Statut</th>
+                                                <th class="text-center">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var rule in employeeData.AllAppliedRules.OrderByDescending(r => r.Date).Take(5))
+                                            {
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            @if (rule.Rule?.Type == AdjustmentType.Bonus)
+                                                            {
+                                                                <i class="bi bi-plus-circle text-success me-2"></i>
+                                                            }
+                                                            else
+                                                            {
+                                                                <i class="bi bi-dash-circle text-danger me-2"></i>
+                                                            }
+                                                            <span>@(rule.Rule?.Name ?? "Règle supprimée")</span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <span class="fw-bold @(rule.Rule?.Type == AdjustmentType.Bonus ? "text-success" : "text-danger")">
+                                                            @rule.Amount.ToString("N0") DZD
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <small class="text-muted">@(rule.Date?.ToString("dd/MM/yyyy") ?? "—")</small>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        @if (rule.PayrollId.HasValue)
+                                                        {
+                                                            <span class="badge bg-success">
+                                                                <i class="bi bi-check-circle"></i> Intégrée
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-warning">
+                                                                <i class="bi bi-clock"></i> En attente
+                                                            </span>
+                                                        }
+                                                    </td>
+                                                    <td class="text-center">
+                                                        @if (!rule.PayrollId.HasValue)
+                                                        {
+                                                            <button class="btn btn-outline-danger btn-sm"
+                                                                    title="Supprimer"
+                                                                    @onclick="() => RemoveRule(rule.Id)">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
                                 </div>
 
-                                <!-- Applied Rules Tables -->
-                                <div class="row">
-                                    <!-- Bonuses -->
-                                    @if (employeeData.BonusRules.Any())
-                                    {
-                                        <div class="col-md-6 mb-3">
-                                            <h6 class="text-success mb-2">
-                                                <i class="bi bi-cash-coin me-2"></i>
-                                                Primes (@employeeData.BonusRules.Count())
-                                            </h6>
-                                            @RenderEmployeeRulesTable((employeeData.BonusRules, "success"))
-                                        </div>
-                                    }
-
-                                    <!-- Deductions -->
-                                    @if (employeeData.DeductionRules.Any())
-                                    {
-                                        <div class="col-md-6 mb-3">
-                                            <h6 class="text-danger mb-2">
-                                                <i class="bi bi-dash-circle me-2"></i>
-                                                Déductions (@employeeData.DeductionRules.Count())
-                                            </h6>
-                                            @RenderEmployeeRulesTable((employeeData.DeductionRules, "danger"))
-                                        </div>
-                                    }
-                                </div>
-
-                                <!-- Actions for this Employee -->
-                                <div class="d-flex justify-content-between align-items-center mt-3">
-                                    <div class="text-muted small">
-                                        <i class="bi bi-clock me-1"></i>
-                                        Dernière règle: @(employeeData.AllAppliedRules.Max(r => r.Date)?.ToString("dd/MM/yyyy HH:mm") ?? "N/A")
-                                    </div>
-                                    <div class="d-flex gap-2">
-                                        @*    <button class="btn btn-outline-primary btn-sm rounded-pill"
-                                        @onclick="() => ExportEmployeeRules(employeeData.Employee.Id)">
-                                            <i class="bi bi-download me-1"></i>
-                                            Exporter
-                                        </button>
-                                        <button class="btn btn-outline-success btn-sm rounded-pill"
-                                        @onclick="() => ApplyNewRules(employeeData.Employee.Id)">
-                                            <i class="bi bi-plus-circle me-1"></i>
-                                            Appliquer règles
-                                        </button>
-                                        <button class="btn btn-outline-warning btn-sm rounded-pill"
-                                        @onclick="() => IntegrateToPayroll(employeeData.Employee.Id)"
-                                        disabled="@(!employeeData.PendingRules.Any())">
-                                            <i class="bi bi-arrow-right-circle me-1"></i>
-                                            Intégrer à la paie (@employeeData.PendingRules.Count)
-                                        </button>*@
-                                        <button class="btn btn-outline-info btn-sm rounded-pill"
-                                         onclick="() => RefreshEmployeeData(employeeData.Employee.Id)">
-                                            <i class="bi bi-arrow-clockwise me-1"></i>
-                                            Actualiser
+                                @if (employeeData.AllAppliedRules.Count > 5)
+                                {
+                                    <div class="text-center mt-2">
+                                        <button class="btn btn-outline-primary btn-sm" @onclick="@(() => ToggleEmployeeExpanded(employeeData.Employee.Id))">
+                                            <i class="bi @(expandedEmployees.Contains(employeeData.Employee.Id) ? "bi-chevron-up" : "bi-chevron-down")"></i>
+                                            @(expandedEmployees.Contains(employeeData.Employee.Id)
+                                                ? "Voir moins"
+                                                : $"Voir toutes ({employeeData.AllAppliedRules.Count} règles)")
                                         </button>
                                     </div>
-                                </div>
+                                }
+
+
+                                <!-- Expanded view -->
+                                @if (expandedEmployees.Contains(employeeData.Employee.Id) && employeeData.AllAppliedRules.Count > 5)
+                                {
+                                    <div class="table-responsive mt-3">
+                                        <table class="table table-sm">
+                                            <tbody>
+                                                @foreach (var rule in employeeData.AllAppliedRules.OrderByDescending(r => r.Date).Skip(5))
+                                                {
+                                                    <tr>
+                                                        <td>
+                                                            <div class="d-flex align-items-center">
+                                                                @if (rule.Rule?.Type == AdjustmentType.Bonus)
+                                                                {
+                                                                    <i class="bi bi-plus-circle text-success me-2"></i>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <i class="bi bi-dash-circle text-danger me-2"></i>
+                                                                }
+                                                                <span>@(rule.Rule?.Name ?? "Règle supprimée")</span>
+                                                            </div>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <span class="fw-bold @(rule.Rule?.Type == AdjustmentType.Bonus ? "text-success" : "text-danger")">
+                                                                @rule.Amount.ToString("N0") DZD
+                                                            </span>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <small class="text-muted">@(rule.Date?.ToString("dd/MM/yyyy") ?? "—")</small>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            @if (rule.PayrollId.HasValue)
+                                                            {
+                                                                <span class="badge bg-success">
+                                                                    <i class="bi bi-check-circle"></i> Intégrée
+                                                                </span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge bg-warning">
+                                                                    <i class="bi bi-clock"></i> En attente
+                                                                </span>
+                                                            }
+                                                        </td>
+                                                        <td class="text-center">
+                                                            @if (!rule.PayrollId.HasValue)
+                                                            {
+                                                                <button class="btn btn-outline-danger btn-sm"
+                                                                        title="Supprimer"
+                                                                        @onclick="() => RemoveRule(rule.Id)">
+                                                                    <i class="bi bi-trash"></i>
+                                                                </button>
+                                                            }
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
                             }
                         </div>
                     </div>
@@ -405,19 +352,17 @@
     private bool IsLoading = true;
     private string EmployeeSearchTerm = "";
     private string SelectedDepartment = "";
-    private string DisplayMode = "all";
-    private string RuleTypeFilter = "all";
+    private string GlobalSelectedPeriod = "current_month"; // Default to current month
+    private HashSet<int> expandedEmployees = new();
 
     private Dictionary<string, string> AvailablePeriods = new()
-        {
+    {
         { "current_month", "Mois en cours" },
         { "last_month", "Mois dernier" },
         { "last_3_months", "3 derniers mois" },
-        { "last_6_months", "6 derniers mois" },
         { "current_year", "Année en cours" },
-        { "custom", "Période personnalisée" },
         { "all", "Toutes les périodes" }
-        };
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -435,17 +380,15 @@
             var employees = await EmployeeService.GetAllAsync();
 
             AllEmployees = employees.Select(emp => new EmployeeRulesData
-                    {
-                        Employee = emp,
-                        SelectedPeriod = "current_month",
-                        AllAppliedRules = new(),
-                        IsLoading = false
-                    }).ToList();
+                {
+                    Employee = emp,
+                    AllAppliedRules = new(),
+                    IsLoading = false
+                }).ToList();
 
-            // Extract departments
+           
 
-
-            // Load initial rules for all employees (all rules - pending and attached)
+            // Load initial rules for all employees with current month filter
             foreach (var employeeData in AllEmployees)
             {
                 await LoadEmployeeRules(employeeData);
@@ -471,10 +414,9 @@
 
         try
         {
-            var (fromDate, toDate) = GetEmployeeDateRange(employeeData);
-            // Use the new method to get ALL applied rules (pending and attached)
+            var (fromDate, toDate) = GetDateRange();
             employeeData.AllAppliedRules = await PayrollService.GetAppliedRulesForEmployeeAsync(
-            employeeData.Employee.Id, fromDate, toDate);
+                employeeData.Employee.Id, fromDate, toDate);
         }
         catch (Exception ex)
         {
@@ -496,21 +438,21 @@
             var pendingRules = allEmployees.SelectMany(e => e.PendingRules).Count();
             var attachedRules = allEmployees.SelectMany(e => e.AttachedRules).Count();
             var totalBonuses = allEmployees.SelectMany(e => e.AllAppliedRules)
-            .Where(r => r.Rule?.Type == AdjustmentType.Bonus)
-            .Sum(r => r.Amount);
+                .Where(r => r.Rule?.Type == AdjustmentType.Bonus)
+                .Sum(r => r.Amount);
             var totalDeductions = allEmployees.SelectMany(e => e.AllAppliedRules)
-            .Where(r => r.Rule?.Type == AdjustmentType.Deduction)
-            .Sum(r => r.Amount);
+                .Where(r => r.Rule?.Type == AdjustmentType.Deduction)
+                .Sum(r => r.Amount);
 
             GlobalStatistics = new GlobalRulesStatistics
-                    {
-                        TotalEmployees = allEmployees.Count,
-                        TotalRules = totalRules,
-                        PendingRules = pendingRules,
-                        AttachedRules = attachedRules,
-                        TotalBonuses = totalBonuses,
-                        TotalDeductions = totalDeductions
-                    };
+                {
+                    TotalEmployees = allEmployees.Count,
+                    TotalRules = totalRules,
+                    PendingRules = pendingRules,
+                    AttachedRules = attachedRules,
+                    TotalBonuses = totalBonuses,
+                    TotalDeductions = totalDeductions
+                };
         }
         catch (Exception ex)
         {
@@ -518,83 +460,49 @@
         }
     }
 
-    private (DateTime? fromDate, DateTime? toDate) GetEmployeeDateRange(EmployeeRulesData employeeData)
+    private (DateTime? fromDate, DateTime? toDate) GetDateRange()
     {
-        if (employeeData.SelectedPeriod == "custom")
-        {
-            return (employeeData.CustomFromDate, employeeData.CustomToDate);
-        }
-
-        return employeeData.SelectedPeriod switch
+        return GlobalSelectedPeriod switch
         {
             "current_month" => (new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1), DateTime.Now),
             "last_month" => (new DateTime(DateTime.Now.AddMonths(-1).Year, DateTime.Now.AddMonths(-1).Month, 1),
                         new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1).AddDays(-1)),
             "last_3_months" => (DateTime.Now.AddMonths(-3), DateTime.Now),
-            "last_6_months" => (DateTime.Now.AddMonths(-6), DateTime.Now),
             "current_year" => (new DateTime(DateTime.Now.Year, 1, 1), DateTime.Now),
             _ => (null, null)
         };
     }
 
-    private async Task ApplyEmployeeFilter(int employeeId)
+    private async Task OnGlobalPeriodChanged()
     {
-        var employeeData = AllEmployees.FirstOrDefault(e => e.Employee.Id == employeeId);
-        if (employeeData != null)
+        // This method is now called explicitly via ApplyFilters button
+        // Reload all employee rules with new period
+        foreach (var employeeData in AllEmployees)
         {
-            // If custom dates are provided, use custom period
-            if (employeeData.CustomFromDate.HasValue || employeeData.CustomToDate.HasValue)
-            {
-                employeeData.SelectedPeriod = "custom";
-            }
-            // If not custom period, clear custom dates
-            else if (employeeData.SelectedPeriod != "custom")
-            {
-                employeeData.CustomFromDate = null;
-                employeeData.CustomToDate = null;
-            }
-
             await LoadEmployeeRules(employeeData);
         }
+        await LoadGlobalStatistics();
+        FilterEmployees();
     }
 
-    private async Task RefreshEmployeeData(int employeeId)
+    private async Task ApplyFilters()
     {
-        var employeeData = AllEmployees.FirstOrDefault(e => e.Employee.Id == employeeId);
-        if (employeeData != null)
-        {
-            await LoadEmployeeRules(employeeData);
-        }
+        // Apply period changes and filter employees
+        await OnGlobalPeriodChanged();
     }
 
     private void FilterEmployees()
     {
         FilteredEmployees = AllEmployees.Where(emp =>
-    {
-        // Search term filter
-        bool matchesSearch = string.IsNullOrEmpty(EmployeeSearchTerm) ||
-                           emp.Employee.FullName.Contains(EmployeeSearchTerm, StringComparison.OrdinalIgnoreCase);
-
-
-
-        // Display mode filter
-        bool matchesDisplayMode = DisplayMode switch
         {
-            "with_rules" => emp.AllAppliedRules.Any(),
-            "without_rules" => !emp.AllAppliedRules.Any(),
-            _ => true
-        };
+            // Search term filter
+            bool matchesSearch = string.IsNullOrEmpty(EmployeeSearchTerm) ||
+                               emp.Employee.FullName.Contains(EmployeeSearchTerm, StringComparison.OrdinalIgnoreCase);
 
-        // Rule type filter
-        bool matchesRuleType = RuleTypeFilter switch
-        {
-            "pending" => emp.PendingRules.Any(),
-            "attached" => emp.AttachedRules.Any(),
-            _ => true
-        };
+         
 
-        return matchesSearch && matchesDisplayMode && matchesRuleType;
-    }).OrderBy(emp => emp.Employee.FullName).ToList();
+            return matchesSearch ;
+        }).OrderBy(emp => emp.Employee.FullName).ToList();
 
         StateHasChanged();
     }
@@ -605,129 +513,36 @@
         await LoadGlobalStatistics();
     }
 
-    private async Task ExportEmployeeRules(int employeeId)
+    private void ToggleEmployeeExpanded(int employeeId)
     {
-        // Implement export functionality for specific employee
-    }
-
-    private void ApplyNewRules(int employeeId)
-    {
-        // Navigate to apply rules page or show modal
-    }
-
-    private async Task IntegrateToPayroll(int employeeId)
-    {
-        // Navigate to payroll integration page or show modal
-        // This would move the rules from "pending" to "integrated" status
-    }
-
-    private RenderFragment<(List<PayrollAppliedRule> rules, string colorClass)> RenderEmployeeRulesTable => (data) => @<div class="table-responsive">
-        <table class="table table-sm table-striped mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th>Règle</th>
-                    <th class="text-end">Montant</th>
-                    <th class="text-center">Qté</th>
-                    <th class="text-end">Total</th>
-                    <th class="text-center">Date</th>
-                    <th class="text-center">Statut</th>
-                    <th>Notes</th>
-                    <th class="text-center">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var rule in data.rules.OrderByDescending(r => r.Date))
-            {
-                <tr>
-                    <td>
-                        <div class="d-flex align-items-center">
-                            <span class="small">@(rule.Rule?.Name ?? "Règle supprimée")</span>
-                            @if (rule.Rule?.IsPercentage == true)
-                        {
-                            <span class="badge bg-info ms-1" style="font-size: 0.6rem;">%</span>
-                        }
-                        </div>
-                    </td>
-                    <td class="text-end small">@((rule.Rule?.Amount ?? 0).ToString("0.##"))</td>
-                    <td class="text-center small">
-                        @if (rule.Quantity.HasValue && rule.Quantity > 1)
-                    {
-                        <span>@rule.Quantity.Value</span>
-                    }
-                    else
-                    {
-                        <span class="text-muted">—</span>
-                    }
-                    </td>
-                    <td class="text-end fw-bold small text-@data.colorClass">@rule.Amount.ToString("0.##")</td>
-                    <td class="text-center small text-muted">
-                        @(rule.Date?.ToString("dd/MM") ?? "—")
-                    </td>
-                    <td class="text-center">
-                        @if (rule.PayrollId.HasValue)
-                    {
-                        <span class="badge bg-success" style="font-size: 0.6rem;" title="Intégrée à la paie #@rule.PayrollId">
-                            <i class="bi bi-check-circle"></i> Intégrée
-                        </span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-warning" style="font-size: 0.6rem;" title="En attente d'intégration">
-                            <i class="bi bi-clock"></i> En attente
-                        </span>
-                    }
-                    </td>
-                    <td class="small text-muted">@(rule.Notes?.Length > 15 ? rule.Notes.Substring(0, 15) + "..." : rule.Notes ?? "—")</td>
-                    <td class="text-center">
-                        <div class="btn-group btn-group-sm">
-                             
-                            @if (!rule.PayrollId.HasValue)
-                        {
-                            <button class="btn btn-outline-danger btn-sm" title="Supprimer" @onclick="() => RemoveRule(rule.Id)">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        }
-                        else
-                        {
-                            // <button class="btn btn-outline-secondary btn-sm" title="Voir paie" @onclick="() => ViewPayroll(rule.PayrollId.Value)">
-                            //     <i class="bi bi-receipt"></i>
-                            // </button>
-                        }
-                        </div>
-                    </td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    </div>
-    ;
-
-    private async Task ViewRuleDetails(int ruleId)
-    {
-        // Implement view rule details functionality
+        if (expandedEmployees.Contains(employeeId))
+        {
+            expandedEmployees.Remove(employeeId);
+        }
+        else
+        {
+            expandedEmployees.Add(employeeId);
+        }
+        StateHasChanged();
     }
 
     private async Task RemoveRule(int ruleId)
     {
-        // Implement remove rule functionality (only for pending rules)
-        // Note: Only pending rules (PayrollId == null) can be removed
-        // Refresh the data after removal
-        PayrollService.deleteAppliedRule(ruleId);
-        await RefreshAllData();
-    }
-
-    private async Task ViewPayroll(int payrollId)
-    {
-        // Navigate to payroll details page
+        try
+        {
+            PayrollService.deleteAppliedRule(ruleId);
+            await RefreshAllData();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error removing rule: {ex.Message}");
+        }
     }
 
     public class EmployeeRulesData
     {
         public Employee Employee { get; set; } = new();
         public List<PayrollAppliedRule> AllAppliedRules { get; set; } = new();
-        public string SelectedPeriod { get; set; } = "current_month";
-        public DateTime? CustomFromDate { get; set; }
-        public DateTime? CustomToDate { get; set; }
         public bool IsLoading { get; set; }
 
         // Pending rules (not attached to any payroll)
