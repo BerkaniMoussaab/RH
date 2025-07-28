@@ -115,7 +115,7 @@
     }
 </div>
 
-}
+
 @code {
     private void OpenEmployeeRecovery(int employeeId)
     {
@@ -143,7 +143,7 @@
                     FullName = emp.FullName,
                     TotalWorkedDays = worked.Count,
                     TotalRecoveryDays = recovery.Count,
-                    UnusedRecoveryDays = recovery.Count(r => !r.Used),
+                   
                     BonusPaid = worked.Count(w => w.GrantsBonus && w.BonusPaid),
                     BonusPending = worked.Count(w => w.GrantsBonus && !w.BonusPaid)
                 };

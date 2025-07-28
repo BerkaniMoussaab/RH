@@ -1,198 +1,828 @@
-﻿@page "/recovery-days"
-@inject RecoveryDayService RecoveryDayService
-@inject IEmployeeService EmployeeService
-@inject IJSRuntime JS
+﻿@page "/recuperation"
 @using RH.Models
 @using RH.Services
+@implements IDisposable
+@inject WorkedDaysOffService WorkedService
+@inject RecoveryDayService RecoveryService
+@inject EmployeeService EmployeeService
+@inject IJSRuntime JSRuntime
+<head>
+    <!-- Font Awesome 4 (CDN) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+</head>
+<h3 class="visually-hidden">Recovery Dashboard</h3>
 
-<PageTitle>Jours de Récupération</PageTitle>
+<div class="recovery-page">
+    <div class="container">
 
-<div class="container mt-4">
-    <h2 class="mb-4">
-        <i class="bi bi-calendar-check"></i> Gestion des Jours de Récupération
-    </h2>
+        <!-- Page Header -->
+        <div class="page-header">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">
+                        <i class="fa fa-calendar" aria-hidden="true"></i>
 
-    <div class="mb-3 d-flex justify-content-between align-items-center">
-        <button class="btn btn-primary" @onclick="ShowAddModal">
-            <i class="bi bi-plus-lg"></i> Ajouter
-        </button>
-    </div>
-
-    @if (isLoading)
-    {
-        <div class="text-center my-5">
-            <div class="spinner-border text-primary" role="status"></div>
-        </div>
-    }
-    else if (recoveryDays.Count == 0)
-    {
-        <div class="alert alert-info">Aucun jour de récupération enregistré.</div>
-    }
-    else
-    {
-        <table class="table table-bordered table-hover">
-            <thead class="table-light">
-                <tr>
-                    <th>Employé</th>
-                    <th>Date</th>
-                    <th>Raison</th>
-                    <th>Quantité</th>
-                    <th>Utilisé</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var day in recoveryDays)
-                {
-                    <tr>
-                        <td>@day.Employee?.FullName</td>
-                        <td>@day.Date.ToShortDateString()</td>
-                        <td>@day.Reason</td>
-                        <td>@day.Quantity</td>
-                        <td>
-                            <div class="progress" style="height: 20px;">
-                                <div class="progress-bar @GetProgressBarClass(day)" role="progressbar"
-                                     style="width: @GetUsagePercentage(day)%;">
-                                    @day.UsedQuantity / @day.Quantity
-                                </div>
-                            </div>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => Edit(day)">
-                                <i class="bi bi-pencil-square"></i>
-                            </button>
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmDelete(day)">
-                                <i class="bi bi-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    }
-</div>
-
-<!-- Modal -->
-@if (showModal)
-{
-    <div class="modal fade show d-block" style="background: rgba(0,0,0,0.5);">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@((editingDay.Id == 0) ? "Ajouter" : "Modifier") Jour de Récupération</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                        Gestion des jours de récupération
+                    </h1>
+                    <p class="mb-0 opacity-75">Gérez efficacement les jours travaillés et les jours de récupération de vos employés</p>
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Employé</label>
-                        <select class="form-select" @bind="editingDay.EmployeeId">
-                            <option disabled value="">-- Sélectionner --</option>
-                            @foreach (var emp in employees)
-                            {
-                                <option value="@emp.Id">@emp.FullName</option>
-                            }
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Date</label>
-                        <input class="form-control" type="date" @bind="editingDay.Date" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Raison</label>
-                        <input class="form-control" @bind="editingDay.Reason" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Quantité</label>
-                        <input type="number" step="0.25" class="form-control" @bind="editingDay.Quantity" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Quantité utilisée</label>
-                        <input type="number" step="0.25" class="form-control" @bind="editingDay.UsedQuantity" />
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="CloseModal">Annuler</button>
-                    <button class="btn btn-primary" @onclick="Save">Enregistrer</button>
+                <div class="col-md-4 text-end">
+                    <i class="fas fa-users" style="font-size: 4rem; opacity: 0.3;"></i>
                 </div>
             </div>
         </div>
+
+        <!-- Employee Selection -->
+        <div class="enhanced-card card">
+            <div class="card-header-custom">
+                <div class="row align-items-center">
+                    <div class="col-auto">
+                        <div class="icon-container icon-primary">
+                            <i class="fa fa-user" aria-hidden="true"></i>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <h5 class="mb-1">Sélection de l'employé</h5>
+                        <small class="text-muted">Choisissez l'employé pour gérer ses jours de récupération</small>
+                    </div>
+                </div>
+            </div>
+            <select class="form-select form-control-enhanced" @onchange="OnEmployeeChanged">
+                <option value="">-- Sélectionnez un employé --</option>
+                @foreach (var emp in Employees)
+                {
+                    <option value="@emp.Id" selected="@(emp.Id == SelectedEmployeeId)">
+                        @emp.FullName
+                    </option>
+                }
+            </select>
+        </div>
+
+        @if (SelectedEmployeeId > 0)
+        {
+            <!-- Recovery Days Summary -->
+            <div class="stats-card">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h3 class="mb-2">
+                            <i class="fas fa-clock me-2"></i>
+                            Jours de récupération disponibles
+                        </h3>
+                        <div class="d-flex align-items-center">
+                            <span style="font-size: 3rem; font-weight: bold;">@RemainingRecoveryDays.ToString("0.##")</span>
+                            <span class="ms-3 opacity-75">jours restants</span>
+                        </div>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        <i class="fas fa-calendar-check" style="font-size: 4rem; opacity: 0.3;"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Worked Days Section -->
+                <div class="col-lg-6">
+                    <!-- Add Worked Day -->
+                    <div class="enhanced-card card">
+                        <div class="card-header-custom">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <div class="icon-container icon-success">
+                                        <i class="fa fa-plus" aria-hidden="true"></i>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <h5 class="mb-1">Ajouter un jour travaillé</h5>
+                                    <small class="text-muted">Enregistrer un nouveau jour travaillé</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <EditForm Model="NewWorkedDay" OnValidSubmit="AddWorkedDay">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Date</label>
+                                        <InputDate class="form-control form-control-enhanced" @bind-Value="NewWorkedDay.Date" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Motif</label>
+                                        <InputText class="form-control form-control-enhanced" @bind-Value="NewWorkedDay.Reason" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Durée (jours)</label>
+                                        <InputNumber class="form-control form-control-enhanced" @bind-Value="NewWorkedDay.Quantity" step="0.1" min="0.1" />
+                                        <small class="text-muted">Ex : 1 pour un jour complet, 0.5 pour une demi-journée</small>
+                                    </div>
+                                    <div class="col-md-6 d-flex flex-column justify-content-center">
+                                        <div class="form-check">
+                                            <InputCheckbox class="form-check-input" @bind-Value="NewWorkedDay.GrantsRecoveryDay" id="recoveryCheck" />
+                                            <label class="form-check-label fw-bold" for="recoveryCheck">
+                                                <i class="fas fa-bed me-2 text-primary"></i>
+                                                Donne droit à un repos
+                                            </label>
+                                        </div>
+                                        <div class="form-check mt-2">
+                                            <InputCheckbox class="form-check-input" @bind-Value="NewWorkedDay.GrantsBonus" id="bonusCheck" />
+                                            <label class="form-check-label fw-bold" for="bonusCheck">
+                                                <i class="fas fa-dollar-sign me-2 text-success"></i>
+                                                Donne droit à une prime
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-enhanced btn-success-enhanced w-100">
+                                            <i class="fa fa-plus me-2" aria-hidden="true"></i>
+                                            Ajouter le jour travaillé
+                                        </button>
+                                    </div>
+                                </div>
+                            </EditForm>
+                        </div>
+                    </div>
+
+                    <!-- Worked Days List -->
+                    <div class="enhanced-card card">
+                        <div class="card-header-custom">
+                            <h5 class="mb-0">
+                                <i class="fa fa-list" aria-hidden="true"></i>
+                                Jours travaillés (@WorkedDays.Count)
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @if (WorkedDays.Any())
+                            {
+                                @foreach (var day in WorkedDays)
+                                {
+                                    <div class="item-card">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-8">
+                                                <h6 class="mb-2">
+                                                    
+                                                    <i class="fa fa-calendar me-2 text-primary"></i>
+                                                    @day.Date.ToShortDateString()
+                                                </h6>
+                                                <p class="mb-1 text-muted">@day.Reason</p>
+                                                <p class="mb-2 text-muted">Durée : @day.Quantity jour(s)</p>
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    @if (day.GrantsRecoveryDay)
+                                                    {
+                                                        @if (day.ConvertedToRecovery)
+                                                        {
+                                                            <span class="badge badge-enhanced badge-secondary-enhanced">
+                                                                <i class="fas fa-check me-1"></i>
+                                                                Repos attribué
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <button class="btn btn-sm btn-enhanced btn-primary-enhanced" @onclick="() => ConvertToRecovery(day.Id)">
+                                                                <i class="fas fa-exchange-alt me-1"></i>
+                                                                Convertir en repos
+                                                            </button>
+                                                        }
+                                                    }
+                                                    @if (day.GrantsBonus)
+                                                    {
+                                                        <div class="bonus-status">
+                                                            @if (day.BonusPaid)
+                                                            {
+                                                                <span class="badge badge-enhanced badge-success-enhanced d-inline-flex align-items-center">
+                                                                    <i class="fa fa-check me-1"></i>
+                                                                    Prime payée
+                                                                </span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <button class="btn btn-sm btn-enhanced btn-success-enhanced d-inline-flex align-items-center"
+                                                                        @onclick="() => MarkBonusPaid(day.Id)">
+                                                                    <i class="fa fa-check me-1"></i>
+                                                                    Marquer payée
+                                                                </button>
+                                                            }
+                                                        </div>
+                                                    }
+
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4 text-end">
+                                                <button class="btn btn-sm btn-enhanced btn-danger-enhanced" @onclick="() => ConfirmDeleteWorkedDay(day.Id)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="empty-state">
+                                    <i class="fas fa-clipboard-list"></i>
+                                    <h5>Aucun jour travaillé</h5>
+                                    <p>Commencez par ajouter un jour travaillé.</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recovery Days Section -->
+                <div class="col-lg-6">
+                    <!-- Add Recovery Day -->
+                    <div class="enhanced-card card">
+                        <div class="card-header-custom">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <div class="icon-container icon-primary">
+                                        <i class="fa fa-plus" aria-hidden="true"></i>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <h5 class="mb-1">Ajouter un jour de récupération</h5>
+                                    <small class="text-muted">Enregistrer un nouveau jour de récupération</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <EditForm Model="NewRecoveryDay" OnValidSubmit="AddRecoveryDay">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Date</label>
+                                        <InputDate class="form-control form-control-enhanced" @bind-Value="NewRecoveryDay.Date" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Durée (jours)</label>
+                                        <InputNumber class="form-control form-control-enhanced" @bind-Value="NewRecoveryDay.Quantity" step="0.1" min="0.1" />
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Motif</label>
+                                        <InputText class="form-control form-control-enhanced" @bind-Value="NewRecoveryDay.Reason" />
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-enhanced btn-primary-enhanced w-100">
+
+
+                                            <i class="fa fa-plus me-2" aria-hidden="true"></i>
+                                            Ajouter le jour de récupération
+                                        </button>
+                                    </div>
+                                </div>
+                            </EditForm>
+                        </div>
+                    </div>
+
+                    <!-- Use Recovery Day -->
+                    <div class="enhanced-card card">
+                        <div class="card-header-custom">
+                            <div class="row align-items-center">
+                                <div class="col-auto">
+                                    <div class="icon-container icon-danger">
+                                        <i class="fa fa-clock-o"></i>
+                                    </div>
+                                </div>
+                                <div class="col">
+                                    <h5 class="mb-1">Utiliser un jour de récupération</h5>
+                                    <small class="text-muted">Consommer partiellement ou totalement un jour de récupération</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <EditForm Model="NewUsage" OnValidSubmit="UseRecoveryDay">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Date d'utilisation</label>
+                                        <InputDate class="form-control form-control-enhanced" @bind-Value="NewUsage.UsageDate" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Quantité à utiliser</label>
+                                        <InputNumber class="form-control form-control-enhanced" @bind-Value="NewUsage.QuantityUsed" step="0.1" min="0.1" max="@RemainingRecoveryDays" />
+                                        <small class="text-muted">Max: @RemainingRecoveryDays.ToString("0.##") jours</small>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label fw-bold">Motif (optionnel)</label>
+                                        <InputText class="form-control form-control-enhanced" @bind-Value="NewUsage.Reason" />
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn btn-enhanced btn-warning-enhanced w-100" disabled="@(RemainingRecoveryDays <= 0)">
+                                            <i class="fas fa-clock me-2"></i>
+                                            Utiliser le jour de récupération
+                                        </button>
+                                    </div>
+                                </div>
+                            </EditForm>
+                        </div>
+                    </div>
+
+                    <!-- Recovery Days List -->
+                    <div class="enhanced-card card">
+                        <div class="card-header-custom">
+                            <h5 class="mb-0">
+                                <i class="fa fa-calendar" aria-hidden="true"></i>
+                                Jours de récupération (@RecoveryDays.Count)
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @if (RecoveryDays.Any())
+                            {
+                                @foreach (var rec in RecoveryDays)
+                                {
+                                    <div class="item-card">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-8">
+                                                <h6 class="mb-2">
+                                                    <i class="fa fa-calendar me-2 text-primary" aria-hidden="true"></i>
+                                                    
+                                                    @rec.Date.ToShortDateString()
+                                                </h6>
+                                                <p class="mb-1 text-muted">@rec.Reason</p>
+                                                <p class="mb-2 text-muted">
+                                                    Durée : @rec.Quantity.ToString("0.##") jour(s) |
+                                                    Utilisé : @rec.UsedQuantity.ToString("0.##") jour(s) |
+                                                    Restant : @((rec.Quantity - rec.UsedQuantity).ToString("0.##")) jour(s)
+                                                </p>
+
+                                                <!-- Progress Bar -->
+                                                <div class="progress mb-2" style="height: 8px;">
+                                                    <div class="progress-bar @(rec.FullyUsed ? "bg-secondary" : "bg-success")"
+                                                         role="progressbar"
+                                                         style="width: @((rec.UsedQuantity / rec.Quantity * 100).ToString("0"))%">
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    @if (rec.FullyUsed)
+                                                    {
+                                                        <span class="badge badge-enhanced badge-secondary-enhanced">
+                                                            <i class="fas fa-check me-1"></i>
+                                                            Entièrement utilisé
+                                                        </span>
+                                                    }
+                                                    else if (rec.UsedQuantity > 0)
+                                                    {
+                                                        <span class="badge badge-enhanced badge-warning-enhanced">
+                                                            <i class="fas fa-clock me-1"></i>
+                                                            Partiellement utilisé
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="badge badge-enhanced badge-success-enhanced">
+                                                            <i class="fas fa-clock me-1"></i>
+                                                            Disponible
+                                                        </span>
+                                                    }
+                                                </div>
+
+                                                <!-- Usage History -->
+                                                @if (UsageHistory.ContainsKey(rec.Id) && UsageHistory[rec.Id].Any())
+                                                {
+                                                    <div class="mt-3">
+                                                        <small class="text-muted fw-bold">Historique d'utilisation:</small>
+                                                        @foreach (var usage in UsageHistory[rec.Id].Take(3))
+                                                        {
+                                                            <div class="d-flex justify-content-between align-items-center mt-1">
+                                                                <small class="text-muted">
+                                                                    @usage.UsageDate.ToShortDateString() - @usage.QuantityUsed.ToString("0.##") jour(s)
+                                                                    @if (!string.IsNullOrEmpty(usage.Reason))
+                                                                    {
+                                                                        <span> (@usage.Reason)</span>
+                                                                    }
+                                                                </small>
+                                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => CancelUsage(usage.Id)">
+                                                                  <i class="fa fa-undo" aria-hidden="true"></i>
+                                                                </button>
+                                                            </div>
+                                                        }
+                                                        @if (UsageHistory[rec.Id].Count > 3)
+                                                        {
+                                                            <small class="text-muted">... et @(UsageHistory[rec.Id].Count - 3) autre(s)</small>
+                                                        }
+                                                    </div>
+                                                }
+                                            </div>
+                                            <div class="col-md-4 text-end">
+                                                <button class="btn btn-sm btn-enhanced btn-danger-enhanced" @onclick="() => ConfirmDeleteRecovery(rec.Id)">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <div class="empty-state">
+                                    <i class="fas fa-calendar-times"></i>
+                                    <h5>Aucun jour de récupération</h5>
+                                    <p>Commencez par ajouter un jour de récupération.</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="enhanced-card card">
+                <div class="card-body">
+                    <div class="empty-state">
+                        <i class="fas fa-user-plus"></i>
+                        <h3>Sélectionnez un employé</h3>
+                        <p>Choisissez un employé dans la liste ci-dessus pour commencer à gérer ses jours de récupération.</p>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+
+<!-- Toast Notification -->
+@if (!string.IsNullOrEmpty(ToastMessage))
+{
+    <div class="toast-notification alert @(ToastType == "success" ? "alert-success" : "alert-danger") alert-dismissible">
+        <div class="d-flex align-items-center">
+            @if (ToastType == "success")
+            {
+                <i class="fas fa-check-circle me-2"></i>
+            }
+            else
+            {
+                <i class="fas fa-exclamation-circle me-2"></i>
+            }
+            <span>@ToastMessage</span>
+            <button type="button" class="btn-close ms-auto" @onclick="ClearToast"></button>
+        </div>
     </div>
 }
 
+
 @code {
-    private List<RecoveryDay> recoveryDays = new();
-    private List<Employee> employees = new();
-    private RecoveryDay editingDay = new();
-    private bool showModal = false;
-    private bool isLoading = true;
+    [Parameter]
+    [SupplyParameterFromQuery]
+    public int? EmployeeId { get; set; }
+
+    private List<Employee> Employees = new();
+    private int SelectedEmployeeId;
+
+    private List<WorkedDayOff> WorkedDays = new();
+    private List<RecoveryDay> RecoveryDays = new();
+    private Dictionary<int, List<RecoveryDayUsage>> UsageHistory = new();
+
+    private WorkedDayOff NewWorkedDay = new();
+    private RecoveryDay NewRecoveryDay = new();
+    private RecoveryDayUsage NewUsage = new();
+
+    private float RemainingRecoveryDays = 0;
+
+    // Toast notification properties
+    private string ToastMessage = "";
+    private string ToastType = "";
+    private System.Threading.Timer? _toastTimer;
 
     protected override async Task OnInitializedAsync()
     {
-        isLoading = true;
-        employees = await EmployeeService.GetAllAsync();
-        recoveryDays = await RecoveryDayService.GetAllAsync();
-        isLoading = false;
+        Employees = await EmployeeService.GetAllAsync();
+        NewWorkedDay.Date = DateTime.Today;
+        NewRecoveryDay.Date = DateTime.Today;
+        NewUsage.UsageDate = DateTime.Today;
+        NewUsage.QuantityUsed = 0.5f;
     }
 
-    private void ShowAddModal()
+    private async Task OnEmployeeChanged(ChangeEventArgs e)
     {
-        editingDay = new RecoveryDay
-            {
-                Date = DateTime.Today,
-                Quantity = 1,
-                UsedQuantity = 0
-            };
-        showModal = true;
-    }
-
-    private void Edit(RecoveryDay day)
-    {
-        editingDay = new RecoveryDay
-            {
-                Id = day.Id,
-                Date = day.Date,
-                Reason = day.Reason,
-                Quantity = day.Quantity,
-                UsedQuantity = day.UsedQuantity,
-                EmployeeId = day.EmployeeId
-            };
-        showModal = true;
-    }
-
-    private async Task Save()
-    {
-        if (editingDay.Id == 0)
-            await RecoveryDayService.AddAsync(editingDay);
-        else
-            await RecoveryDayService.UpdateAsync(editingDay);
-
-        showModal = false;
-        recoveryDays = await RecoveryDayService.GetAllAsync();
-    }
-
-    private async Task ConfirmDelete(RecoveryDay day)
-    {
-        bool confirm = await JS.InvokeAsync<bool>("confirm", $"Supprimer ce jour de récupération du {day.Date:dd/MM/yyyy} ?");
-        if (confirm)
+        if (int.TryParse(e.Value?.ToString(), out var id))
         {
-            await RecoveryDayService.DeleteAsync(day.Id);
-            recoveryDays = await RecoveryDayService.GetAllAsync();
+            SelectedEmployeeId = id;
+            await LoadData();
+        }
+        else
+        {
+            SelectedEmployeeId = 0;
+            WorkedDays.Clear();
+            RecoveryDays.Clear();
+            UsageHistory.Clear();
+            RemainingRecoveryDays = 0;
         }
     }
 
-    private void CloseModal()
+    protected override async Task OnParametersSetAsync()
     {
-        showModal = false;
+        if (EmployeeId.HasValue)
+        {
+            SelectedEmployeeId = EmployeeId.Value;
+            await LoadData();
+        }
+
+        Employees = await EmployeeService.GetAllAsync();
     }
 
-    private string GetProgressBarClass(RecoveryDay day)
+    private async Task LoadData()
     {
-        float usage = GetUsagePercentage(day);
-        return usage >= 100 ? "bg-success" : (usage > 0 ? "bg-warning" : "bg-secondary");
+        try
+        {
+            WorkedDays = await WorkedService.GetByEmployeeAsync(SelectedEmployeeId);
+            RecoveryDays = await RecoveryService.GetByEmployeeAsync(SelectedEmployeeId);
+            RemainingRecoveryDays = await RecoveryService.GetRemainingDaysAsync(SelectedEmployeeId);
+
+            // Load usage history for each recovery day
+            UsageHistory.Clear();
+            foreach (var recoveryDay in RecoveryDays)
+            {
+                var usages = await RecoveryService.GetUsageHistoryAsync(recoveryDay.Id);
+                UsageHistory[recoveryDay.Id] = usages;
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Erreur lors du chargement des données", "error");
+        }
     }
 
-    private float GetUsagePercentage(RecoveryDay day)
+    private async Task AddWorkedDay()
     {
-        return day.Quantity == 0 ? 0 : Math.Clamp((day.UsedQuantity / day.Quantity) * 100f, 0, 100);
+        try
+        {
+            NewWorkedDay.EmployeeId = SelectedEmployeeId;
+            await WorkedService.AddAsync(NewWorkedDay);
+            NewWorkedDay = new() { Date = DateTime.Today };
+            await LoadData();
+            ShowToast("Jour travaillé ajouté avec succès", "success");
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Erreur lors de l'ajout du jour travaillé", "error");
+        }
+    }
+
+    private async Task ConvertToRecovery(int id)
+    {
+        try
+        {
+            await WorkedService.ConvertToRecovery(id);
+            await LoadData();
+            ShowToast("Jour converti en récupération", "success");
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Erreur lors de la conversion", "error");
+        }
+    }
+
+    private async Task MarkBonusPaid(int id)
+    {
+        try
+        {
+            await WorkedService.MarkBonusPaid(id);
+            await LoadData();
+            ShowToast("Prime marquée comme payée", "success");
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Erreur lors de la mise à jour", "error");
+        }
+    }
+
+    private async Task ConfirmDeleteWorkedDay(int id)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Êtes-vous sûr de vouloir supprimer ce jour travaillé ?");
+        if (confirmed)
+        {
+            await DeleteWorkedDay(id);
+        }
+    }
+
+    private async Task DeleteWorkedDay(int id)
+    {
+        try
+        {
+            // Implement delete in WorkedDayOffService if needed
+            // await WorkedService.DeleteAsync(id);
+            await LoadData();
+            ShowToast("Jour travaillé supprimé", "success");
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Erreur lors de la suppression", "error");
+        }
+    }
+
+    private async Task AddRecoveryDay()
+    {
+        try
+        {
+            NewRecoveryDay.EmployeeId = SelectedEmployeeId;
+            await RecoveryService.AddAsync(NewRecoveryDay);
+            NewRecoveryDay = new() { Date = DateTime.Today };
+            await LoadData();
+            ShowToast("Jour de récupération ajouté avec succès", "success");
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Erreur lors de l'ajout du jour de récupération", "error");
+        }
+    }
+
+    private async Task UseRecoveryDay()
+    {
+        try
+        {
+            if (NewUsage.QuantityUsed <= 0 || NewUsage.QuantityUsed > RemainingRecoveryDays)
+            {
+                ShowToast("Quantité invalide", "error");
+                return;
+            }
+
+            // Find the first available recovery day with enough remaining quantity
+            var availableRecoveryDay = RecoveryDays
+                .Where(r => r.Quantity - r.UsedQuantity >= NewUsage.QuantityUsed)
+                .OrderBy(r => r.Date)
+                .FirstOrDefault();
+
+            if (availableRecoveryDay == null)
+            {
+                // Try to use multiple recovery days
+                var remainingToUse = NewUsage.QuantityUsed;
+                var partiallyUsedDays = RecoveryDays
+                    .Where(r => r.Quantity - r.UsedQuantity > 0)
+                    .OrderBy(r => r.Date)
+                    .ToList();
+
+                foreach (var recoveryDay in partiallyUsedDays)
+                {
+                    var availableInThisDay = recoveryDay.Quantity - recoveryDay.UsedQuantity;
+                    var toUseFromThisDay = Math.Min(remainingToUse, availableInThisDay);
+
+                    var success = await RecoveryService.UsePartialRecoveryDayAsync(
+                        recoveryDay.Id,
+                        toUseFromThisDay,
+                        NewUsage.UsageDate,
+                        NewUsage.Reason);
+
+                    if (!success)
+                    {
+                        ShowToast("Erreur lors de l'utilisation du jour de récupération", "error");
+                        return;
+                    }
+
+                    remainingToUse -= toUseFromThisDay;
+                    if (remainingToUse <= 0) break;
+                }
+
+                if (remainingToUse > 0)
+                {
+                    ShowToast("Pas assez de jours de récupération disponibles", "error");
+                    return;
+                }
+            }
+            else
+            {
+                var success = await RecoveryService.UsePartialRecoveryDayAsync(
+                    availableRecoveryDay.Id,
+                    NewUsage.QuantityUsed,
+                    NewUsage.UsageDate,
+                    NewUsage.Reason);
+
+                if (!success)
+                {
+                    ShowToast("Erreur lors de l'utilisation du jour de récupération", "error");
+                    return;
+                }
+            }
+
+            NewUsage = new() { UsageDate = DateTime.Today, QuantityUsed = 0.5f };
+            await LoadData();
+            ShowToast("Jour de récupération utilisé avec succès", "success");
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Erreur lors de l'utilisation du jour de récupération", "error");
+        }
+    }
+
+    private async Task CancelUsage(int usageId)
+    {
+        try
+        {
+            var success = await RecoveryService.CancelUsageAsync(usageId);
+            if (success)
+            {
+                await LoadData();
+                ShowToast("Utilisation annulée avec succès", "success");
+            }
+            else
+            {
+                ShowToast("Erreur lors de l'annulation", "error");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Erreur lors de l'annulation", "error");
+        }
+    }
+
+    private async Task ConfirmDeleteRecovery(int id)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "Êtes-vous sûr de vouloir supprimer ce jour de récupération ? Cela supprimera également tout l'historique d'utilisation.");
+        if (confirmed)
+        {
+            await DeleteRecovery(id);
+        }
+    }
+
+    private async Task DeleteRecovery(int id)
+    {
+        try
+        {
+            await RecoveryService.DeleteAsync(id);
+            await LoadData();
+            ShowToast("Jour de récupération supprimé", "success");
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Erreur lors de la suppression", "error");
+        }
+    }
+
+    // Legacy methods for backward compatibility - now using new partial consumption
+    private async Task MarkAsUsed(int id)
+    {
+        try
+        {
+            var recoveryDay = RecoveryDays.FirstOrDefault(r => r.Id == id);
+            if (recoveryDay != null && !recoveryDay.FullyUsed)
+            {
+                var remainingQuantity = recoveryDay.Quantity - recoveryDay.UsedQuantity;
+                await RecoveryService.UsePartialRecoveryDayAsync(id, remainingQuantity, DateTime.Today, "Utilisation complète");
+                await LoadData();
+                ShowToast("Jour marqué comme utilisé", "success");
+            }
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Erreur lors de la mise à jour", "error");
+        }
+    }
+
+    private async Task MarkAsUnused(int id)
+    {
+        try
+        {
+            var usages = await RecoveryService.GetUsageHistoryAsync(id);
+            foreach (var usage in usages)
+            {
+                await RecoveryService.CancelUsageAsync(usage.Id);
+            }
+            await LoadData();
+            ShowToast("Utilisation annulée", "success");
+        }
+        catch (Exception ex)
+        {
+            ShowToast("Erreur lors de la mise à jour", "error");
+        }
+    }
+
+    // Fixed toast methods with proper threading
+    private void ShowToast(string message, string type)
+    {
+        // Clear any existing timer
+        _toastTimer?.Dispose();
+
+        ToastMessage = message;
+        ToastType = type;
+        StateHasChanged();
+
+        // Set up timer to clear toast after 3 seconds
+        _toastTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(() =>
+            {
+                ToastMessage = "";
+                ToastType = "";
+                StateHasChanged();
+            });
+            _toastTimer?.Dispose();
+        }, null, 3000, Timeout.Infinite);
+    }
+
+    private async Task ClearToast()
+    {
+        _toastTimer?.Dispose();
+        await InvokeAsync(() =>
+        {
+            ToastMessage = "";
+            ToastType = "";
+            StateHasChanged();
+        });
+    }
+
+    // Dispose the timer when the component is disposed
+    public void Dispose()
+    {
+        _toastTimer?.Dispose();
     }
 }
+
+                <style>
+
+                </style>

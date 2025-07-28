@@ -10,9 +10,9 @@ public class RecoveryDay
     public string? Reason { get; set; }
     public float Quantity { get; set; } = 1f;
 
-    public bool Used { get; set; } = false; // Keep this temporarily
     public float UsedQuantity { get; set; } = 0f;
 
     [NotMapped]
     public bool FullyUsed => UsedQuantity >= Quantity;
 }
+

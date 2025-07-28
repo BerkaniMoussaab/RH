@@ -25,6 +25,7 @@ namespace RH.Data
         // Advance payment entities (already present in your context)
         public DbSet<Advance> Advances { get; set; }
         public DbSet<AdvanceDeduction> AdvanceDeductions { get; set; }
+        public DbSet<RecoveryDayUsage> RecoveryDayUsages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -67,7 +68,11 @@ namespace RH.Data
                 .WithMany(p => p.Absences)
                 .HasForeignKey(a => a.PayrollId)
                 .OnDelete(DeleteBehavior.SetNull); // Or Restrict, depending on business logic
-
+            modelBuilder.Entity<RecoveryDayUsage>()
+              .HasOne(ru => ru.RecoveryDay)
+              .WithMany()
+              .HasForeignKey(ru => ru.RecoveryDayId)
+              .OnDelete(DeleteBehavior.Cascade);
             // CORRECTED: Configure advance payment entities with NoAction for both foreign keys
             ConfigureAdvanceEntities(modelBuilder);
         }
