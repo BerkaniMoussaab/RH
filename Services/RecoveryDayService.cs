@@ -76,6 +76,20 @@ public class RecoveryDayService
             .Where(r => r.EmployeeId == employeeId && !r.Used)
             .SumAsync(r => r.Quantity);
     }
+    public async Task UpdateAsync(RecoveryDay updatedDay)
+    {
+        var existing = await _context.RecoveryDays.FindAsync(updatedDay.Id);
+        if (existing != null)
+        {
+            existing.Date = updatedDay.Date;
+            existing.Reason = updatedDay.Reason;
+            existing.Quantity = updatedDay.Quantity;
+            existing.Used = updatedDay.Used;
+            existing.EmployeeId = updatedDay.EmployeeId;
+
+            await _context.SaveChangesAsync();
+        }
+    }
 
 
     // ✅ Get dictionary of employeeId → remaining days (for dashboard)

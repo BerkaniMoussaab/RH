@@ -1,18 +1,18 @@
-﻿namespace RH.Models
+﻿using RH.Models;
+using System.ComponentModel.DataAnnotations.Schema;
+
+public class RecoveryDay
 {
-    public class RecoveryDay
-    {
-        public int Id { get; set; }
+    public int Id { get; set; }
+    public int EmployeeId { get; set; }
+    public Employee? Employee { get; set; }
+    public DateTime Date { get; set; }
+    public string? Reason { get; set; }
+    public float Quantity { get; set; } = 1f;
 
-        public int EmployeeId { get; set; }
-        public Employee? Employee { get; set; }
+    public bool Used { get; set; } = false; // Keep this temporarily
+    public float UsedQuantity { get; set; } = 0f;
 
-        public DateTime Date { get; set; }
-
-        public string? Reason { get; set; }
-
-        public bool Used { get; set; } = false;
-        public float Quantity { get; set; } = 1f;
-
-    }
+    [NotMapped]
+    public bool FullyUsed => UsedQuantity >= Quantity;
 }
