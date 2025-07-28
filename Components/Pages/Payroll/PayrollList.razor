@@ -124,16 +124,63 @@ else
                             @onclick="() => EditPayroll(payroll)">
                                 <i class="bi bi-pencil-square"></i>
                             </button>
-                            <button class="btn btn-sm btn-outline-danger" title="Supprimer"
-                            @onclick="() => DeletePayroll(payroll.Id)">
-                                <i class="bi bi-trash3"></i>
-                            </button>
+                            <div class="position-relative d-inline-block">
+                                <button type="button"
+                                class="btn btn-sm btn-outline-danger"
+                                @onclick="() => ToggleDropdown(payroll.Id)">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+
+                                @if (openedDropdownId == payroll.Id)
+                                {
+                                    <ul class="dropdown-menu show end-0 mt-1 shadow"
+                                    style="position: absolute; min-width: 220px; z-index: 1055;">
+                                        <li>
+                                            <button class="dropdown-item text-danger fw-semibold"
+                                            @onclick="() => ConfirmDelete(payroll.Id, true)">
+                                                Supprimer avec règles appliquées
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button class="dropdown-item"
+                                            @onclick="() => ConfirmDelete(payroll.Id, false)">
+                                                Supprimer sans règles appliquées
+                                            </button>
+                                        </li>
+                                    </ul>
+                                }
+                            </div>
+
+
+
+
+
                         </td>
                     </tr>
                 }
             </tbody>
         </table>
     </div>
+}
+@code {
+    int? openedDropdownId = null;
+
+    private void ToggleDropdown(int payrollId)
+    {
+        if (openedDropdownId == payrollId)
+            openedDropdownId = null;
+        else
+            openedDropdownId = payrollId;
+    }
+
+    private async Task ConfirmDelete(int payrollId, bool deleteAppliedRules)
+    {
+        openedDropdownId = null;
+        PayrollService.DeleteAsync(payrollId, deleteAppliedRules);
+        // reload list if needed
+        await LoadPayrolls();
+        StateHasChanged();
+    }
 }
 
 @if (IsModalOpen)
@@ -151,8 +198,8 @@ else
                                 <h5 class="modal-title mb-1 fw-bold">
                                     <i class="bi bi-cash-coin me-2"></i>
                                     @((CurrentPayroll.Id == 0)
-                                                            ? "Ajouter une fiche de paie"
-                                                            : $"Modifier la fiche de paie (ID: {CurrentPayroll.Id})")
+                                                                ? "Ajouter une fiche de paie"
+                                                                : $"Modifier la fiche de paie (ID: {CurrentPayroll.Id})")
                                 </h5>
                             </div>
                         </div>
@@ -953,7 +1000,7 @@ else
 
     private async Task ShowPrintModal()
     {
-       await RefreshAdvanceDeductionSummary();
+        await RefreshAdvanceDeductionSummary();
         IsPrintModalOpen = true;
         StateHasChanged();
     }
@@ -1403,8 +1450,8 @@ else
 
         await RefreshAdvanceDeductionSummary();
 
-      
-       
+
+
         StateHasChanged();
         Console.WriteLine("--- Recalculation Complete, StateHasChanged called ---");
     }
@@ -1455,7 +1502,7 @@ else
             // You\'ll need to add this method to your PayrollService
             var employee = await EmployeeService.GetByIdAsync(employeeId);
             var preappliedRules = await PayrollService.GetAppliedRulesForEmployeeAsync(employeeId);
-           
+
             PreappliedBonusRules = preappliedRules
                 .Where(r => r.Rule.Type == AdjustmentType.Bonus && r.PayrollId == null)
                 .Select(r => new SelectableRule(r, workDaysPerMonth, employee.BaseSalary))
@@ -1483,7 +1530,7 @@ else
                 PayrollStartDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1),
                 PayrollEndDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(1).AddDays(-1),
                 Employee = new Employee()
-                
+
             };
 
         SelectedBonusRules.Clear();
@@ -1513,17 +1560,8 @@ else
         IsModalOpen = true;
     }
 
-    private async Task DeletePayroll(int id)
-    {
-        bool confirmed = await JS.InvokeAsync<bool>("confirm", "Êtes-vous sûr de vouloir supprimer cette fiche de paie ?");
-        if (confirmed)
-        {
-            // Reverse advance deductions before deleting payroll
-            await PayrollService.ReverseAdvanceDeductionsAsync(id);
-            await PayrollService.DeleteAsync(id);
-        }
-        await LoadPayrolls();
-    }
+    
+    
 
     private async Task EditPayroll(Payroll payroll)
     {

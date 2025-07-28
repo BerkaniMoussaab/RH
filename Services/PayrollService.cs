@@ -182,15 +182,25 @@ public class PayrollService : IPayrollService
         return existing;
     }
 
-    public async Task DeleteAsync(int id)
+    public  void DeleteAsync(int payrollId, bool deleteAppliedRules)
     {
-        var payroll = await _context.Payrolls.FindAsync(id);
+        var payroll =  _context.Payrolls.Find(payrollId);
         if (payroll != null)
         {
+            if (deleteAppliedRules)
+            {
+                var appliedRules =  _context.PayrollAppliedRules
+                    .Where(r => r.PayrollId == payrollId)
+                    .ToList();
+
+                _context.PayrollAppliedRules.RemoveRange(appliedRules);
+            }
+
             _context.Payrolls.Remove(payroll);
-            await _context.SaveChangesAsync();
+            _context.SaveChanges();
         }
     }
+
 
     public async Task<Payroll?> GetLastPayrollForEmployeeAsync(int employeeId)
     {

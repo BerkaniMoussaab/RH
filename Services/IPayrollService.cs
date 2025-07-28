@@ -8,7 +8,7 @@ namespace RH.Services
         
 
         Task<Payroll?> GetByIdAsync(int id);
-        Task DeleteAsync(int id);
+        void DeleteAsync(int id , bool deleteAppliedRules);
         Task<Payroll> GeneratePayrollForEmployee(int employeeId, DateTime payDate);
         Task<Payroll> CreateAsync(Payroll payroll);
         Task<Payroll> UpdateAsync(Payroll payroll);

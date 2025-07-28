@@ -24,22 +24,28 @@
 <div id="printable-area" class="payroll-sheet">
     @if (Company != null)
     {
-        <div class="payroll-header border rounded p-4 shadow-sm mb-4">
-            <div class="d-flex justify-content-between align-items-center flex-wrap">
-                <div class="d-flex align-items-center">
+        <div class="payroll-header card shadow-sm border-0 mb-4 p-4">
+            <div class="row align-items-center">
+                <!-- Logo & Infos entreprise -->
+                <div class="col-md-8 d-flex align-items-start">
                     @if (Company.LogoBytes != null)
                     {
                         <img src="data:@Company.LogoMimeType;base64,@Convert.ToBase64String(Company.LogoBytes)"
                              alt="Logo Entreprise"
-                             class="company-logo me-3 rounded border" />
+                             class="company-logo rounded border me-3"
+                             style="width: 80px; height: auto;" />
                     }
                     <div class="company-info">
                         <h5 class="mb-1 fw-bold">@Company.Name</h5>
-                        <small>@Company.Address</small><br />
-                        <small>RC : @Company.RC | NIF : @Company.NIF</small>
+                        <div class="text-muted small">
+                            <div>@Company.Address</div>
+                            <div>RC : @Company.RC | NIF : @Company.NIF</div>
+                        </div>
                     </div>
                 </div>
-                <div class="text-end mt-3 mt-md-0">
+
+                <!-- Titre & Détails fiche -->
+                <div class="col-md-4 text-md-end text-start mt-3 mt-md-0">
                     <h4 class="text-primary fw-bold mb-2">FICHE DE PAIE</h4>
                     <p class="mb-1 text-muted"><strong>Période :</strong> @CurrentPayroll?.PayDate.ToString("MMMM yyyy")</p>
                     <p class="mb-0 text-muted"><strong>Émission :</strong> @DateTime.Now.ToString("dd/MM/yyyy")</p>
