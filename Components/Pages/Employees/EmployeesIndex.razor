@@ -4,16 +4,24 @@
 @inject IEmployeeService EmployeeService
 @inject IJSRuntime JS
 
-<h1 class="text-2xl font-bold mb-4">Employés</h1>
 
-<button class="btn btn-primary mb-4" @onclick="AddEmployee">Ajouter un employé</button>
-
+<div class="d-flex justify-content-between align-items-center mb-4 bg-white rounded">
+    <h2 class="text-primary fw-bold mb-0">
+        <i class="bi bi-person-vcard me-2"></i> Employés
+    </h2>
+    <div>
+        <button class="btn btn-outline-success mb-4" @onclick="NavigateToUrl">
+            Génerateur attestation
+        </button>
+        <button class="btn btn-primary mb-4" @onclick="AddEmployee">
+            <i class="bi bi-plus-circle me-2"></i> Ajouter un employé
+        </button>
+    </div>
+</div>
 
 @inject NavigationManager Navigation
 
-<button class="btn btn-success mb-4" @onclick="NavigateToUrl">
-   Génerateur attestation
-</button>
+
 
 @code {
     private void NavigateToUrl()

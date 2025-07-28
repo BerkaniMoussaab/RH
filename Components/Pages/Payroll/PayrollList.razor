@@ -15,7 +15,15 @@
 @attribute [Authorize]
 
 <PageTitle>Fiches de paie</PageTitle>
-<div class="bg-light p-3 mb-4 rounded shadow-sm">
+<div class="d-flex justify-content-between align-items-center mb-4 bg-white rounded">
+    <h2 class="text-primary fw-bold mb-0">
+        <i class="bi bi-cash-coin me-2"></i> Fiches de paie
+    </h2>
+    <button class="btn btn-success px-4" @onclick="async () => await AddPayroll()">
+        <i class="bi bi-plus-circle me-2"></i> Nouvelle fiche
+    </button>
+</div>
+<div class="bg-light mb-4  bg-white">
     <div class="row g-3 align-items-end">
         <div class="col-md-3">
             <label for="startDate" class="form-label fw-semibold">Date début</label>
@@ -45,15 +53,6 @@
             </button>
         </div>
     </div>
-</div>
-
-<div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white rounded shadow-sm">
-    <h2 class="text-primary fw-bold mb-0">
-        <i class="bi bi-cash-coin me-2"></i> Fiches de paie
-    </h2>
-    <button class="btn btn-success px-4" @onclick="async () => await AddPayroll()">
-        <i class="bi bi-plus-circle me-2"></i> Nouvelle fiche
-    </button>
 </div>
 
 @if (Payrolls is null)
@@ -166,7 +165,7 @@ else
                                 <div class="info-section">
                                     <div class="section-title">
                                         <i class="bi bi-person-badge text-primary me-2"></i>
-                                        <span>Informations de l\'employé et période de paie</span>
+                                        <span>Informations de l'employé et période de paie</span>
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-md-4">
@@ -194,89 +193,85 @@ else
                                     </div>
 
                                     <!-- Enhanced Date Interval Selection Section -->
-                                    <div class="row g-3 mt-2">
-                                        <div class="col-12">
-                                            <div class="payroll-period-section">
-                                                <div class="section-subtitle">
-                                                    <i class="bi bi-calendar-range text-info me-2"></i>
-                                                    <span>Période de paie</span>
-                                                    <small class="text-muted ms-2">(Définit la période pour le calcul des absences et primes)</small>
-                                                </div>
+                                    <div class="mt-4">
+                                        <div class="section-subtitle">
+                                            <i class="bi bi-calendar-range text-info me-2"></i>
+                                            <h5>Période de paie</h5>
+                                            <small class="text-muted ms-2">(Définit la période pour le calcul des absences et primes)</small>
+                                        </div>
 
-                                                <div class="row g-3 mt-2">
-                                                    <div class="col-md-3">
-                                                        <div class="enhanced-form-group">
-                                                            <label class="form-label fw-semibold">
-                                                                <i class="bi bi-calendar-check me-1"></i>Date de début
-                                                            </label>
-                                                            <InputDate class="form-control enhanced-input"
-                                                            @bind-Value="CurrentPayroll.PayrollStartDate"
-                                                            @onchange="OnPayrollPeriodChanged" />
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="enhanced-form-group">
-                                                            <label class="form-label fw-semibold">
-                                                                <i class="bi bi-calendar-x me-1"></i>Date de fin
-                                                            </label>
-                                                            <InputDate class="form-control enhanced-input"
-                                                            @bind-Value="CurrentPayroll.PayrollEndDate"
-                                                            @onchange="OnPayrollPeriodChanged" />
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <div class="enhanced-form-group">
-                                                            <label class="form-label fw-semibold">Période prédéfinie</label>
-                                                            <select class="form-select enhanced-select" @onchange="OnPredefinedPeriodChanged">
-                                                                <option value="">-- Sélectionner --</option>
-                                                                <option value="current_month">Mois en cours</option>
-                                                                <option value="previous_month">Mois précédent</option>
-                                                                <option value="last_30_days">30 derniers jours</option>
-                                                                <option value="current_quarter">Trimestre en cours</option>
-                                                                <option value="custom">Personnalisé</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-3 ">
-                                                        <label class="form-label fw-semibold"> </label>
-                                                        <button type="button" class="btn btn-outline-info w-100"
+                                        <div class="row g-3 mt-2">
+                                            <div class="col-md-3">
+                                                <div class="enhanced-form-group">
+                                                    <label class="form-label fw-semibold">
+                                                        <i class="bi bi-calendar-check me-1"></i>Date de début
+                                                    </label>
+                                                    <InputDate class="form-control enhanced-input"
+                                                               @bind-Value="CurrentPayroll.PayrollStartDate"
+                                                               @onchange="OnPayrollPeriodChanged" />
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="enhanced-form-group">
+                                                    <label class="form-label fw-semibold">
+                                                        <i class="bi bi-calendar-x me-1"></i>Date de fin
+                                                    </label>
+                                                    <InputDate class="form-control enhanced-input"
+                                                               @bind-Value="CurrentPayroll.PayrollEndDate"
+                                                               @onchange="OnPayrollPeriodChanged" />
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="enhanced-form-group">
+                                                    <label class="form-label fw-semibold">Période prédéfinie</label>
+                                                    <select class="form-select enhanced-select" @onchange="OnPredefinedPeriodChanged">
+                                                        <option value="">-- Sélectionner --</option>
+                                                        <option value="current_month">Mois en cours</option>
+                                                        <option value="previous_month">Mois précédent</option>
+                                                        <option value="last_30_days">30 derniers jours</option>
+                                                        <option value="current_quarter">Trimestre en cours</option>
+                                                        <option value="custom">Personnalisé</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 ">
+                                                <label class="form-label fw-semibold"> </label>
+                                                <button type="button" class="btn btn-outline-info w-100"
                                                         @onclick="RefreshAbsencesForPeriod"
                                                         disabled="@(!CurrentPayroll.PayrollStartDate.HasValue || !CurrentPayroll.PayrollEndDate.HasValue || CurrentPayroll.EmployeeId == 0)">
-                                                            <i class="bi bi-arrow-clockwise me-1"></i>
-                                                            Actualiser les absences
-                                                        </button>
-                                                    </div>
-                                                </div>
-
-                                                @if (CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue)
-                                                {
-                                                    <div class="period-summary mt-3 p-3 bg-light rounded">
-                                                        <div class="row">
-                                                            <div class="col-md-4">
-                                                                <strong>Période sélectionnée:</strong><br>
-                                                                <span class="text-primary">
-                                                                    @CurrentPayroll.PayrollStartDate.Value.ToString("dd/MM/yyyy")
-                                                                    au
-                                                                    @CurrentPayroll.PayrollEndDate.Value.ToString("dd/MM/yyyy")
-                                                                </span>
-                                                            </div>
-                                                            <div class="col-md-4">
-                                                                <strong>Durée:</strong><br>
-                                                                <span class="text-info">
-                                                                    @((CurrentPayroll.PayrollEndDate.Value - CurrentPayroll.PayrollStartDate.Value).Days + 1) jours
-                                                                </span>
-                                                            </div>
-                                                            <div class="col-md-4">
-                                                                <strong>Jours ouvrables:</strong><br>
-                                                                <span class="text-success">
-                                                                    @CalculateWorkingDays(CurrentPayroll.PayrollStartDate.Value, CurrentPayroll.PayrollEndDate.Value) jours
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                }
+                                                    <i class="bi bi-arrow-clockwise me-1"></i>
+                                                    Actualiser les absences
+                                                </button>
                                             </div>
                                         </div>
+
+                                        @if (CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue)
+                                        {
+                                            <div class="mt-3 ps-2">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <strong>Période sélectionnée:</strong><br>
+                                                        <span class="text-primary">
+                                                            @CurrentPayroll.PayrollStartDate.Value.ToString("dd/MM/yyyy")
+                                                            au
+                                                            @CurrentPayroll.PayrollEndDate.Value.ToString("dd/MM/yyyy")
+                                                        </span>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <strong>Durée:</strong><br>
+                                                        <span class="text-info">
+                                                            @((CurrentPayroll.PayrollEndDate.Value - CurrentPayroll.PayrollStartDate.Value).Days + 1) jours
+                                                        </span>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <strong>Jours ouvrables:</strong><br>
+                                                        <span class="text-success">
+                                                            @CalculateWorkingDays(CurrentPayroll.PayrollStartDate.Value, CurrentPayroll.PayrollEndDate.Value) jours
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -837,11 +832,11 @@ else
                             </div>
 
                             <div class="col-12">
-                                <div class="border rounded p-2 bg-light">
+                                <div class="border rounded p-2 bg-white">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span class="text-primary fw-semibold small">
+                                        <h5 class="fw-bold">
                                             <i class="bi bi-credit-card me-1"></i>Mode de paiement
-                                        </span>
+                                        </h5>
                                         <div class="form-check form-switch m-0">
                                             <InputCheckbox @bind-Value="CurrentPayroll.TransactionIsManual" class="form-check-input form-check-sm" />
                                             <label class="form-check-label small ms-1">
@@ -1939,14 +1934,6 @@ else
             transform: scale(1.1);
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
         }
-
-    .payroll-period-section {
-        background: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-top: 0.5rem;
-    }
 
     .section-subtitle {
         font-weight: 600;
