@@ -89,12 +89,19 @@ public class PayrollAdjustmentRuleService : IPayrollAdjustmentRuleService
         using (var context = _dbContextFactory.CreateDbContext())
         {
             var rule = await context.PayrollAdjustmentRules.FindAsync(id);
-            if (rule != null)
-            {
-                context.PayrollAdjustmentRules.Remove(rule);
-                await context.SaveChangesAsync();
-            }
+            if (rule == null)
+                throw new InvalidOperationException("Règle introuvable.");
+
+            var ruleApplied = await context.PayrollAppliedRules
+                .AnyAsync(r => r.RuleId == id);
+
+            if (ruleApplied)
+                throw new InvalidOperationException("La règle a déjà été appliquée et ne peut pas être supprimée.");
+
+            context.PayrollAdjustmentRules.Remove(rule);
+            await context.SaveChangesAsync();
         }
     }
+
 }
 

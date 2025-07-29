@@ -5,6 +5,7 @@ using RH.Components;
 using RH.Components.Account;
 using RH.Data;
 using RH.Services;
+using System.Globalization;
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
@@ -131,6 +132,9 @@ app.MapRazorComponents<App>()
 
 // Add additional endpoints required by the Identity /Account Razor components.
 app.MapAdditionalIdentityEndpoints();
+var culture = new CultureInfo("fr-DZ"); // Or "fr-FR", "ar-DZ", etc.
+CultureInfo.DefaultThreadCurrentCulture = culture;
+CultureInfo.DefaultThreadCurrentUICulture = culture;
 using (var scope = app.Services.CreateScope())
 {
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();

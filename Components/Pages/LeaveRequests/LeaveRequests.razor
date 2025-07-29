@@ -49,8 +49,10 @@ else
                             }
                         </td>
                         <td>
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowPrint(request)">Imprimer</button>
                             <button class="btn btn-sm btn-outline-secondary" @onclick="() => Edit(request.Id)">Modifier</button>
                             <button class="btn btn-sm btn-outline-danger" @onclick="() => Delete(request.Id)">Supprimer</button>
+
                         </td>
                     </tr>
                 }
@@ -62,10 +64,34 @@ else
         </tbody>
     </table>
 }
+@if (PrintVisible && Selected != null)
+{
+    <PrintableLeaveRequest LeaveRequest="Selected" OnClose="() => PrintVisible = false" />
+}
+
+
+
 
 <LeaveRequestForm LeaveRequest="Selected" IsOpen="ShowForm" IsOpenChanged="HandleClose" OnSave="Save" />
 
 @code {
+    @inject IJSRuntime JS
+
+    
+        private bool PrintVisible = false;
+
+        private void ShowPrint(LeaveRequest request)
+        {
+            Selected = request;
+            PrintVisible = true;
+        }
+
+        private async Task TriggerPrint()
+        {
+            await JS.InvokeVoidAsync("window.print");
+        }
+    
+
     private List<LeaveRequest> Requests = new();
     private LeaveRequest Selected = new();
     private bool ShowForm = false;

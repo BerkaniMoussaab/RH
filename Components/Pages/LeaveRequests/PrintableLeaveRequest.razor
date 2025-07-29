@@ -1,0 +1,88 @@
+@using RH.Models
+
+<div class="modal fade show d-block d-print-none" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.5);" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div id="leave-print-area" class="printable-content">
+                    <div class="print-header">
+                        <h2>Demande de Congé</h2>
+                        <h5>Clinique Médico-Chirurgicale Ibn Siradj</h5>
+                        <hr />
+                    </div>
+
+                    <div class="print-body">
+                        <p><strong>Employé :</strong> @LeaveRequest?.Employee?.FullName</p>
+                        <p><strong>Date de début :</strong> @LeaveRequest.StartDate.ToString("dd/MM/yyyy")</p>
+                        <p><strong>Date de fin :</strong> @LeaveRequest.EndDate.ToString("dd/MM/yyyy")</p>
+                        <p><strong>Durée :</strong> @GetDurationText()</p>
+                        <p><strong>Motif :</strong> @LeaveRequest?.Reason</p>
+                    </div>
+
+                    <div class="signature-block mt-5">
+                        <div class="row text-center">
+                            <div class="col">
+                                <div class="signature-line">Signature de l’employé</div>
+                            </div>
+                            <div class="col">
+                                <div class="signature-line">Validation de la direction</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="print-footer text-end mt-4">
+                        <small>Généré le @DateTime.Now.ToString("dd/MM/yyyy")</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer d-print-none">
+                <button class="btn btn-secondary" @onclick="Close">Fermer</button>
+                <button class="btn btn-success" @onclick="TriggerPrint">Imprimer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public LeaveRequest LeaveRequest { get; set; } = new();
+    [Parameter] public EventCallback OnClose { get; set; }
+
+    [Inject] public IJSRuntime JS { get; set; }
+
+    private IJSObjectReference? jsModule;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/js/leave-utils.js");
+        }
+    }
+
+    private async Task TriggerPrint()
+    {
+        if (jsModule != null)
+        {
+            await jsModule.InvokeVoidAsync("printLeaveRequest");
+        }
+    }
+
+    private async Task Close()
+    {
+        if (OnClose.HasDelegate)
+        {
+            await OnClose.InvokeAsync();
+        }
+    }
+
+    private string GetDurationText()
+    {
+        if (LeaveRequest.StartDate != default && LeaveRequest.EndDate != default)
+        {
+            var days = (LeaveRequest.EndDate - LeaveRequest.StartDate).TotalDays + 1;
+            return $"{days:0} jour(s)";
+        }
+        return string.Empty;
+    }
+}
