@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.JSInterop;
 using RH.Data;
 using RH.Models;
 
@@ -7,17 +8,22 @@ namespace RH.Services
     public class LeaveRequestService : ILeaveRequestService
     {
         private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+        private readonly ILogger<LeaveRequestService>? _logger;
 
-        public LeaveRequestService(IDbContextFactory<ApplicationDbContext> contextFactory)
+        public LeaveRequestService(
+     IDbContextFactory<ApplicationDbContext> contextFactory,
+     ILogger<LeaveRequestService>? logger = null)
         {
             _contextFactory = contextFactory;
+            _logger = logger;
         }
+
 
         public async Task<List<LeaveRequest>> GetAllAsync()
         {
             using var context = _contextFactory.CreateDbContext();
             return await context.LeaveRequests
-                .Include(lr => lr.Employee)
+                .Include(lr => lr.Employee).ThenInclude(j=>j.JobTitle)
                 .ToListAsync();
         }
 
@@ -120,5 +126,93 @@ namespace RH.Services
                 await context.SaveChangesAsync();
             }
         }
-    }
+      
+        /// <summary>
+        /// Génère le HTML pour l'impression d'une demande de congé
+        /// </summary>
+        //public async Task<string> GenerateLeaveRequestHtmlAsync(LeaveRequestPrintModel model)
+        //{
+        //    try
+        //    {
+        //        _logger?.LogInformation("Génération du HTML pour la demande de congé {LeaveRequestId}", model.LeaveRequest.Id);
+
+        //        // Template HTML de base
+        //        var htmlTemplate = await GetHtmlTemplateAsync();
+
+        //        // Remplacer les placeholders avec les données réelles
+        //        var html = htmlTemplate
+        //            .Replace("{{CompanyName}}", model.CompanyInfo.Name)
+        //            .Replace("{{CompanyAddress}}", model.CompanyInfo.Address)
+        //            .Replace("{{CompanyCity}}", model.CompanyInfo.City)
+        //            .Replace("{{CompanyRC}}", model.CompanyInfo.RC)
+        //            .Replace("{{CompanyNIF}}", model.CompanyInfo.NIF)
+        //            .Replace("{{CompanyPhone}}", model.CompanyInfo.Phone)
+        //            .Replace("{{CompanyEmail}}", model.CompanyInfo.Email)
+        //            .Replace("{{EmployeeName}}", model.Employee.FullName)
+        //            .Replace("{{EmployeePosition}}", model.Employee.JobTitle.Title)
+                 
+                 
+        //            .Replace("{{StartDate}}", model.LeaveRequest.StartDate.ToString("dd/MM/yyyy"))
+        //            .Replace("{{EndDate}}", model.LeaveRequest.EndDate.ToString("dd/MM/yyyy"))
+        //            .Replace("{{TotalDays}}", model.LeaveRequest.TotalDays.ToString())
+        //            .Replace("{{Reason}}", model.LeaveRequest.Reason ?? "")
+        //            .Replace("{{Status}}", GetStatusText(model.LeaveRequest.Status))
+        //            .Replace("{{IsPaid}}", model.LeaveRequest.IsPaid ? "checked" : "")
+        //            .Replace("{{IsUnpaid}}", !model.LeaveRequest.IsPaid ? "checked" : "")
+        //            .Replace("{{SupervisorName}}", model.SupervisorName ?? "")
+        //            .Replace("{{SupervisorTitle}}", model.SupervisorTitle ?? "")
+        //            .Replace("{{PrintDate}}", DateTime.Now.ToString("dd/MM/yyyy"));
+
+        //        // Ajouter le logo si disponible
+        //        if (model.CompanyInfo.LogoBytes != null && !string.IsNullOrEmpty(model.CompanyInfo.LogoMimeType))
+        //        {
+        //            var logoBase64 = Convert.ToBase64String(model.CompanyInfo.LogoBytes);
+        //            var logoSrc = $"data:{model.CompanyInfo.LogoMimeType};base64,{logoBase64}";
+        //            html = html.Replace("{{LogoSrc}}", logoSrc).Replace("{{LogoDisplay}}", "block");
+        //        }
+        //        else
+        //        {
+        //            html = html.Replace("{{LogoSrc}}", "").Replace("{{LogoDisplay}}", "none");
+        //        }
+
+        //        return html;
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger?.LogError(ex, "Erreur lors de la génération du HTML pour la demande de congé");
+        //        throw;
+        //    }
+        //}
+
+        /// <summary>
+        /// Déclenche l'impression via JavaScript
+        /// </summary>
+        public async Task PrintLeaveRequestAsync(IJSRuntime jsRuntime)
+        {
+            try
+            {
+                _logger?.LogInformation("Déclenchement de l'impression");
+                await jsRuntime.InvokeVoidAsync("window.print");
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Erreur lors du déclenchement de l'impression");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Génère un PDF de la demande de congé (nécessite une bibliothèque PDF)
+        /// </summary>
+       
+        /// <summary>
+        /// Récupère le template HTML de base
+        /// </summary>
+     
+
+    /// <summary>
+    /// Extensions pour faciliter l'utilisation du service
+    /// </summary>
+   
+}
 }

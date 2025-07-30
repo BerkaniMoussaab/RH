@@ -17,7 +17,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Company = await CompanyService.GetAsync();
+        Company =  CompanyService.GetAsync();
         CurrentPayroll.AdvanceDeductions = await AdvanceService.GetDeductionsForPayroll(CurrentPayroll.Id);
     }
 }

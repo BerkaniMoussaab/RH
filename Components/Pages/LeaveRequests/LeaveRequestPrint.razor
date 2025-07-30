@@ -1,0 +1,88 @@
+@using RH.Models
+<link href="css/attestation.css" rel="stylesheet" />
+
+<div id="leave-print-area" class="attestation-container">
+    @if (LeaveData != null)
+    {
+        <!-- Company Header -->
+        <div class="company-header border-box">
+            <div class="logo-container">
+                @if (!string.IsNullOrEmpty(LeaveData.CompanyLogoDataUrl))
+                {
+                    <img src="@LeaveData.CompanyLogoDataUrl" alt="Logo" class="company-logo" />
+                }
+            </div>
+
+            <div class="company-info text-start">
+                <h1 class="company-name">@LeaveData.CompanyInfo.Name?.ToUpper()</h1>
+
+                @if (!string.IsNullOrWhiteSpace(LeaveData.CompanyInfo.DirectorName))
+                {
+                    <p class="director-name">Dr. @LeaveData.CompanyInfo.DirectorName</p>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(LeaveData.CompanyInfo.DirectorTitle))
+                {
+                    <p class="director-title">@LeaveData.CompanyInfo.DirectorTitle</p>
+                }
+
+                <div class="contact-info mt-2">
+                    @if (!string.IsNullOrWhiteSpace(LeaveData.CompanyInfo.Address))
+                    {
+                        <p><i class="bi bi-geo-alt"></i> @LeaveData.CompanyInfo.Address</p>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(LeaveData.CompanyInfo.Phone) || !string.IsNullOrWhiteSpace(LeaveData.CompanyInfo.Mobile))
+                    {
+                        <p><i class="bi bi-telephone"></i> Tél/Fax : @(LeaveData.CompanyInfo.Phone ?? "N/A")    |   Mob : @(LeaveData.CompanyInfo.Mobile ?? "N/A")</p>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(LeaveData.CompanyInfo.Email))
+                    {
+                        <p><i class="bi bi-envelope"></i> E-mail : @LeaveData.CompanyInfo.Email</p>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(LeaveData.CompanyInfo.RegistrationNumber))
+                    {
+                        <p><i class="bi bi-card-checklist"></i> N° Adhérent : @LeaveData.CompanyInfo.RegistrationNumber</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Title -->
+        <h1 class="attestation-title">DEMANDE DE CONGÉ</h1>
+
+        <!-- Content -->
+        <div class="attestation-content">
+            <p>Je soussigné(e) <strong>@LeaveData.Leave.Employee?.FullName</strong>,</p>
+            <p>Occuppant le poste de <strong>@LeaveData.Leave.Employee?.JobTitle?.Title</strong>,</p>
+            <p>
+                Sollicite un congé du <strong>@LeaveData.FormattedStartDate</strong> au <strong>@LeaveData.FormattedEndDate</strong>
+                (@LeaveData.TotalDays jours calendaires).
+            </p>
+
+            @if (!string.IsNullOrWhiteSpace(LeaveData.Leave.Reason))
+            {
+                <p>Motif du congé : <strong>@LeaveData.Leave.Reason</strong></p>
+            }
+
+            <br />
+
+            <p class="closing-statement">
+                <strong>Cette demande est présentée pour approbation et régularisation selon les procédures internes de l’établissement.</strong>
+            </p>
+        </div>
+
+        <!-- Signature -->
+        <div class="signature-section">
+            <p class="date-location">@LeaveData.CompanyCity le @LeaveData.FormattedRequestDate</p>
+            <p class="signature-label">Signature de l'employé(e)</p>
+            <div class="signature-space"></div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public LeaveRequestData? LeaveData { get; set; }
+}

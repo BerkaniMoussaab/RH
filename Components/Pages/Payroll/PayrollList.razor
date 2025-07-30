@@ -1477,7 +1477,7 @@ else
         Employees = await EmployeeService.GetAllAsync();
         AllAdjustmentRules = await AdjustmentService.GetAllAsync();
 
-        var company = await CompanyService.GetAsync(); // fetch company first
+        var company =  CompanyService.GetAsync(); // fetch company first
         workDaysPerMonth = company.WorKdaysInMonth;            // then access property safely
 
         if (CurrentPayroll.ManualAbsenceDays != 0)

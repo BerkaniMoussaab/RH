@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace RH.Models
 {
@@ -19,14 +20,15 @@ namespace RH.Models
         [DataType(DataType.Date)]
         [DateGreaterThan("StartDate", ErrorMessage = "La date de fin doit être postérieure à la date de début.")]
         public DateTime EndDate { get; set; }
-
+        [NotMapped]
+        public int TotalDays => (EndDate - StartDate).Days + 1;
         public LeaveStatus Status { get; set; } = LeaveStatus.Pending;
 
         [MaxLength(500, ErrorMessage = "La raison ne peut pas dépasser 500 caractères.")]
         public string? Reason { get; set; }
         public bool IsPaid { get; set; } = true;
 
-
+        
     }
 
     public enum LeaveStatus

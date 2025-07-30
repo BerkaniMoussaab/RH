@@ -1,4 +1,4 @@
-﻿/* Styles pour le composant Blazor LeaveRequestPrint */
+/* Styles pour le composant Blazor LeaveRequestPrint */
 
 .leave-request-container {
     max-width: 210mm; /* A4 width */
@@ -26,28 +26,28 @@
     flex-shrink: 0;
 }
 
-    .company-logo img {
-        max-width: 80px;
-        max-height: 80px;
-        object-fit: contain;
-    }
+.company-logo img {
+    max-width: 80px;
+    max-height: 80px;
+    object-fit: contain;
+}
 
 .company-info {
     flex: 1;
 }
 
-    .company-info h1 {
-        font-size: 18pt;
-        font-weight: bold;
-        color: #2c5aa0;
-        margin-bottom: 8px;
-        text-transform: uppercase;
-    }
+.company-info h1 {
+    font-size: 18pt;
+    font-weight: bold;
+    color: #2c5aa0;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
 
-    .company-info p {
-        margin-bottom: 4px;
-        font-size: 11pt;
-    }
+.company-info p {
+    margin-bottom: 4px;
+    font-size: 11pt;
+}
 
 .company-details {
     margin-top: 10px;
@@ -56,9 +56,9 @@
     gap: 5px;
 }
 
-    .company-details p {
-        font-size: 10pt;
-    }
+.company-details p {
+    font-size: 10pt;
+}
 
 /* Titre du document */
 .document-title {
@@ -66,31 +66,31 @@
     margin-bottom: 30px;
 }
 
-    .document-title h2 {
-        font-size: 20pt;
-        font-weight: bold;
-        color: #2c5aa0;
-        text-transform: uppercase;
-        letter-spacing: 2px;
-        border: 2px solid #2c5aa0;
-        padding: 15px;
-        display: inline-block;
-    }
+.document-title h2 {
+    font-size: 20pt;
+    font-weight: bold;
+    color: #2c5aa0;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border: 2px solid #2c5aa0;
+    padding: 15px;
+    display: inline-block;
+}
 
 /* Sections */
 section {
     margin-bottom: 25px;
 }
 
-    section h3 {
-        font-size: 14pt;
-        font-weight: bold;
-        color: #2c5aa0;
-        margin-bottom: 15px;
-        padding-bottom: 5px;
-        border-bottom: 1px solid #ddd;
-        text-transform: uppercase;
-    }
+section h3 {
+    font-size: 14pt;
+    font-weight: bold;
+    color: #2c5aa0;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #ddd;
+    text-transform: uppercase;
+}
 
 /* Informations en lignes */
 .info-row {
@@ -99,18 +99,18 @@ section {
     align-items: center;
 }
 
-    .info-row label {
-        font-weight: bold;
-        min-width: 150px;
-        color: #555;
-    }
+.info-row label {
+    font-weight: bold;
+    min-width: 150px;
+    color: #555;
+}
 
-    .info-row span {
-        flex: 1;
-        padding: 5px 10px;
-        border-bottom: 1px solid #ccc;
-        min-height: 25px;
-    }
+.info-row span {
+    flex: 1;
+    padding: 5px 10px;
+    border-bottom: 1px solid #ccc;
+    min-height: 25px;
+}
 
 /* Type de congé */
 .leave-type {
@@ -120,9 +120,9 @@ section {
     border: none !important;
 }
 
-    .leave-type input[type="checkbox"] {
-        margin-right: 5px;
-    }
+.leave-type input[type="checkbox"] {
+    margin-right: 5px;
+}
 
 /* Statut */
 .status-badge {
@@ -156,10 +156,10 @@ section {
     background-color: #f9f9f9;
 }
 
-    .reason-box p {
-        margin: 0;
-        line-height: 1.6;
-    }
+.reason-box p {
+    margin: 0;
+    line-height: 1.6;
+}
 
 /* Section des signatures */
 .signatures-section {
@@ -189,9 +189,9 @@ section {
     margin-top: 20px;
 }
 
-    .signature-space p {
-        margin-top: 30px;
-    }
+.signature-space p {
+    margin-top: 30px;
+}
 
 /* Section d'approbation */
 .approval-section {
@@ -200,13 +200,13 @@ section {
     background-color: #f9f9f9;
 }
 
-    .approval-section h4 {
-        font-size: 12pt;
-        font-weight: bold;
-        color: #2c5aa0;
-        margin-bottom: 15px;
-        text-transform: uppercase;
-    }
+.approval-section h4 {
+    font-size: 12pt;
+    font-weight: bold;
+    color: #2c5aa0;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+}
 
 .decision-options {
     display: flex;
@@ -214,16 +214,16 @@ section {
     margin-bottom: 20px;
 }
 
-    .decision-options label {
-        display: flex;
-        align-items: center;
-        font-weight: bold;
-    }
+.decision-options label {
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+}
 
-    .decision-options input[type="checkbox"] {
-        margin-right: 8px;
-        transform: scale(1.2);
-    }
+.decision-options input[type="checkbox"] {
+    margin-right: 8px;
+    transform: scale(1.2);
+}
 
 .comments-box label {
     font-weight: bold;
@@ -250,9 +250,9 @@ section {
     color: #666;
 }
 
-    .document-footer p {
-        margin-bottom: 5px;
-    }
+.document-footer p {
+    margin-bottom: 5px;
+}
 
 /* Bouton d'impression */
 .print-button {
@@ -271,11 +271,11 @@ section {
     z-index: 1000;
 }
 
-    .print-button:hover {
-        background-color: #1e3d6f;
-        transform: translateY(-1px);
-        box-shadow: 0 3px 8px rgba(0,0,0,0.3);
-    }
+.print-button:hover {
+    background-color: #1e3d6f;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+}
 
 /* Styles d'impression */
 @media print {
@@ -307,43 +307,44 @@ section {
         padding: 15px;
         margin: 10px;
     }
-
+    
     .company-header {
         flex-direction: column;
         text-align: center;
     }
-
+    
     .company-logo {
         margin: 0 auto 15px auto;
     }
-
+    
     .company-details {
         grid-template-columns: 1fr;
     }
-
+    
     .signature-block {
         grid-template-columns: 1fr;
         gap: 20px;
     }
-
+    
     .decision-options {
         flex-direction: column;
         gap: 10px;
     }
-
+    
     .info-row {
         flex-direction: column;
         align-items: flex-start;
     }
-
-        .info-row label {
-            min-width: auto;
-            margin-bottom: 5px;
-        }
-
+    
+    .info-row label {
+        min-width: auto;
+        margin-bottom: 5px;
+    }
+    
     .print-button {
         position: static;
         width: 100%;
         margin-bottom: 20px;
     }
 }
+

@@ -195,7 +195,8 @@ public class PayrollService : IPayrollService
 
                 _context.PayrollAppliedRules.RemoveRange(appliedRules);
             }
-
+            _context.AdvanceDeductions.RemoveRange(
+                _context.AdvanceDeductions.Where(d => d.PayrollId == payrollId));
             _context.Payrolls.Remove(payroll);
             _context.SaveChanges();
         }

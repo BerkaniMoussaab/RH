@@ -54,3 +54,41 @@ export function saveAttestationAsPdf(fileName = "attestation.pdf") {
             }).from(element).save();
         });
 }
+export function previewLeaveRequest() {
+    const content = document.querySelector('.printable-content');
+    if (!content) return;
+
+    const win = window.open('', '_blank', 'width=800,height=1000');
+    win.document.write(`
+        <html>
+            <head>
+                <title>Aperçu Demande de Congé</title>
+                <link rel="stylesheet" href="/css/leave-request.css">
+            </head>
+            <body>
+                <div class="printable-content">${content.innerHTML}</div>
+            </body>
+        </html>
+    `);
+    
+    win.document.close();
+}
+export function previewLeaveRequest() {
+    
+    const content = document.querySelector('.printable-content');
+    if (!content) return;
+
+    const win = window.open('', '_blank', 'width=800,height=1000');
+    win.document.write(`
+        <html>
+            <head>
+                <title>Aperçu Demande de Congé</title>
+                <link rel="stylesheet" href="/css/leave-print.css">
+            </head>
+            <body>
+                <div class="printable-content">${content.innerHTML}</div>
+            </body>
+        </html>
+    `);
+    win.document.close();
+}

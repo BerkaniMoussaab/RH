@@ -13,9 +13,9 @@ namespace RH.Services
             _context = context;
         }
 
-        public async Task<CompanyInfo> GetAsync()
+        public CompanyInfo GetAsync()
         {
-            var existing = await _context.CompanyInfos.FirstOrDefaultAsync();
+            var existing =  _context.CompanyInfos.FirstOrDefault();
             if (existing != null)
                 return existing;
 
@@ -31,7 +31,7 @@ namespace RH.Services
 
 
             _context.CompanyInfos.Add(newInfo);
-            await _context.SaveChangesAsync();
+            _context.SaveChanges();
 
             return newInfo;
         }
