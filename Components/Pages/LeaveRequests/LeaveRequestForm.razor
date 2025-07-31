@@ -344,6 +344,10 @@
             {
                 LeaveRequest.DateTime = DateTime.Now;
             }
+            if(LeaveRequest.RemainingDays == null)
+            {
+                LeaveRequest.RemainingDays = await LeaveRequestService.GetRemainingDaysAsync(LeaveRequest.EmployeeId);
+            }
             await OnSave.InvokeAsync(LeaveRequest);
             // Close is handled by the parent after OnSave completes and reloads data
         }

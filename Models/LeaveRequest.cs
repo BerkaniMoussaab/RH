@@ -31,6 +31,7 @@ namespace RH.Models
         [DisplayFormat(DataFormatString = "{0:dd/MM/yyyy}", ApplyFormatInEditMode = true)]
         public DateTime DateTime { get; set; }
 
+        public float? RemainingDays { get; set; }
     }
 
     public enum LeaveStatus

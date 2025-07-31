@@ -56,11 +56,12 @@
 
         <!-- Content -->
         <div class="attestation-content">
-            <p>Je soussigné(e) <strong>@LeaveData.Leave.Employee?.FullName</strong>,</p>
+            <p>Nous certifions que <strong>@LeaveData.Leave.Employee?.FullName</strong>,</p>
             <p>Occuppant le poste de <strong>@LeaveData.Leave.Employee?.JobTitle?.Title</strong>,</p>
             <p>
-                Sollicite un congé du <strong>@LeaveData.Leave.StartDate.ToShortDateString()</strong> au <strong>@LeaveData.Leave.EndDate.ToShortDateString()</strong>
-                (@LeaveData.Leave.TotalDays jours calendaires).
+                A bénéficié d’un congé dûment approuvé allant du <strong>@LeaveData.Leave.StartDate.ToShortDateString()</strong>
+                au <strong>@LeaveData.Leave.EndDate.ToShortDateString()</strong>,
+                soit une durée totale de <strong>@LeaveData.Leave.TotalDays</strong> jours calendaires.
             </p>
 
             @if (!string.IsNullOrWhiteSpace(LeaveData.Leave.Reason))
@@ -68,17 +69,25 @@
                 <p>Motif du congé : <strong>@LeaveData.Leave.Reason</strong></p>
             }
 
+
+            @if (LeaveData.Leave.RemainingDays.HasValue)
+            {
+                <p>Reliquat de congé : <strong>@LeaveData.Leave.RemainingDays</strong> jour(s)</p>
+            }
+
+            
+
             <br />
 
             <p class="closing-statement">
-                <strong>Cette demande est présentée pour approbation et régularisation selon les procédures internes de l’établissement.</strong>
+                <strong>Le présent titre est délivré pour servir et valoir ce que de droit.</strong>
             </p>
         </div>
 
         <!-- Signature -->
         <div class="signature-section">
-            <p class="date-location">@LeaveData.CompanyInfo.City le @toDay.Date.ToShortDateString()</p>
-            <p class="signature-label">Signature de l'employé(e)</p>
+            <p class="date-location">@LeaveData.CompanyInfo.City le @toDay.ToShortDateString()</p>
+            <p class="signature-label">Signature et cachet de l'établissement</p>
             <div class="signature-space"></div>
         </div>
     }

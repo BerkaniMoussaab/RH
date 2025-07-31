@@ -49,11 +49,28 @@ else
                                 <span>Chargement...</span>
                             }
                         </td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowModal(request.Id)">Imprimer</button>
-                            <button class="btn btn-sm btn-outline-secondary" @onclick="() => Edit(request.Id)">Modifier</button>
-                            <button class="btn btn-sm btn-outline-danger" @onclick="() => Delete(request.Id)">Supprimer</button>
+                        <td class="text-center align-middle">
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Actions">
+                                @if (request.Status == LeaveStatus.Approved)
+                                {
+                                    <button type="button" class="btn btn-outline-primary" title="Imprimer la demande"
+                                            @onclick="() => ShowModal(request.Id)">
+                                        <i class="bi bi-printer"></i>
+                                    </button>
+                                }
+
+                                <button type="button" class="btn btn-outline-secondary" title="Modifier la demande"
+                                        @onclick="() => Edit(request.Id)">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+
+                                <button type="button" class="btn btn-outline-danger" title="Supprimer la demande"
+                                        @onclick="() => Delete(request.Id)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
                         </td>
+
                     </tr>
                 }
             }
@@ -67,33 +84,48 @@ else
 
 @if (showModal)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);" role="dialog" aria-modal="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Aperçu de l'attestation</h5>
-                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+            <div class="modal-content shadow-lg border-0">
+                <!-- Modal Header -->
+                <div class="modal-header bg-light border-bottom align-items-center">
+                    <h5 class="modal-title text-primary fw-bold me-auto">Aperçu de l'attestation</h5>
+
+                    <button class="btn btn-sm btn-outline-success me-2" @onclick="Print" title="Imprimer">
+                        <i class="bi bi-printer"></i> Imprimer
+                    </button>
+
+                    <button type="button" class="btn-close" aria-label="Fermer" @onclick="CloseModal"></button>
                 </div>
+
+                <!-- Modal Body -->
                 <div class="modal-body">
                     @if (leaveRequestData != null)
                     {
-                        <div class="printable-content">
+                        <div class="printable-content px-2">
                             <LeaveRequestPrint LeaveData="leaveRequestData" />
                         </div>
                     }
                     else
                     {
-                        <p>Chargement de l'attestation...</p>
+                        <div class="text-center text-muted py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Chargement...</span>
+                            </div>
+                            <p class="mt-2">Chargement de l'attestation...</p>
+                        </div>
                     }
                 </div>
+
+                <!-- Optional footer (you can leave it empty or add metadata/info) -->
                 <div class="modal-footer">
-                    <button class="btn btn-secondary" @onclick="CloseModal">Fermer</button>
-                    <button class="btn btn-success" @onclick="Print">Imprimer</button>
+                    <!-- Empty or additional information can go here -->
                 </div>
             </div>
         </div>
     </div>
 }
+
 
 <LeaveRequestForm LeaveRequest="Selected" IsOpen="ShowForm" IsOpenChanged="HandleClose" OnSave="Save" />
 
