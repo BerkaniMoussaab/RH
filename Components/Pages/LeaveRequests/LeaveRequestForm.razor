@@ -132,6 +132,7 @@
             if (LeaveRequest.EmployeeId != value)
             {
                 LeaveRequest.EmployeeId = value;
+                GetRemainingDaysBadgeClass();
                 InvokeAsync(async () => await OnEmployeeChanged(value));
             }
         }
@@ -142,6 +143,11 @@
         try
         {
             Employees = await EmployeeService.GetAllAsync() ?? new();
+            RemainingDays = null;
+            if (LeaveRequest.EmployeeId != 0)
+            {
+                GetRemainingDaysBadgeClass();
+            }
         }
         catch (Exception ex)
         {
@@ -150,10 +156,33 @@
         }
     }
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
+        RemainingDays = null;
         editContext = new EditContext(LeaveRequest);
+
+        if (LeaveRequest.EmployeeId != 0)
+        {
+            try
+            {
+                isLoadingRemainingDays = true;
+                StateHasChanged();
+                RemainingDays = await LeaveRequestService.GetRemainingDaysAsync(LeaveRequest.EmployeeId);
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine(ex);
+                ValidationMessage = "Erreur lors du chargement des jours restants";
+            }
+            finally
+            {
+                isLoadingRemainingDays = false;
+                StateHasChanged();
+            }
+        }
     }
+
+
 
     private async Task OnEmployeeChanged(int employeeId)
     {
