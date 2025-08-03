@@ -2,6 +2,9 @@
 
 namespace RH.Models
 {
+    using Microsoft.EntityFrameworkCore;
+    using System.ComponentModel.DataAnnotations.Schema;
+
     public class Employee
     {
         public int Id { get; set; }
@@ -12,6 +15,7 @@ namespace RH.Models
 
         [Range(0, double.MaxValue)]
         [Display(Name = "Salaire mensuel")]
+        [Precision(18, 2)]
         public decimal MonthlySalary { get; set; }
 
         [EmailAddress]
@@ -43,6 +47,7 @@ namespace RH.Models
         public DateTime? DateOfTermination { get; set; }
 
         [Range(0, double.MaxValue)]
+        [Precision(18, 2)]
         public decimal BaseSalary { get; set; } = 0;
 
         public bool Deleted { get; set; }
@@ -50,6 +55,7 @@ namespace RH.Models
         public DateOnly? BirthDate { get; set; }
         public string? BirthPlace { get; set; }
     }
+
 
     public enum EmployeeStatus
     {

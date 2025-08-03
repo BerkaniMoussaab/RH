@@ -170,6 +170,40 @@ namespace RH.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("MonthlyAttendanceSummary", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DaysAbsent")
+                        .HasColumnType("int");
+
+                    b.Property<int>("EmployeeId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LateArrivals")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TotalDeduction")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EmployeeId");
+
+                    b.ToTable("MonthlyAttendanceSummaries");
+                });
+
             modelBuilder.Entity("PayrollAdjustmentRule", b =>
                 {
                     b.Property<int>("Id")
@@ -179,6 +213,7 @@ namespace RH.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("AutoApplied")
@@ -313,6 +348,7 @@ namespace RH.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime?>("CompletedAt")
@@ -333,6 +369,7 @@ namespace RH.Migrations
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<decimal>("RemainingAmount")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("Status")
@@ -364,6 +401,7 @@ namespace RH.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("DeductedAmount")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("DeductionDate")
@@ -475,6 +513,7 @@ namespace RH.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("BaseSalary")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateOnly?>("BirthDate")
@@ -522,6 +561,7 @@ namespace RH.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("MonthlySalary")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("PhoneNumber")
@@ -621,39 +661,6 @@ namespace RH.Migrations
                     b.ToTable("LeaveRequests");
                 });
 
-            modelBuilder.Entity("RH.Models.MonthlyAttendanceSummary", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("DaysAbsent")
-                        .HasColumnType("int");
-
-                    b.Property<int>("EmployeeId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("LateArrivals")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Month")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("TotalDeduction")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("Year")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("EmployeeId");
-
-                    b.ToTable("MonthlyAttendanceSummaries");
-                });
-
             modelBuilder.Entity("RH.Models.Payroll", b =>
                 {
                     b.Property<int>("Id")
@@ -666,24 +673,31 @@ namespace RH.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal>("AbsenceDeduction")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("AdvanceDeductionsAmounts")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("BaseSalary")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("Bonus")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("Cash")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("DeductionPerAbsenceDay")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("Deductions")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("EmployeeId")
@@ -702,6 +716,7 @@ namespace RH.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("Transaction")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("TransactionIsManual")
@@ -723,6 +738,7 @@ namespace RH.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime?>("Date")
@@ -738,6 +754,7 @@ namespace RH.Migrations
                         .HasColumnType("int");
 
                     b.Property<decimal?>("Quantity")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("RuleId")
@@ -949,6 +966,17 @@ namespace RH.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("MonthlyAttendanceSummary", b =>
+                {
+                    b.HasOne("RH.Models.Employee", "Employee")
+                        .WithMany()
+                        .HasForeignKey("EmployeeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Employee");
+                });
+
             modelBuilder.Entity("RH.Models.AbsenceRecord", b =>
                 {
                     b.HasOne("RH.Models.Payroll", "Payroll")
@@ -1012,17 +1040,6 @@ namespace RH.Migrations
                 {
                     b.HasOne("RH.Models.Employee", "Employee")
                         .WithMany("LeaveRequests")
-                        .HasForeignKey("EmployeeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Employee");
-                });
-
-            modelBuilder.Entity("RH.Models.MonthlyAttendanceSummary", b =>
-                {
-                    b.HasOne("RH.Models.Employee", "Employee")
-                        .WithMany()
                         .HasForeignKey("EmployeeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

@@ -1,4 +1,5 @@
-﻿using RH.Models;
+﻿using Microsoft.EntityFrameworkCore;
+using RH.Models;
 using System.ComponentModel.DataAnnotations;
 
 public class PayrollAdjustmentRule
@@ -11,16 +12,21 @@ public class PayrollAdjustmentRule
     public AdjustmentType Type { get; set; }
 
     [Range(0, double.MaxValue)]
+    [Precision(18, 2)] // Ensures correct precision in the database
     public decimal Amount { get; set; }
 
     public bool IsPercentage { get; set; }
-    public bool IsCountable { get; set; }
-    public bool IsEditable { get; set; } // ✅ NEW in DB
-    public ICollection<JobTitle> JobTitles { get; set; } = new List<JobTitle>();
-    public RuleTrigger Trigger { get; set; } = RuleTrigger.Manual;
-    public bool AutoApplied { get; set; }
-}
 
+    public bool IsCountable { get; set; }
+
+    public bool IsEditable { get; set; }
+
+    public RuleTrigger Trigger { get; set; } = RuleTrigger.Manual;
+
+    public bool AutoApplied { get; set; }
+
+    public ICollection<JobTitle> JobTitles { get; set; } = new List<JobTitle>();
+}
 public enum RuleTrigger
 {
     Manual,             // Default

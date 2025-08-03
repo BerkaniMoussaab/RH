@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace RH.Models
 {
@@ -13,38 +15,46 @@ namespace RH.Models
         public DateTime PayDate { get; set; }
 
         [Range(0, double.MaxValue)]
+        [Precision(18, 2)]
         public decimal BaseSalary { get; set; }
 
         [Range(0, double.MaxValue)]
+        [Precision(18, 2)]
         public decimal Bonus { get; set; }
 
         [Range(0, double.MaxValue)]
+        [Precision(18, 2)]
         public decimal Deductions { get; set; }
 
-        // Updated NetPay calculation to include advance deductions
+        [NotMapped]
         public decimal NetPay =>
             (Employee?.BaseSalary ?? BaseSalary) + Bonus - Deductions - AdvanceDeductionsAmounts;
 
         public ICollection<PayrollAppliedRule> AppliedRules { get; set; } = new List<PayrollAppliedRule>();
-        public int AbsenceDays { get; set; } // how many days the employee was absent
-        public decimal AbsenceDeduction { get; set; } // the amount deducted due to absences
 
+        public int AbsenceDays { get; set; }
+
+        [Precision(18, 2)]
+        public decimal AbsenceDeduction { get; set; }
+
+        [Precision(18, 2)]
         public decimal DeductionPerAbsenceDay { get; set; }
+
         public int ManualAbsenceDays { get; set; }
+
         public ICollection<AbsenceRecord> Absences { get; set; } = new List<AbsenceRecord>();
-        /// <summary>
-        /// If true: Transaction is entered, Cash is calculated.
-        /// If false: Cash is entered, Transaction is calculated.
-        /// </summary>
+
         public bool TransactionIsManual { get; set; } = true;
 
         private decimal _transaction;
         private decimal _cash;
 
-        // Advance payment properties (already present in the model)
+        [Precision(18, 2)]
         public decimal AdvanceDeductionsAmounts { get; set; }
+
         public virtual ICollection<AdvanceDeduction> AdvanceDeductions { get; set; } = new List<AdvanceDeduction>();
 
+        [Precision(18, 2)]
         public decimal Transaction
         {
             get => _transaction;
@@ -58,6 +68,7 @@ namespace RH.Models
             }
         }
 
+        [Precision(18, 2)]
         public decimal Cash
         {
             get => _cash;
@@ -70,7 +81,6 @@ namespace RH.Models
                 }
             }
         }
-
 
         /// <summary>
         /// Start date of the payroll period for calculating absences and bonuses

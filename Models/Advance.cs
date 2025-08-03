@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace RH.Models
 {
@@ -7,9 +9,15 @@ namespace RH.Models
         public int Id { get; set; }
         public int EmployeeId { get; set; }
         public Employee Employee { get; set; }
+
+        [Precision(18, 2)]
         public decimal Amount { get; set; }
+
         public DateTime Date { get; set; }
+
+        [Precision(18, 2)]
         public decimal RemainingAmount { get; set; }
+
         [Required(ErrorMessage = "La raison de l'avance est obligatoire.")]
         [MaxLength(500, ErrorMessage = "La raison ne peut pas dépasser 500 caractères.")]
         public string Reason { get; set; } = string.Empty;
@@ -18,7 +26,6 @@ namespace RH.Models
         public DateTime CreatedAt { get; set; }
         public DateTime? CompletedAt { get; set; }
 
-        // Navigation properties
         public virtual ICollection<AdvanceDeduction> Deductions { get; set; }
     }
 
