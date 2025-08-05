@@ -101,7 +101,8 @@ public class PayrollService : IPayrollService
         existing.AbsenceDeduction = payroll.AbsenceDeduction;
         existing.ManualAbsenceDays = payroll.ManualAbsenceDays;
         existing.DeductionPerAbsenceDay = payroll.DeductionPerAbsenceDay;
-
+        existing.Cash = payroll.Cash;
+        existing.Transaction = payroll.Transaction;
         // Replace AppliedRules
         _context.PayrollAppliedRules.RemoveRange(existing.AppliedRules);
 
