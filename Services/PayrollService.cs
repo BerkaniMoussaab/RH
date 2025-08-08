@@ -109,7 +109,8 @@ public class PayrollService : IPayrollService
         existing.Transaction = payroll.Transaction;
         existing.PayrollStartDate = payroll.PayrollStartDate;
         existing.PayrollEndDate = payroll.PayrollEndDate;
-
+        existing.PayrollStartDate = payroll.PayrollStartDate;
+        existing.PayrollEndDate = payroll.PayrollEndDate;
         _context.PayrollAppliedRules.RemoveRange(existing.AppliedRules);
         foreach (var rule in payroll.AppliedRules)
         {

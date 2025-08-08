@@ -33,7 +33,7 @@ public class AbsenceService
         using var context = _contextFactory.CreateDbContext();
 
         return await context.AbsenceRecords
-            .Where(a => a.EmployeeId == employeeId && a.Date >= startDate && a.Date < endDate)
+            .Where(a => a.EmployeeId == employeeId && a.Date >= startDate && a.Date < endDate && a.PayrollId == null)
             .ToListAsync();
     }
 
