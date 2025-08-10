@@ -374,10 +374,7 @@
         }
 
         // Only enforce future start date for new requests, not for editing past ones
-        if (LeaveRequest.Id == 0 && LeaveRequest.StartDate < DateTime.Today)
-        {
-            return (false, "La date de début ne peut pas être dans le passé pour une nouvelle demande");
-        }
+       
 
         if (string.IsNullOrWhiteSpace(LeaveRequest.Reason))
         {
