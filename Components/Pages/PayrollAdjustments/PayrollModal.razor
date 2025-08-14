@@ -1,0 +1,339 @@
+﻿@using RH.Models
+@using RH.Services
+@inject IJSRuntime JS
+
+<div class="modal fade @(ShowModal ? "show d-block" : "") enhanced-modal-backdrop" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content enhanced-modal">
+            <div class="modal-header enhanced-modal-header">
+                <div class="modal-title-wrapper">
+                    <div class="modal-icon">
+                        <i class="bi bi-sliders2-vertical"></i>
+                    </div>
+                    <div class="modal-title-content">
+                        <h5 class="modal-title">
+                            @((IsEditMode ? "Modifier" : "Ajouter") + " une règle d'ajustement")
+                        </h5>
+                        <small class="modal-subtitle">
+                            @(IsEditMode ? "Modifiez les paramètres de la règle existante" : "Créez une nouvelle règle de prime ou déduction")
+                        </small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close bg-white" @onclick="Close"></button>
+            </div>
+
+            <EditForm Model="@NewAdjustment" OnValidSubmit="HandleSave">
+                <DataAnnotationsValidator />
+
+                <div class="modal-body enhanced-modal-body">
+                    <ValidationSummary class="validation-summary-enhanced" />
+
+                    <div class="form-sections">
+                        <!-- Section Informations de base -->
+                        <div class="form-section">
+                            <div class="section-title-small">
+                                <i class="bi bi-info-circle text-primary me-2"></i>
+                                Informations de base
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="enhanced-form-group">
+                                        <label class="form-label enhanced-label">
+                                            <i class="bi bi-tag me-1"></i>
+                                            Nom de la règle
+                                        </label>
+                                        <InputText class="form-control enhanced-input" @bind-Value="NewAdjustment.Name" placeholder="Ex: Prime de performance" />
+                                        <ValidationMessage For="@(() => NewAdjustment.Name)" class="validation-message-enhanced" />
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="enhanced-form-group">
+                                        <label class="form-label enhanced-label">
+                                            <i class="bi bi-list-ul me-1"></i>
+                                            Type de règle
+                                        </label>
+                                        <InputSelect class="form-select enhanced-select" @bind-Value="NewAdjustment.Type">
+                                            <option disabled value="">-- Sélectionner le type --</option>
+                                            <option value="@AdjustmentType.Bonus">🎁 Prime (Bonus)</option>
+                                            <option value="@AdjustmentType.Deduction">🛡️ Déduction (Retenue)</option>
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Section Montant et Options -->
+                        <div class="form-section p-4 rounded-4 shadow-sm bg-white border">
+                            <div class="d-flex align-items-center mb-3 section-title-small text-primary fs-5 fw-semibold">
+                                <i class="bi bi-currency-dollar text-success me-2 fs-4"></i>
+                                Configuration du montant et options
+                            </div>
+
+                            <div class="row g-4">
+                                <!-- Montant Section -->
+                                <div class="col-lg-7">
+                                    <div class="enhanced-form-group">
+                                        <label class="form-label fw-semibold">
+                                            <i class="bi bi-calculator me-1 text-muted"></i>
+                                            Montant
+                                        </label>
+
+                                        <div class="input-group">
+                                            <InputNumber class="form-control"
+                                                         @bind-Value="NewAdjustment.Amount"
+                                                         disabled="@NewAdjustment.IsEditable"
+                                                         placeholder="0.00" />
+                                            <span class="input-group-text bg-light">
+                                                <div class="form-check m-0">
+                                                    <InputCheckbox class="form-check-input"
+                                                                   @bind-Value="NewAdjustment.IsPercentage" />
+                                                    <label class="form-check-label ms-1 mb-0">%</label>
+                                                </div>
+                                            </span>
+                                        </div>
+
+                                        <ValidationMessage For="@(() => NewAdjustment.Amount)" class="text-danger mt-1 small" />
+
+                                        @if (NewAdjustment.IsEditable)
+                                        {
+                                            <div class="text-info mt-1 small">
+                                                <i class="bi bi-info-circle me-1"></i>
+                                                Le montant sera saisi lors de l'application de la règle
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                                <!-- Options Section -->
+                                <div class="col-lg-5">
+                                    <div class="enhanced-form-group">
+                                        <label class="form-label fw-semibold">
+                                            <i class="bi bi-gear me-1 text-muted"></i>
+                                            Options
+                                        </label>
+
+                                        <div class="d-flex flex-column gap-2">
+                                            <!-- IsCountable -->
+                                            <div class="form-check">
+                                                <InputCheckbox class="form-check-input"
+                                                               @bind-Value="NewAdjustment.IsCountable" />
+                                                <label class="form-check-label ms-2">
+                                                    <div class="fw-semibold">Avec quantité</div>
+                                                    <div class="text-muted small">Permet de multiplier par une quantité</div>
+                                                </label>
+                                            </div>
+
+                                            <!-- IsEditable -->
+                                            <div class="form-check">
+                                                <InputCheckbox class="form-check-input"
+                                                               Value="NewAdjustment.IsEditable"
+                                                               ValueChanged="val => OnEditableChanged(new ChangeEventArgs { Value = val })"
+                                                               ValueExpression="@(() => NewAdjustment.IsEditable)" />
+                                                <label class="form-check-label ms-2">
+                                                    <div class="fw-semibold">Montant modifiable</div>
+                                                    <div class="text-muted small">Le montant peut être ajusté lors de l'application</div>
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <InputCheckbox class="form-check-input"
+                                                               Value="NewAdjustment.AutoApplied"
+                                                              
+                                                               ValueExpression="@(() => NewAdjustment.AutoApplied)" />
+                                                <label class="form-check-label ms-2">
+                                                    <div class="fw-semibold">Automatiquement appliqué</div>
+                                                    <div class="text-muted small">La règle sera automatiquement appliqué chaque paie</div>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <!-- Section Postes -->
+                        <div class="form-section">
+                            <div class="section-title-small">
+                                <i class="bi bi-people text-warning me-2"></i>
+                                Postes concernés
+                            </div>
+
+                            <div class="enhanced-form-group">
+                                <label class="form-label enhanced-label">
+                                    <i class="bi bi-briefcase me-1"></i>
+                                    Sélection des postes
+                                </label>
+
+                                <div class="position-relative">
+                                    <button type="button" class="btn enhanced-dropdown-btn w-100" @onclick="ToggleDropdown">
+                                        <div class="dropdown-content">
+                                            <span class="dropdown-text">
+                                                @((SelectedJobTitleIds.Any())
+                                                    ? $"{SelectedJobTitleIds.Count} poste(s) sélectionné(s)"
+                                                    : "Sélectionnez des postes")
+                                            </span>
+                                            <i class="bi bi-caret-down-fill dropdown-icon"></i>
+                                        </div>
+                                    </button>
+
+                                    @if (ShowDropdown)
+                                    {
+                                        <div class="enhanced-dropdown-menu">
+                                            <div class="dropdown-header">
+                                                <i class="bi bi-search me-2"></i>
+                                                Sélectionnez les postes concernés
+                                            </div>
+                                            <div class="dropdown-body">
+                                                @foreach (var jt in AllJobTitles)
+                                                {
+                                                    <div class="dropdown-item enhanced-dropdown-item">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input enhanced-checkbox"
+                                                                   type="checkbox"
+                                                                   id="jt_@jt.Id"
+                                                                   checked="@SelectedJobTitleIds.Contains(jt.Id)"
+                                                                   @onchange="() => ToggleJobTitleSelection(jt.Id)" />
+                                                            <label class="form-check-label" for="jt_@jt.Id">
+                                                                @jt.Title
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+
+                                @if (ShowJobTitleValidation && !SelectedJobTitleIds.Any())
+                                {
+                                    <div class="validation-message-enhanced">
+                                        <i class="bi bi-exclamation-triangle me-1"></i>
+                                        Veuillez sélectionner au moins un poste.
+                                    </div>
+                                }
+
+                                @if (SelectedJobTitleIds.Any())
+                                {
+                                    <div class="selected-items-preview">
+                                        <small class="text-muted mb-2 d-block">Postes sélectionnés:</small>
+                                        <div class="selected-badges">
+                                            @foreach (var selectedId in SelectedJobTitleIds)
+                                            {
+                                                var jobTitle = AllJobTitles.FirstOrDefault(j => j.Id == selectedId);
+                                                if (jobTitle != null)
+                                                {
+                                                    <span class="selected-badge">
+                                                        @jobTitle.Title
+                                                        <button type="button" class="badge-remove" @onclick="() => ToggleJobTitleSelection(selectedId)">
+                                                            <i class="bi bi-x"></i>
+                                                        </button>
+                                                    </span>
+                                                }
+                                            }
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer enhanced-modal-footer">
+                    <div class="footer-actions">
+                        <button type="submit" class="btn btn-success enhanced-btn primary-action">
+                            <i class="bi bi-check-circle me-2"></i>
+                            @(IsEditMode ? "Enregistrer les modifications" : "Créer la règle")
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary enhanced-btn" @onclick="Close">
+                            <i class="bi bi-x-circle me-2"></i>
+                            Annuler
+                        </button>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool ShowModal { get; set; }
+    [Parameter] public EventCallback<bool> ShowModalChanged { get; set; }
+
+    [Parameter] public PayrollAdjustmentRule NewAdjustment { get; set; }
+    [Parameter] public EventCallback<PayrollAdjustmentRule> NewAdjustmentChanged { get; set; }
+
+    [Parameter] public bool IsEditMode { get; set; }
+    [Parameter] public EventCallback<bool> IsEditModeChanged { get; set; }
+
+    [Parameter] public List<int> SelectedJobTitleIds { get; set; } = new();
+    [Parameter] public EventCallback<List<int>> SelectedJobTitleIdsChanged { get; set; }
+
+    [Parameter] public List<JobTitle> AllJobTitles { get; set; } = new();
+
+    [Parameter] public EventCallback<PayrollAdjustmentRule> OnSave { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+
+
+    private bool ShowJobTitleValidation = false;
+    private bool ShowDropdown = false;
+
+    private void ToggleJobTitleSelection(int id)
+    {
+        if (SelectedJobTitleIds.Contains(id))
+            SelectedJobTitleIds.Remove(id);
+        else
+            SelectedJobTitleIds.Add(id);
+        StateHasChanged();
+    }
+
+    private void OnEditableChanged(ChangeEventArgs e)
+    {
+        if (bool.TryParse(e?.Value?.ToString(), out var isEditable))
+        {
+            NewAdjustment.IsEditable = isEditable;
+
+            if (isEditable)
+            {
+                NewAdjustment.Amount = 0; // force amount to 0
+            }
+
+            StateHasChanged(); // refresh form
+        }
+    }
+
+    private async Task HandleSave()
+    {
+        ShowJobTitleValidation = SelectedJobTitleIds.Count == 0;
+        if (string.IsNullOrWhiteSpace(NewAdjustment.Name) || ShowJobTitleValidation)
+        {
+            return;
+        }
+
+        if (NewAdjustment.IsEditable && NewAdjustment.Amount != 0)
+        {
+            NewAdjustment.Amount = 0;
+        }
+
+        NewAdjustment.JobTitles = AllJobTitles
+            .Where(j => SelectedJobTitleIds.Contains(j.Id))
+            .ToList();
+
+        await OnSave.InvokeAsync(NewAdjustment);
+        // The parent component will handle closing the modal and resetting the state
+    }
+
+    private async Task Close()
+    {
+        ShowJobTitleValidation = false;
+        ShowDropdown = false;
+        await OnClose.InvokeAsync();
+    }
+
+    private void ToggleDropdown()
+    {
+        ShowDropdown = !ShowDropdown;
+    }
+
+}

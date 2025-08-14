@@ -1,5 +1,5 @@
 ﻿@page "/payrolls"
-
+@inject CompanyInfoService CompanyService
 @using Microsoft.AspNetCore.Authorization
 @using RH.Models
 @using RH.Services
@@ -255,7 +255,7 @@ else
                                         <InputNumber TValue="decimal"
                                                      class="form-control enhanced-input salary-input"
                                                      Value="CurrentPayroll.BaseSalary"
-                                                     ValueChanged="@(value => OnBaseSalaryChanged(value, WorkDays))"
+                                                     ValueChanged="@(value => OnBaseSalaryChanged(value, workDaysPerMonth))"
                                                      ValueExpression="@(() => CurrentPayroll.BaseSalary)" />
 
                                         <small class="text-muted mt-1 d-flex align-items-center">
@@ -394,7 +394,7 @@ else
                                     <div class="section-title bonus-title">
                                         <i class="bi bi-plus-circle text-success me-2"></i>
                                         <span>Primes</span>
-                                        <span class="badge bg-success ms-auto">+@CurrentPayroll.Bonus.ToString("N2") DA</span>
+                                        <span class="badge bg-success ms-auto">+@CurrentPayroll.Bonus.ToString() DA</span>
                                     </div>
 
                                     <div class="bonus-rules-container">
@@ -416,6 +416,10 @@ else
                                                             else if (rule.IsPercentage)
                                                             {
                                                                 <span class="text-muted ms-1">(@rule.Amount %)</span>
+                                                            }
+                                                            @if (rule.AutoApplied)
+                                                            {
+                                                                <span class="text-muted ms-1 fst-italic" title="Règle appliquée automatiquement">(Auto)</span>
                                                             }
                                                         </label>
                                                     </div>
@@ -442,7 +446,7 @@ else
                                                             }
 
                                                             <div class="calculated-amount success">
-                                                                @rule.CalculatedAmount.ToString("N2") DA
+                                                                @rule.CalculatedAmount.ToString() DA
                                                             </div>
 
                                                             @if (!rule.IsEditable && !rule.IsCountable)
@@ -464,7 +468,7 @@ else
                                     <div class="section-title deduction-title">
                                         <i class="bi bi-dash-circle text-danger me-2"></i>
                                         <span>Retenues</span>
-                                        <span class="badge bg-danger ms-auto">-@CurrentPayroll.Deductions.ToString("N2") DA</span>
+                                        <span class="badge bg-danger ms-auto">-@CurrentPayroll.Deductions.ToString() DA</span>
                                     </div>
 
                                     <div class="deduction-rules-container">
@@ -481,11 +485,15 @@ else
                                                             @rule.Name
                                                             @if (!rule.IsPercentage && rule.Amount > 0)
                                                             {
-                                                                <span class="text-muted ms-1">(@rule.Amount:N2 DA)</span>
+                                                                <span class="text-muted ms-1">(@rule.Amount : DA)</span>
                                                             }
                                                             else if (rule.IsPercentage)
                                                             {
                                                                 <span class="text-muted ms-1">(@rule.Amount %)</span>
+                                                            }
+                                                            @if (rule.AutoApplied)
+                                                            {
+                                                                <span class="text-muted ms-1 fst-italic" title="Règle appliquée automatiquement">(Auto)</span>
                                                             }
                                                         </label>
                                                     </div>
@@ -512,7 +520,7 @@ else
                                                             }
 
                                                             <div class="calculated-amount danger">
-                                                                @rule.CalculatedAmount.ToString("N2") DA
+                                                                @rule.CalculatedAmount.ToString() DA
                                                             </div>
 
                                                             @if (!rule.IsEditable && !rule.IsCountable)
@@ -527,6 +535,7 @@ else
                                     </div>
                                 </div>
                             </div>
+
 
                             <!-- Section Résumé -->
                             <div class="col-12">
@@ -728,7 +737,7 @@ else
     private List<SelectableRule> SelectedBonusRules = new();
     private List<SelectableRule> SelectedDeductionRules = new();
     private Payroll CurrentPayroll = new();
-    public int WorkDays { get; set; } = 22;
+    public int workDaysPerMonth;
 
     private DateTime? SelectedStartDate { get; set; }
     private DateTime? SelectedEndDate { get; set; }
@@ -758,9 +767,7 @@ else
         CurrentPayroll.BaseSalary = value;
 
         // Calculate deduction per absence day based on working days in the payroll period
-        var actualWorkDays = CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue
-            ? CalculateWorkingDays(CurrentPayroll.PayrollStartDate.Value, CurrentPayroll.PayrollEndDate.Value)
-            : workDays;
+        var actualWorkDays = workDays;
 
         CurrentPayroll.DeductionPerAbsenceDay = Math.Round(value / actualWorkDays, 2);
     }
@@ -780,8 +787,8 @@ else
             // Recalculate deduction per absence day based on new period
             if (CurrentPayroll.BaseSalary > 0)
             {
-                var workingDays = CalculateWorkingDays(CurrentPayroll.PayrollStartDate.Value, CurrentPayroll.PayrollEndDate.Value);
-                CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workingDays, 2);
+                var workingDays = workDaysPerMonth;
+                CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workDaysPerMonth, 2);
             }
 
             // Refresh absences for the new period
@@ -1021,12 +1028,17 @@ else
         Employees = await EmployeeService.GetAllAsync();
         AllAdjustmentRules = await AdjustmentService.GetAllAsync();
 
+        var company = await CompanyService.GetAsync(); // fetch company first
+        workDaysPerMonth = company.WorKdaysInMonth;            // then access property safely
+
         if (CurrentPayroll.ManualAbsenceDays != 0)
         {
             UseManualAbsences = true;
         }
+
         await LoadPayrolls();
     }
+
 
     private async Task LoadPayrolls() => Payrolls = await PayrollService.GetAllAsync();
 
@@ -1042,6 +1054,17 @@ else
 
         SelectedBonusRules.Clear();
         SelectedDeductionRules.Clear();
+
+        // Auto-apply rules with AutoApplied = true
+        SelectedBonusRules = AllAdjustmentRules
+            .Where(r => r.Type == AdjustmentType.Bonus && r.AutoApplied)
+            .Select(r => new SelectableRule(r, workDaysPerMonth, isApplied: true))
+            .ToList();
+
+        SelectedDeductionRules = AllAdjustmentRules
+            .Where(r => r.Type == AdjustmentType.Deduction && r.AutoApplied)
+            .Select(r => new SelectableRule(r, workDaysPerMonth, isApplied: true))
+            .ToList();
 
         if (Employees.Any())
         {
@@ -1096,16 +1119,21 @@ else
                 .Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId));
 
             SelectedBonusRules = bonusRules.Select(rule =>
-            {
-                var applied = appliedRules.FirstOrDefault(a => a.RuleId == rule.Id);
-                return applied != null ? new SelectableRule(applied) : new SelectableRule(rule);
-            }).ToList();
+     {
+         var applied = appliedRules.FirstOrDefault(a => a.RuleId == rule.Id);
+         return applied != null
+         ? new SelectableRule(applied, workDaysPerMonth)
+         : new SelectableRule(rule, workDaysPerMonth, rule.AutoApplied);
+     }).ToList();
 
             SelectedDeductionRules = deductionRules.Select(rule =>
             {
                 var applied = appliedRules.FirstOrDefault(a => a.RuleId == rule.Id);
-                return applied != null ? new SelectableRule(applied) : new SelectableRule(rule);
+                return applied != null
+                    ? new SelectableRule(applied, workDaysPerMonth)
+                    : new SelectableRule(rule, workDaysPerMonth, rule.AutoApplied);
             }).ToList();
+
         }
         else
         {
@@ -1131,7 +1159,7 @@ else
                     Amount = r.Amount,
                     Quantity = r.IsCountable ? r.Quantity : null
                 }).ToList();
-
+        CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workDaysPerMonth, 2);
         if (CurrentPayroll.Id == 0)
         {
             await PayrollService.CreateAsync(CurrentPayroll);
@@ -1183,11 +1211,13 @@ else
         {
             SelectedBonusRules = AllAdjustmentRules
                 .Where(r => r.Type == AdjustmentType.Bonus && r.JobTitles.Any(j => j.Id == jobTitleId))
-                .Select(r => new SelectableRule(r)).ToList();
+                .Select(r => new SelectableRule(r, workDaysPerMonth, r.AutoApplied)) // Modified
+                .ToList();
 
             SelectedDeductionRules = AllAdjustmentRules
                 .Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId))
-                .Select(r => new SelectableRule(r)).ToList();
+                .Select(r => new SelectableRule(r, workDaysPerMonth, r.AutoApplied)) // Modified
+                .ToList();
         }
 
         var lastPayroll = await PayrollService.GetLastPayrollForEmployeeAsync(employeeId);
@@ -1195,10 +1225,7 @@ else
 
         if (CurrentPayroll.BaseSalary != 0)
         {
-            var workingDays = CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue
-                ? CalculateWorkingDays(CurrentPayroll.PayrollStartDate.Value, CurrentPayroll.PayrollEndDate.Value)
-                : 22;
-            CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workingDays, 2);
+            CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workDaysPerMonth, 2); // ✅ Fixed
         }
 
         if (CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue)
@@ -1209,6 +1236,7 @@ else
         RecalculateBonusesAndDeductions();
         StateHasChanged();
     }
+
 
     private void OnAbsenceDeductionChanged()
     {
@@ -1280,7 +1308,7 @@ else
             }
             else
             {
-                var newRule = new SelectableRule(rule, isApplied: true)
+                var newRule = new SelectableRule(rule, workDaysPerMonth, isApplied: true)
                     {
                         Quantity = workedDayOffCount
                     };
@@ -1302,28 +1330,32 @@ else
         public decimal Quantity { get; set; } = 1;
         public bool IsEditable { get; set; } = false;
         public decimal CalculatedAmount { get; set; }
-        public int WorkDays { get; set; } = 30;
+        public int WorkDays { get; set; }
         private DateTime? SelectedStartDate { get; set; }
         private DateTime? SelectedEndDate { get; set; }
         public RuleTrigger Trigger { get; set; } = RuleTrigger.Manual;
+        public bool AutoApplied { get; set; }
 
-        public SelectableRule(PayrollAppliedRule appliedRule)
+        public SelectableRule(PayrollAppliedRule appliedRule, int workDaysPerMonth)
         {
             RuleId = appliedRule.RuleId;
             Name = appliedRule.Rule.Name;
             Amount = appliedRule.Amount;
             IsPercentage = appliedRule.Rule.IsPercentage;
             IsCountable = appliedRule.Rule.IsCountable;
+            AutoApplied = appliedRule.Rule.AutoApplied;
             IsApplied = true;
             IsEditable = appliedRule.Rule.IsEditable;
             Quantity = appliedRule.Quantity ?? 1;
             Trigger = appliedRule.Rule.Trigger;
+            WorkDays = workDaysPerMonth;
             CalculatedAmount = IsCountable
                 ? (IsPercentage ? appliedRule.Payroll.BaseSalary * Amount / 100 : Amount) * Quantity
                 : (IsPercentage ? appliedRule.Payroll.BaseSalary * Amount / 100 : Amount);
+
         }
 
-        public SelectableRule(PayrollAdjustmentRule rule, bool isApplied = false)
+        public SelectableRule(PayrollAdjustmentRule rule, int workDaysPerMonth, bool isApplied = false)
         {
             RuleId = rule.Id;
             Name = rule.Name;
@@ -1333,9 +1365,16 @@ else
             IsEditable = rule.IsEditable;
             IsApplied = isApplied;
             Quantity = 1;
-            CalculatedAmount = rule.Amount;
+            WorkDays = workDaysPerMonth;
             Trigger = rule.Trigger;
+            AutoApplied = rule.AutoApplied;
+
+            CalculatedAmount = IsCountable
+                ? Amount * Quantity
+                : Amount;
         }
+
+
     }
 }
 

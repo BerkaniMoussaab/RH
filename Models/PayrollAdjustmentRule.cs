@@ -1,4 +1,5 @@
-﻿using RH.Models;
+﻿using Microsoft.AspNetCore.Components.Web;
+using RH.Models;
 using System.ComponentModel.DataAnnotations;
 
 public class PayrollAdjustmentRule
@@ -18,6 +19,7 @@ public class PayrollAdjustmentRule
     public bool IsEditable { get; set; } // ✅ NEW in DB
     public ICollection<JobTitle> JobTitles { get; set; } = new List<JobTitle>();
     public RuleTrigger Trigger { get; set; } = RuleTrigger.Manual;
+    public bool AutoApplied { get; set; }
 }
 
 public enum RuleTrigger

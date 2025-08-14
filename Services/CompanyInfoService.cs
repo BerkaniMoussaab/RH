@@ -24,8 +24,11 @@ namespace RH.Services
                 Name = string.Empty,
                 Address = string.Empty,
                 RC = string.Empty,
-                NIF = string.Empty
+                NIF = string.Empty,
+                WorKdaysInMonth = 22, // Default value, can be changed later
+
             };
+
 
             _context.CompanyInfos.Add(newInfo);
             await _context.SaveChangesAsync();

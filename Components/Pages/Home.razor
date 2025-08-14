@@ -1,13 +1,17 @@
 ﻿@page "/"
-@using RH.Components.Pages.AbsenceRecords
+@using Microsoft.AspNetCore.Authorization
 @using RH.Models
 @using RH.Services
 @inject IEmployeeService EmployeeService
 @inject AbsenceService AbsenceService
+@inject PayrollAdjustmentRuleService RuleService
 @inject IPayrollService PayrollService
+@inject IJobTitleService JobTitleService
 @inject NavigationManager Navigation
-@using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
+@using RH.Components.Pages.AbsenceRecords
+@using RH.Components.Pages.PayrollAdjustments
+
 <PageTitle>Dashboard</PageTitle>
 
 <h3 class="mb-4">Tableau de Bord</h3>
@@ -49,9 +53,14 @@
 
 <div class="mt-5 d-flex justify-content-between align-items-center">
     <h5 class="mb-0">Actions rapides</h5>
-    <button class="btn btn-outline-primary" @onclick="() => ShowAddAbsenceModal = true">
-        <i class="bi bi-plus-circle me-1"></i>Ajouter une absence
-    </button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-success" @onclick="OpenNewPayrollModal">
+            <i class="bi bi-currency-dollar me-1"></i>Ajouter une règle salaire
+        </button>
+        <button class="btn btn-outline-primary" @onclick="() => ShowAddAbsenceModal = true">
+            <i class="bi bi-plus-circle me-1"></i>Ajouter une absence
+        </button>
+    </div>
 </div>
 
 @if (ShowAddAbsenceModal)
@@ -61,12 +70,32 @@
                      OnSaved="ReloadAbsenceCount" />
 }
 
+@if (ShowPayrollModal)
+{
+    <PayrollModal @bind-ShowModal="ShowPayrollModal"
+                  @bind-NewAdjustment="NewPayrollAdjustment"
+                  @bind-IsEditMode="IsEditPayrollMode"
+                  @bind-SelectedJobTitleIds="SelectedPayrollJobTitleIds"
+                  AllJobTitles="@AllJobTitles"
+                  OnSave="HandlePayrollSave"
+                  OnClose="ClosePayrollModal" />
+}
+
 @code {
     private List<Employee> Employees = new();
+    private List<JobTitle> AllJobTitles = new();
+
     private int JobTitlesCount;
     private int PayrollsCount;
     private int AbsencesCount;
+
     private bool ShowAddAbsenceModal;
+
+    // Payroll Modal State
+    private bool ShowPayrollModal = false;
+    private bool IsEditPayrollMode = false;
+    private PayrollAdjustmentRule NewPayrollAdjustment = new() { Type = AdjustmentType.Bonus };
+    private List<int> SelectedPayrollJobTitleIds = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -74,6 +103,7 @@
         JobTitlesCount = await EmployeeService.GetJobTitleCountAsync();
         PayrollsCount = await PayrollService.GetPayrollCountAsync();
         AbsencesCount = await AbsenceService.GetTotalAbsenceCountAsync();
+        AllJobTitles = await JobTitleService.GetAllAsync(); // Load job titles for modal
     }
 
     private async Task ReloadAbsenceCount()
@@ -84,5 +114,30 @@
     private void NavigateTo(string url)
     {
         Navigation.NavigateTo(url);
+    }
+
+    private void OpenNewPayrollModal()
+    {
+        IsEditPayrollMode = false;
+        NewPayrollAdjustment = new PayrollAdjustmentRule { Type = AdjustmentType.Bonus };
+        SelectedPayrollJobTitleIds = new();
+        ShowPayrollModal = true;
+    }
+
+    private async Task HandlePayrollSave(PayrollAdjustmentRule adjustment)
+    {
+        // Save to database
+        await RuleService.AddAsync(adjustment); // You must implement this method
+        ShowPayrollModal = false;
+
+        // Optionally refresh data
+        PayrollsCount = await PayrollService.GetPayrollCountAsync();
+        StateHasChanged();
+    }
+
+    private Task ClosePayrollModal()
+    {
+        ShowPayrollModal = false;
+        return Task.CompletedTask;
     }
 }
