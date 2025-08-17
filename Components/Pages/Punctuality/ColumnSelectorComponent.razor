@@ -1,0 +1,323 @@
+@using RH.Models.Attendance
+@using RH.Services.Interfaces
+@inject IExcelReaderService ExcelReaderService
+
+<div class="row">
+    <div class="col-12">
+        <h4 class="mb-4">
+            <i class="fas fa-columns me-2"></i>
+            Sélection des Colonnes
+        </h4>
+        <p class="text-muted mb-4">
+            Indiquez quelles colonnes contiennent le nom complet de l'employé et la date/heure de présence.
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Column Selection -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-cog me-2"></i>
+                    Configuration des Colonnes
+                </h5>
+            </div>
+            <div class="card-body">
+                
+                <!-- Name Column Selection -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-user me-2"></i>
+                        Colonne Nom Complet
+                    </label>
+                    <select class="form-select @(ColumnMapping.NameColumnIndex >= 0 ? "is-valid" : "")" 
+                            @onchange="OnNameColumnChanged">
+                        <option value="-1">-- Sélectionner la colonne nom --</option>
+                        @for (int i = 0; i < ExcelData.Headers.Count; i++)
+                        {
+                            <option value="@i" selected="@(ColumnMapping.NameColumnIndex == i)">
+                                Colonne @(i + 1): @ExcelData.Headers[i]
+                            </option>
+                        }
+                    </select>
+                    <div class="form-text">
+                        Cette colonne doit contenir le nom complet de l'employé tel qu'enregistré dans la base de données.
+                    </div>
+                </div>
+
+                <!-- DateTime Column Selection -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-clock me-2"></i>
+                        Colonne Date/Heure
+                    </label>
+                    <select class="form-select @(ColumnMapping.DateTimeColumnIndex >= 0 ? "is-valid" : "")" 
+                            @onchange="OnDateTimeColumnChanged">
+                        <option value="-1">-- Sélectionner la colonne date/heure --</option>
+                        @for (int i = 0; i < ExcelData.Headers.Count; i++)
+                        {
+                            <option value="@i" selected="@(ColumnMapping.DateTimeColumnIndex == i)">
+                                Colonne @(i + 1): @ExcelData.Headers[i]
+                            </option>
+                        }
+                    </select>
+                    <div class="form-text">
+                        Cette colonne doit contenir la date et l'heure d'arrivée de l'employé.
+                    </div>
+                </div>
+
+                <!-- Date Format Selection -->
+                <div class="mb-4">
+                    <label class="form-label fw-bold">
+                        <i class="fas fa-calendar me-2"></i>
+                        Format de Date
+                    </label>
+                    <select class="form-select" @onchange="OnDateFormatChanged">
+                        @foreach (var format in SupportedDateFormats.FormatDescriptions)
+                        {
+                            <option value="@format.Key" selected="@(ColumnMapping.DateFormat == format.Key)">
+                                @format.Value
+                            </option>
+                        }
+                    </select>
+                    <div class="form-text">
+                        Sélectionnez le format qui correspond à vos données.
+                    </div>
+                    
+                    @if (ColumnMapping.DateTimeColumnIndex >= 0 && detectedFormat != null)
+                    {
+                        <div class="alert alert-info mt-2">
+                            <i class="fas fa-lightbulb me-2"></i>
+                            <strong>Format détecté automatiquement :</strong> @SupportedDateFormats.FormatDescriptions.GetValueOrDefault(detectedFormat, detectedFormat)
+                        </div>
+                    }
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-eye me-2"></i>
+                    Aperçu des Données Sélectionnées
+                </h5>
+            </div>
+            <div class="card-body">
+                
+                @if (ColumnMapping.NameColumnIndex >= 0 && ColumnMapping.DateTimeColumnIndex >= 0)
+                {
+                    <div class="table-responsive" style="max-height: 400px;">
+                        <table class="table table-sm table-striped">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th style="width: 50px;">#</th>
+                                    <th>Nom Employé</th>
+                                    <th>Date/Heure</th>
+                                    <th style="width: 80px;">Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Math.Min(ExcelData.Rows.Count, 10); i++)
+                                {
+                                    var row = ExcelData.Rows[i];
+                                    var name = ColumnMapping.NameColumnIndex < row.Count ? row[ColumnMapping.NameColumnIndex] : "";
+                                    var dateTime = ColumnMapping.DateTimeColumnIndex < row.Count ? row[ColumnMapping.DateTimeColumnIndex] : "";
+                                    var isValidDate = ExcelReaderService.TryParseDateTime(dateTime, ColumnMapping.DateFormat) != null;
+                                    
+                                    <tr class="@(isValidDate ? "" : "table-warning")">
+                                        <td class="text-muted">@(i + 1)</td>
+                                        <td>
+                                            @if (string.IsNullOrWhiteSpace(name))
+                                            {
+                                                <span class="text-danger">
+                                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                                    Vide
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                @name
+                                            }
+                                        </td>
+                                        <td>@dateTime</td>
+                                        <td>
+                                            @if (isValidDate && !string.IsNullOrWhiteSpace(name))
+                                            {
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check"></i>
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning">
+                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                </span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Validation Summary -->
+                    <div class="mt-3">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="border rounded p-2">
+                                    <div class="h5 text-primary mb-1">@ExcelData.Rows.Count</div>
+                                    <small class="text-muted">Total</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="border rounded p-2">
+                                    <div class="h5 text-success mb-1">@validRowsCount</div>
+                                    <small class="text-muted">Valides</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="border rounded p-2">
+                                    <div class="h5 text-warning mb-1">@invalidRowsCount</div>
+                                    <small class="text-muted">Invalides</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-arrow-left fa-2x mb-3"></i>
+                        <p>Sélectionnez les colonnes pour voir l'aperçu</p>
+                    </div>
+                }
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between">
+            <button class="btn btn-outline-secondary btn-lg" @onclick="OnPrevious">
+                <i class="fas fa-arrow-left me-2"></i>
+                Précédent
+            </button>
+            <button class="btn btn-primary btn-lg" 
+                    @onclick="OnNext" 
+                    disabled="@(ColumnMapping.NameColumnIndex < 0 || ColumnMapping.DateTimeColumnIndex < 0)">
+                Suivant
+                <i class="fas fa-arrow-right ms-2"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public ExcelData ExcelData { get; set; } = new();
+    [Parameter] public ColumnMapping ColumnMapping { get; set; } = new();
+    [Parameter] public EventCallback<ColumnMapping> ColumnMappingChanged { get; set; }
+    [Parameter] public EventCallback OnNext { get; set; }
+    [Parameter] public EventCallback OnPrevious { get; set; }
+
+    private string? detectedFormat;
+    private int validRowsCount = 0;
+    private int invalidRowsCount = 0;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await UpdateValidationCounts();
+    }
+
+    private async Task OnNameColumnChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var columnIndex))
+        {
+            ColumnMapping.NameColumnIndex = columnIndex;
+            await ColumnMappingChanged.InvokeAsync(ColumnMapping);
+            await UpdateValidationCounts();
+        }
+    }
+
+    private async Task OnDateTimeColumnChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var columnIndex))
+        {
+            ColumnMapping.DateTimeColumnIndex = columnIndex;
+            await ColumnMappingChanged.InvokeAsync(ColumnMapping);
+            
+            // Auto-detect date format
+            if (columnIndex >= 0)
+            {
+                await DetectDateFormat();
+            }
+            
+            await UpdateValidationCounts();
+        }
+    }
+
+    private async Task OnDateFormatChanged(ChangeEventArgs e)
+    {
+        ColumnMapping.DateFormat = e.Value?.ToString() ?? SupportedDateFormats.Formats.First();
+        await ColumnMappingChanged.InvokeAsync(ColumnMapping);
+        await UpdateValidationCounts();
+    }
+
+    private async Task DetectDateFormat()
+    {
+        if (ColumnMapping.DateTimeColumnIndex >= 0 && ExcelData.Rows.Any())
+        {
+            var dateStrings = ExcelData.Rows
+                .Where(row => ColumnMapping.DateTimeColumnIndex < row.Count)
+                .Select(row => row[ColumnMapping.DateTimeColumnIndex])
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Take(10);
+
+            detectedFormat = ExcelReaderService.DetectDateFormat(dateStrings);
+            
+            if (!string.IsNullOrEmpty(detectedFormat))
+            {
+                ColumnMapping.DateFormat = detectedFormat;
+                await ColumnMappingChanged.InvokeAsync(ColumnMapping);
+            }
+        }
+    }
+
+    private async Task UpdateValidationCounts()
+    {
+        if (ColumnMapping.NameColumnIndex >= 0 && ColumnMapping.DateTimeColumnIndex >= 0)
+        {
+            validRowsCount = 0;
+            invalidRowsCount = 0;
+
+            foreach (var row in ExcelData.Rows)
+            {
+                var name = ColumnMapping.NameColumnIndex < row.Count ? row[ColumnMapping.NameColumnIndex] : "";
+                var dateTime = ColumnMapping.DateTimeColumnIndex < row.Count ? row[ColumnMapping.DateTimeColumnIndex] : "";
+                
+                var isValidName = !string.IsNullOrWhiteSpace(name);
+                var isValidDate = ExcelReaderService.TryParseDateTime(dateTime, ColumnMapping.DateFormat) != null;
+
+                if (isValidName && isValidDate)
+                {
+                    validRowsCount++;
+                }
+                else
+                {
+                    invalidRowsCount++;
+                }
+            }
+        }
+
+        StateHasChanged();
+    }
+}
+

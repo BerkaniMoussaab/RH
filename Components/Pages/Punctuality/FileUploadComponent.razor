@@ -1,0 +1,204 @@
+@using RH.Models.Attendance
+@using RH.Services.Interfaces
+@inject IExcelReaderService ExcelReaderService
+
+<div class="row">
+    <div class="col-12">
+        <h4 class="mb-4">
+            <i class="fas fa-file-excel me-2"></i>
+            Téléchargement du Fichier Excel
+        </h4>
+        <p class="text-muted mb-4">
+            Sélectionnez un fichier Excel (.xls ou .xlsx) contenant les données de présence des employés.
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <!-- File Upload Button -->
+                <div class="mb-3">
+                    <InputFile OnChange="HandleFileSelected"
+                               accept=".xls,.xlsx"
+                               class="form-control" />
+                    <small class="text-muted">Formats supportés: .xls, .xlsx (Max: 10MB)</small>
+                </div>
+
+                <!-- Selected File Info -->
+                @if (ExcelData != null)
+                {
+                    <div class="alert alert-success">
+                        <i class="fas fa-file-excel me-2"></i>
+                        <strong>@ExcelData.FileName</strong> chargé avec succès (@ExcelData.Rows.Count ligne(s) de données)
+                        <button class="btn btn-sm btn-outline-danger ms-3" @onclick="RemoveFile">
+                            <i class="fas fa-times"></i> Supprimer
+                        </button>
+                    </div>
+                }
+
+                <!-- File Preview -->
+                @if (ExcelData != null && showPreview)
+                {
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6><i class="fas fa-eye me-2"></i>Aperçu du fichier</h6>
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="TogglePreview">
+                                <i class="fas fa-eye-slash"></i> Masquer
+                            </button>
+                        </div>
+
+                        <div class="table-responsive" style="max-height: 400px;">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 60px;">#</th>
+                                        @foreach (var header in ExcelData.Headers)
+                                        {
+                                            <th>@header</th>
+                                        }
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @for (int i = 0; i < Math.Min(ExcelData.Rows.Count, 10); i++)
+                                    {
+                                        var row = ExcelData.Rows[i];
+                                        <tr>
+                                            <td class="text-muted">@(i + 1)</td>
+                                            @foreach (var cell in row)
+                                            {
+                                                <td>@cell</td>
+                                            }
+                                        </tr>
+                                    }
+                                    @if (ExcelData.Rows.Count > 10)
+                                    {
+                                        <tr>
+                                            <td colspan="@(ExcelData.Headers.Count + 1)" class="text-center text-muted">
+                                                ... et @(ExcelData.Rows.Count - 10) ligne(s) supplémentaire(s)
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+
+                <!-- Loading State -->
+                @if (isLoading)
+                {
+                    <div class="text-center mt-3">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Chargement...</span>
+                        </div>
+                        <p class="mt-2 text-muted">Lecture du fichier Excel...</p>
+                    </div>
+                }
+
+                <!-- Error Message -->
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger mt-3">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        @errorMessage
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between">
+            <button class="btn btn-outline-secondary btn-lg" @onclick="OnPrevious">
+                <i class="fas fa-arrow-left me-2"></i>
+                Précédent
+            </button>
+            <button class="btn btn-primary btn-lg"
+                    @onclick="OnNext"
+                    disabled="@(ExcelData == null)">
+                Suivant
+                <i class="fas fa-arrow-right ms-2"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public ExcelData? ExcelData { get; set; }
+    [Parameter] public EventCallback<ExcelData?> ExcelDataChanged { get; set; }
+    [Parameter] public EventCallback OnNext { get; set; }
+    [Parameter] public EventCallback OnPrevious { get; set; }
+
+    private bool isLoading = false;
+    private bool showPreview = true;
+    private string errorMessage = "";
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        await ProcessFile(e.File);
+    }
+
+    private async Task ProcessFile(IBrowserFile file)
+    {
+        try
+        {
+            errorMessage = "";
+            isLoading = true;
+            StateHasChanged();
+
+            // Validation
+            if (file.Size > 10 * 1024 * 1024) // 10MB
+            {
+                errorMessage = "Le fichier est trop volumineux. Taille maximale: 10MB.";
+                return;
+            }
+
+            var allowedExtensions = new[] { ".xls", ".xlsx" };
+            var fileExtension = Path.GetExtension(file.Name).ToLowerInvariant();
+
+            if (!allowedExtensions.Contains(fileExtension))
+            {
+                errorMessage = "Format de fichier non supporté. Utilisez .xls ou .xlsx.";
+                return;
+            }
+
+            // Read file
+            using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            ExcelData = await ExcelReaderService.ReadExcelFileAsync(stream, file.Name);
+
+            await ExcelDataChanged.InvokeAsync(ExcelData);
+            showPreview = true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors de la lecture du fichier: {ex.Message}";
+            ExcelData = null;
+            await ExcelDataChanged.InvokeAsync(ExcelData);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RemoveFile()
+    {
+        ExcelData = null;
+        await ExcelDataChanged.InvokeAsync(ExcelData);
+        errorMessage = "";
+        showPreview = true;
+        StateHasChanged();
+    }
+
+    private void TogglePreview()
+    {
+        showPreview = !showPreview;
+        StateHasChanged();
+    }
+}

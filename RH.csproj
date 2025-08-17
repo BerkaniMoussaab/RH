@@ -13,6 +13,7 @@
 		<PackageReference Include="Blazorise.Icons.FontAwesome" Version="1.8.0" />
 		<PackageReference Include="bootstrap" Version="5.3.7" />
 		<PackageReference Include="Chart.js" Version="3.7.1" />
+		<PackageReference Include="EPPlus" Version="8.0.8" />
 		<PackageReference Include="itext" Version="9.2.0" />
 		<PackageReference Include="itext7.bouncy-castle-adapter" Version="9.2.0" />
 		<PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.13" />
@@ -29,7 +30,12 @@
 		</PackageReference>
 		<PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.6" />
 		<PackageReference Include="Plotly.Blazor" Version="6.0.2" />
+		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
 		
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Configuration\" />
 	</ItemGroup>
 
 </Project>

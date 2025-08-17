@@ -1,0 +1,253 @@
+@using RH.Models.Attendance
+
+<div class="row">
+    <div class="col-12">
+        <h4 class="mb-4">
+            <i class="fas fa-sliders-h me-2"></i>
+            Configuration des Seuils de Ponctualité
+        </h4>
+        <p class="text-muted mb-4">
+            Définissez les heures limites pour déterminer les arrivées précoces (bonus) et les retards (déduction).
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-body">
+
+                <!-- Timeline Visualization -->
+                <div class="mb-5">
+                    <h6 class="mb-3">
+                        <i class="fas fa-timeline me-2"></i>
+                        Visualisation des Seuils
+                    </h6>
+                    <div class="timeline-container">
+                        <div class="timeline">
+                            <!-- Early Zone -->
+                            <div class="timeline-section early-zone">
+                                <div class="timeline-label">
+                                    <i class="fas fa-plus-circle text-success"></i>
+                                    <span>Zone Bonus</span>
+                                    <small>Avant @Thresholds.EarlyThreshold.ToString(@"hh\:mm")</small>
+                                </div>
+                            </div>
+
+                            <!-- On Time Zone -->
+                            <div class="timeline-section ontime-zone">
+                                <div class="timeline-label">
+                                    <i class="fas fa-check-circle text-primary"></i>
+                                    <span>À l'heure</span>
+                                    <small>@Thresholds.EarlyThreshold.ToString(@"hh\:mm") - @Thresholds.LateThreshold.ToString(@"hh\:mm")</small>
+                                </div>
+                            </div>
+
+                            <!-- Late Zone -->
+                            <div class="timeline-section late-zone">
+                                <div class="timeline-label">
+                                    <i class="fas fa-minus-circle text-danger"></i>
+                                    <span>Zone Déduction</span>
+                                    <small>Après @Thresholds.LateThreshold.ToString(@"hh\:mm")</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Threshold Configuration -->
+                <div class="row">
+
+                    <!-- Early Threshold -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-plus-circle me-2"></i>
+                                    Seuil Arrivée Précoce (Bonus)
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Heure limite pour le bonus :</label>
+                                    <input type="time"
+                                           class="form-control form-control-lg"
+                                           value="@earlyTimeString"
+                                           @onchange="OnEarlyTimeChanged" />
+                                    <div class="form-text">
+                                        Les employés arrivant avant cette heure recevront un bonus.
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-success">
+                                    <small>
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        <strong>Exemple :</strong> Si défini à 08:00, tous les employés arrivant avant 08:00 recevront le bonus.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Late Threshold -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card border-danger">
+                            <div class="card-header bg-danger text-white">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-minus-circle me-2"></i>
+                                    Seuil Retard (Déduction)
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Heure limite avant déduction :</label>
+                                    <input type="time"
+                                           class="form-control form-control-lg"
+                                           value="@lateTimeString"
+                                           @onchange="OnLateTimeChanged" />
+                                    <div class="form-text">
+                                        Les employés arrivant après cette heure subiront une déduction.
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-danger">
+                                    <small>
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        <strong>Exemple :</strong> Si défini à 08:30, tous les employés arrivant après 08:30 subiront une déduction.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Validation -->
+                @if (!string.IsNullOrEmpty(validationMessage))
+                {
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        @validationMessage
+                    </div>
+                }
+
+                <!-- Quick Presets -->
+                <div class="mb-4">
+                    <h6 class="mb-3">
+                        <i class="fas fa-magic me-2"></i>
+                        Configurations Prédéfinies
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-4 mb-2">
+                            <button class="btn btn-outline-primary w-100" @onclick="() => SetPreset(TimeSpan.FromHours(7.5), TimeSpan.FromHours(8.5))">
+                                <div class="fw-bold">Standard</div>
+                                <small>Bonus: 07:30 | Retard: 08:30</small>
+                            </button>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <button class="btn btn-outline-primary w-100" @onclick="() => SetPreset(TimeSpan.FromHours(8), TimeSpan.FromHours(8.25))">
+                                <div class="fw-bold">Strict</div>
+                                <small>Bonus: 08:00 | Retard: 08:15</small>
+                            </button>
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <button class="btn btn-outline-primary w-100" @onclick="() => SetPreset(TimeSpan.FromHours(7), TimeSpan.FromHours(9))">
+                                <div class="fw-bold">Flexible</div>
+                                <small>Bonus: 07:00 | Retard: 09:00</small>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between">
+            <button class="btn btn-outline-secondary btn-lg" @onclick="OnPrevious">
+                <i class="fas fa-arrow-left me-2"></i>
+                Précédent
+            </button>
+            <button class="btn btn-success btn-lg"
+                    @onclick="OnNext"
+                    disabled="@(!IsValid)">
+                <i class="fas fa-play me-2"></i>
+                Traiter les Données
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public PunctualityThresholds Thresholds { get; set; } = new();
+    [Parameter] public EventCallback<PunctualityThresholds> ThresholdsChanged { get; set; }
+    [Parameter] public EventCallback OnNext { get; set; }
+    [Parameter] public EventCallback OnPrevious { get; set; }
+
+    private string earlyTimeString = "08:00";
+    private string lateTimeString = "08:30";
+    private string validationMessage = "";
+
+    protected override void OnInitialized()
+    {
+        earlyTimeString = Thresholds.EarlyThreshold.ToString(@"hh\:mm");
+        lateTimeString = Thresholds.LateThreshold.ToString(@"hh\:mm");
+    }
+
+    private async Task OnEarlyTimeChanged(ChangeEventArgs e)
+    {
+        earlyTimeString = e.Value?.ToString() ?? "08:00";
+        if (TimeSpan.TryParse(earlyTimeString, out var earlyTime))
+        {
+            Thresholds.EarlyThreshold = earlyTime;
+            await ThresholdsChanged.InvokeAsync(Thresholds);
+            ValidateThresholds();
+        }
+    }
+
+    private async Task OnLateTimeChanged(ChangeEventArgs e)
+    {
+        lateTimeString = e.Value?.ToString() ?? "08:30";
+        if (TimeSpan.TryParse(lateTimeString, out var lateTime))
+        {
+            Thresholds.LateThreshold = lateTime;
+            await ThresholdsChanged.InvokeAsync(Thresholds);
+            ValidateThresholds();
+        }
+    }
+
+    private async Task SetPreset(TimeSpan earlyThreshold, TimeSpan lateThreshold)
+    {
+        Thresholds.EarlyThreshold = earlyThreshold;
+        Thresholds.LateThreshold = lateThreshold;
+
+        earlyTimeString = earlyThreshold.ToString(@"hh\:mm");
+        lateTimeString = lateThreshold.ToString(@"hh\:mm");
+
+        await ThresholdsChanged.InvokeAsync(Thresholds);
+        ValidateThresholds();
+        StateHasChanged();
+    }
+
+    private void ValidateThresholds()
+    {
+        validationMessage = "";
+
+        if (Thresholds.EarlyThreshold >= Thresholds.LateThreshold)
+        {
+            validationMessage = "L'heure limite pour le bonus doit être antérieure à l'heure limite pour la déduction.";
+        }
+        else if (Thresholds.LateThreshold - Thresholds.EarlyThreshold < TimeSpan.FromMinutes(15))
+        {
+            validationMessage = "Il devrait y avoir au moins 15 minutes entre les deux seuils pour une zone 'à l'heure'.";
+        }
+    }
+
+    private bool IsValid =>
+        string.IsNullOrEmpty(validationMessage) &&
+        Thresholds.EarlyThreshold < Thresholds.LateThreshold;
+}

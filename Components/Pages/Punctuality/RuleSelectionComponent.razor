@@ -1,0 +1,191 @@
+@using RH.Models
+@using RH.Services.Interfaces
+@inject IPayrollAdjustmentRuleService PayrollRuleService
+
+<div class="row">
+    <div class="col-12">
+        <h4 class="mb-4">
+            <i class="fas fa-cogs me-2"></i>
+            Configuration des Règles de Ponctualité
+        </h4>
+        <p class="text-muted mb-4">
+            Sélectionnez une règle de bonus pour les arrivées précoces et une règle de déduction pour les retards.
+        </p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Règle de Bonus -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100 @(BonusRule != null ? "border-success" : "")">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Règle de Bonus (Arrivée Précoce)
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (bonusRules.Any())
+                {
+                    <div class="mb-3">
+                        <label class="form-label">Sélectionner une règle de bonus :</label>
+                        <select class="form-select @(BonusRule != null ? "is-valid" : "")" 
+                                @onchange="OnBonusRuleChanged">
+                            <option value="">-- Choisir une règle --</option>
+                            @foreach (var rule in bonusRules)
+                            {
+                                <option value="@rule.Id" selected="@(BonusRule?.Id == rule.Id)">
+                                    @rule.Name (@(rule.IsPercentage ? $"{rule.Amount}%" : $"{rule.Amount:C}"))
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    @if (BonusRule != null)
+                    {
+                        <div class="alert alert-success">
+                            <h6><i class="fas fa-info-circle me-2"></i>Détails de la règle :</h6>
+                            <ul class="mb-0">
+                                <li><strong>Nom :</strong> @BonusRule.Name</li>
+                                <li><strong>Montant :</strong> @(BonusRule.IsPercentage ? $"{BonusRule.Amount}% du salaire" : $"{BonusRule.Amount:C}")</li>
+                                <li><strong>Comptable :</strong> @(BonusRule.IsCountable ? "Oui (multiplié par le nombre d'occurrences)" : "Non (montant fixe)")</li>
+                            </ul>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Aucune règle de bonus disponible. Veuillez créer une règle de type "Bonus" d'abord.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Règle de Déduction -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100 @(DeductionRule != null ? "border-danger" : "")">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-minus-circle me-2"></i>
+                    Règle de Déduction (Retard)
+                </h5>
+            </div>
+            <div class="card-body">
+                @if (deductionRules.Any())
+                {
+                    <div class="mb-3">
+                        <label class="form-label">Sélectionner une règle de déduction :</label>
+                        <select class="form-select @(DeductionRule != null ? "is-valid" : "")" 
+                                @onchange="OnDeductionRuleChanged">
+                            <option value="">-- Choisir une règle --</option>
+                            @foreach (var rule in deductionRules)
+                            {
+                                <option value="@rule.Id" selected="@(DeductionRule?.Id == rule.Id)">
+                                    @rule.Name (@(rule.IsPercentage ? $"{rule.Amount}%" : $"{rule.Amount:C}"))
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    @if (DeductionRule != null)
+                    {
+                        <div class="alert alert-danger">
+                            <h6><i class="fas fa-info-circle me-2"></i>Détails de la règle :</h6>
+                            <ul class="mb-0">
+                                <li><strong>Nom :</strong> @DeductionRule.Name</li>
+                                <li><strong>Montant :</strong> @(DeductionRule.IsPercentage ? $"{DeductionRule.Amount}% du salaire" : $"{DeductionRule.Amount:C}")</li>
+                                <li><strong>Comptable :</strong> @(DeductionRule.IsCountable ? "Oui (multiplié par le nombre d'occurrences)" : "Non (montant fixe)")</li>
+                            </ul>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Aucune règle de déduction disponible. Veuillez créer une règle de type "Deduction" d'abord.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation -->
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-end">
+            <button class="btn btn-primary btn-lg" 
+                    @onclick="OnNext" 
+                    disabled="@(BonusRule == null || DeductionRule == null)">
+                Suivant
+                <i class="fas fa-arrow-right ms-2"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public PayrollAdjustmentRule? BonusRule { get; set; }
+    [Parameter] public EventCallback<PayrollAdjustmentRule?> BonusRuleChanged { get; set; }
+    
+    [Parameter] public PayrollAdjustmentRule? DeductionRule { get; set; }
+    [Parameter] public EventCallback<PayrollAdjustmentRule?> DeductionRuleChanged { get; set; }
+    
+    [Parameter] public EventCallback OnNext { get; set; }
+
+    private List<PayrollAdjustmentRule> bonusRules = new();
+    private List<PayrollAdjustmentRule> deductionRules = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadRules();
+    }
+
+    private async Task LoadRules()
+    {
+        try
+        {
+            var allRules = await PayrollRuleService.GetAllAsync();
+            bonusRules = allRules.Where(r => r.Type == AdjustmentType.Bonus).ToList();
+            deductionRules = allRules.Where(r => r.Type == AdjustmentType.Deduction).ToList();
+        }
+        catch (Exception ex)
+        {
+            // Log error or show message
+            Console.WriteLine($"Erreur lors du chargement des règles: {ex.Message}");
+        }
+    }
+
+    private async Task OnBonusRuleChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var ruleId) && ruleId > 0)
+        {
+            BonusRule = bonusRules.FirstOrDefault(r => r.Id == ruleId);
+        }
+        else
+        {
+            BonusRule = null;
+        }
+        
+        await BonusRuleChanged.InvokeAsync(BonusRule);
+    }
+
+    private async Task OnDeductionRuleChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var ruleId) && ruleId > 0)
+        {
+            DeductionRule = deductionRules.FirstOrDefault(r => r.Id == ruleId);
+        }
+        else
+        {
+            DeductionRule = null;
+        }
+        
+        await DeductionRuleChanged.InvokeAsync(DeductionRule);
+    }
+}
+

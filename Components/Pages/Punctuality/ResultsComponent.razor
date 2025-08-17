@@ -1,0 +1,405 @@
+@using RH.Models
+@using RH.Models.Attendance
+@using RH.Services.Interfaces
+@inject IAttendanceProcessingService AttendanceProcessingService
+@inject IJSRuntime JSRuntime
+
+<div class="row">
+    <div class="col-12">
+        <h4 class="mb-4">
+            <i class="fas fa-chart-line me-2"></i>
+            Résultats du Traitement
+        </h4>
+        <p class="text-muted mb-4">
+            Vérifiez les résultats et désélectionnez les employés pour lesquels vous ne souhaitez pas appliquer les règles.
+        </p>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-users fa-2x mb-2"></i>
+                <h4 class="mb-1">@ProcessingResult.EmployeeResults.Count</h4>
+                <small>Employés Traités</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-check-circle fa-2x mb-2"></i>
+                <h4 class="mb-1">@ProcessingResult.EmployeeResults.Count(r => r.HasMatchingEmployee)</h4>
+                <small>Employés Trouvés</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-plus-circle fa-2x mb-2"></i>
+                <h4 class="mb-1">@ProcessingResult.EmployeeResults.Sum(r => r.EarlyArrivals)</h4>
+                <small>Arrivées Précoces</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-minus-circle fa-2x mb-2"></i>
+                <h4 class="mb-1">@ProcessingResult.EmployeeResults.Sum(r => r.LateArrivals)</h4>
+                <small>Retards</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Results Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-table me-2"></i>
+                    Détails par Employé
+                </h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-primary me-2" @onclick="SelectAll">
+                        <i class="fas fa-check-square me-1"></i>
+                        Tout Sélectionner
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="DeselectAll">
+                        <i class="fas fa-square me-1"></i>
+                        Tout Désélectionner
+                    </button>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th style="width: 50px;">
+                                    <input type="checkbox" 
+                                           class="form-check-input" 
+                                           @onchange="ToggleSelectAll" 
+                                           checked="@allSelected" />
+                                </th>
+                                <th>Employé</th>
+                                <th style="width: 100px;">Statut</th>
+                                <th style="width: 120px;">Arrivées Précoces</th>
+                                <th style="width: 120px;">Retards</th>
+                                <th style="width: 120px;">Bonus</th>
+                                <th style="width: 120px;">Déduction</th>
+                                <th style="width: 100px;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var result in ProcessingResult.EmployeeResults)
+                            {
+                                <tr class="@(result.IsSelected ? "" : "table-secondary")">
+                                    <td>
+                                        <input type="checkbox" 
+                                               class="form-check-input" 
+                                               @bind="result.IsSelected" 
+                                               disabled="@(!result.HasMatchingEmployee)" />
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            @if (result.HasMatchingEmployee)
+                                            {
+                                                <i class="fas fa-user text-success me-2"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-user-times text-danger me-2"></i>
+                                            }
+                                            <div>
+                                                <div class="fw-bold">@result.EmployeeName</div>
+                                                @if (!result.HasMatchingEmployee)
+                                                {
+                                                    <small class="text-danger">@result.ValidationMessage</small>
+                                                }
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if (result.HasMatchingEmployee)
+                                        {
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-check"></i> Trouvé
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-times"></i> Non trouvé
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (result.EarlyArrivals > 0)
+                                        {
+                                            <span class="badge bg-success fs-6">@result.EarlyArrivals</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">0</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (result.LateArrivals > 0)
+                                        {
+                                            <span class="badge bg-warning fs-6">@result.LateArrivals</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">0</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (result.BonusAmount > 0)
+                                        {
+                                            <span class="text-success fw-bold">@result.BonusAmount.ToString("C")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (result.DeductionAmount > 0)
+                                        {
+                                            <span class="text-danger fw-bold">@result.DeductionAmount.ToString("C")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info" 
+                                                @onclick="() => ShowDetails(result)"
+                                                title="Voir les détails">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invalid Records -->
+@if (ProcessingResult.InvalidRecords.Any())
+{
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Enregistrements Invalides (@ProcessingResult.InvalidRecords.Count)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        Les enregistrements suivants n'ont pas pu être traités en raison d'erreurs de format ou de données manquantes.
+                    </p>
+                    
+                    <div class="table-responsive" style="max-height: 300px;">
+                        <table class="table table-sm table-striped">
+                            <thead class="table-warning">
+                                <tr>
+                                    <th>Ligne</th>
+                                    <th>Nom Employé</th>
+                                    <th>Date/Heure Originale</th>
+                                    <th>Erreur</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var record in ProcessingResult.InvalidRecords.Take(10))
+                                {
+                                    <tr>
+                                        <td>@record.RowNumber</td>
+                                        <td>@record.EmployeeName</td>
+                                        <td>@record.OriginalDateTimeString</td>
+                                        <td class="text-danger">@record.ValidationError</td>
+                                    </tr>
+                                }
+                                @if (ProcessingResult.InvalidRecords.Count > 10)
+                                {
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted">
+                                            ... et @(ProcessingResult.InvalidRecords.Count - 10) enregistrement(s) supplémentaire(s)
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <button class="btn btn-outline-warning" @onclick="DownloadInvalidRecords">
+                            <i class="fas fa-download me-2"></i>
+                            Télécharger CSV des Erreurs
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Summary -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6 class="mb-3">
+                    <i class="fas fa-calculator me-2"></i>
+                    Résumé des Règles à Appliquer
+                </h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between">
+                            <span>Employés sélectionnés :</span>
+                            <strong>@selectedEmployeesCount</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Total bonus :</span>
+                            <strong class="text-success">@totalBonusAmount.ToString("C")</strong>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between">
+                            <span>Total déductions :</span>
+                            <strong class="text-danger">@totalDeductionAmount.ToString("C")</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Impact net :</span>
+                            <strong class="@(netImpact >= 0 ? "text-success" : "text-danger")">
+                                @netImpact.ToString("C")
+                            </strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between">
+            <div>
+                <button class="btn btn-outline-secondary btn-lg me-2" @onclick="OnPrevious">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Précédent
+                </button>
+                <button class="btn btn-outline-danger btn-lg" @onclick="OnReset">
+                    <i class="fas fa-redo me-2"></i>
+                    Recommencer
+                </button>
+            </div>
+            <button class="btn btn-success btn-lg" 
+                    @onclick="OnSave" 
+                    disabled="@(selectedEmployeesCount == 0)">
+                <i class="fas fa-save me-2"></i>
+                Sauvegarder (@selectedEmployeesCount règle(s))
+            </button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public AttendanceProcessingResult ProcessingResult { get; set; } = new();
+    [Parameter] public PayrollAdjustmentRule BonusRule { get; set; } = new();
+    [Parameter] public PayrollAdjustmentRule DeductionRule { get; set; } = new();
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnPrevious { get; set; }
+    [Parameter] public EventCallback OnReset { get; set; }
+
+    private bool allSelected = false;
+    private int selectedEmployeesCount = 0;
+    private decimal totalBonusAmount = 0;
+    private decimal totalDeductionAmount = 0;
+    private decimal netImpact = 0;
+
+    protected override void OnParametersSet()
+    {
+        UpdateSummary();
+    }
+
+    private void UpdateSummary()
+    {
+        var selectedResults = ProcessingResult.EmployeeResults.Where(r => r.IsSelected && r.HasMatchingEmployee);
+        
+        selectedEmployeesCount = selectedResults.Count();
+        totalBonusAmount = selectedResults.Sum(r => r.BonusAmount);
+        totalDeductionAmount = selectedResults.Sum(r => r.DeductionAmount);
+        netImpact = totalBonusAmount - totalDeductionAmount;
+        
+        allSelected = ProcessingResult.EmployeeResults.Where(r => r.HasMatchingEmployee).All(r => r.IsSelected);
+        
+        StateHasChanged();
+    }
+
+    private void SelectAll()
+    {
+        foreach (var result in ProcessingResult.EmployeeResults.Where(r => r.HasMatchingEmployee))
+        {
+            result.IsSelected = true;
+        }
+        UpdateSummary();
+    }
+
+    private void DeselectAll()
+    {
+        foreach (var result in ProcessingResult.EmployeeResults)
+        {
+            result.IsSelected = false;
+        }
+        UpdateSummary();
+    }
+
+    private void ToggleSelectAll(ChangeEventArgs e)
+    {
+        var isChecked = (bool)(e.Value ?? false);
+        
+        foreach (var result in ProcessingResult.EmployeeResults.Where(r => r.HasMatchingEmployee))
+        {
+            result.IsSelected = isChecked;
+        }
+        
+        UpdateSummary();
+    }
+
+    private void ShowDetails(EmployeeAttendanceResult result)
+    {
+        // Ici, vous pourriez ouvrir un modal avec les détails des enregistrements
+        // Pour l'instant, on affiche juste une alerte
+        var details = $"Employé: {result.EmployeeName}\n" +
+                     $"Enregistrements: {result.Records.Count}\n" +
+                     $"Arrivées précoces: {result.EarlyArrivals}\n" +
+                     $"Retards: {result.LateArrivals}";
+        
+        JSRuntime.InvokeVoidAsync("alert", details);
+    }
+
+    private async Task DownloadInvalidRecords()
+    {
+        var csvContent = AttendanceProcessingService.GenerateInvalidRecordsCsv(ProcessingResult.InvalidRecords);
+        var fileName = $"enregistrements_invalides_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+        
+        await JSRuntime.InvokeVoidAsync("downloadFile", fileName, csvContent, "text/csv");
+    }
+}
+

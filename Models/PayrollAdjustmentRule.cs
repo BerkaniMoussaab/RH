@@ -21,18 +21,12 @@ public class PayrollAdjustmentRule
 
     public bool IsEditable { get; set; }
 
-    public RuleTrigger Trigger { get; set; } = RuleTrigger.Manual;
-
+   
     public bool AutoApplied { get; set; }
 
     public ICollection<JobTitle> JobTitles { get; set; } = new List<JobTitle>();
 }
-public enum RuleTrigger
-{
-    Manual,             // Default
-    WorkedDayOffBonus,  // Bonus triggered by worked day off
-    // Add other triggers as needed
-}
+
 public enum AdjustmentType
 {
     Bonus,

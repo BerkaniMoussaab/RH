@@ -1,0 +1,277 @@
+@page "/punctuality-management"
+@using RH.Models
+@using RH.Models.Attendance
+@using RH.Services.Interfaces
+@inject IPayrollAdjustmentRuleService PayrollRuleService
+@inject IExcelReaderService ExcelReaderService
+@inject IAttendanceProcessingService AttendanceProcessingService
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Gestion de la Ponctualité</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-clock me-2"></i>
+                        Gestion des Bonus et Déductions de Ponctualité
+                    </h3>
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Stepper Navigation -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="stepper-wrapper">
+                                <div class="stepper-item @(currentStep >= 1 ? "completed" : "") @(currentStep == 1 ? "active" : "")">
+                                    <div class="step-counter">1</div>
+                                    <div class="step-name">Configuration</div>
+                                </div>
+                                <div class="stepper-item @(currentStep >= 2 ? "completed" : "") @(currentStep == 2 ? "active" : "")">
+                                    <div class="step-counter">2</div>
+                                    <div class="step-name">Upload Excel</div>
+                                </div>
+                                <div class="stepper-item @(currentStep >= 3 ? "completed" : "") @(currentStep == 3 ? "active" : "")">
+                                    <div class="step-counter">3</div>
+                                    <div class="step-name">Colonnes</div>
+                                </div>
+                                <div class="stepper-item @(currentStep >= 4 ? "completed" : "") @(currentStep == 4 ? "active" : "")">
+                                    <div class="step-counter">4</div>
+                                    <div class="step-name">Seuils</div>
+                                </div>
+                                <div class="stepper-item @(currentStep >= 5 ? "completed" : "") @(currentStep == 5 ? "active" : "")">
+                                    <div class="step-counter">5</div>
+                                    <div class="step-name">Résultats</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step Content -->
+                    @if (currentStep == 1)
+                    {
+                        <RuleSelectionComponent @bind-BonusRule="selectedBonusRule" 
+                                              @bind-DeductionRule="selectedDeductionRule"
+                                              OnNext="() => NextStep()" />
+                    }
+                    else if (currentStep == 2)
+                    {
+                        <FileUploadComponent @bind-ExcelData="excelData"
+                                           OnNext="() => NextStep()"
+                                           OnPrevious="() => PreviousStep()" />
+                    }
+                    else if (currentStep == 3)
+                    {
+                        <ColumnSelectorComponent ExcelData="excelData"
+                                               @bind-ColumnMapping="columnMapping"
+                                               OnNext="() => NextStep()"
+                                               OnPrevious="() => PreviousStep()" />
+                    }
+                    else if (currentStep == 4)
+                    {
+                        <ThresholdConfigComponent @bind-Thresholds="thresholds"
+                                                OnNext="() => ProcessAttendance()"
+                                                OnPrevious="() => PreviousStep()" />
+                    }
+                    else if (currentStep == 5)
+                    {
+                        <ResultsComponent ProcessingResult="processingResult"
+                                        BonusRule="selectedBonusRule"
+                                        DeductionRule="selectedDeductionRule"
+                                        OnSave="() => SaveResults()"
+                                        OnPrevious="() => PreviousStep()"
+                                        OnReset="() => ResetProcess()" />
+                    }
+
+                    <!-- Loading Overlay -->
+                    @if (isLoading)
+                    {
+                        <div class="loading-overlay">
+                            <div class="loading-spinner">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Chargement...</span>
+                                </div>
+                                <p class="mt-2">@loadingMessage</p>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Error Messages -->
+                    @if (!string.IsNullOrEmpty(errorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            @errorMessage
+                            <button type="button" class="btn-close" @onclick="() => errorMessage = string.Empty"></button>
+                        </div>
+                    }
+
+                    <!-- Success Messages -->
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>
+                            @successMessage
+                            <button type="button" class="btn-close" @onclick="() => successMessage = string.Empty"></button>
+                        </div>
+                    }
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int currentStep = 1;
+    private bool isLoading = false;
+    private string loadingMessage = "";
+    private string errorMessage = "";
+    private string successMessage = "";
+
+    // Data models
+    private PayrollAdjustmentRule? selectedBonusRule;
+    private PayrollAdjustmentRule? selectedDeductionRule;
+    private ExcelData? excelData;
+    private ColumnMapping columnMapping = new();
+    private PunctualityThresholds thresholds = new();
+    private AttendanceProcessingResult? processingResult;
+
+    private void NextStep()
+    {
+        if (ValidateCurrentStep())
+        {
+            currentStep++;
+            StateHasChanged();
+        }
+    }
+
+    private void PreviousStep()
+    {
+        if (currentStep > 1)
+        {
+            currentStep--;
+            StateHasChanged();
+        }
+    }
+
+    private bool ValidateCurrentStep()
+    {
+        errorMessage = "";
+
+        switch (currentStep)
+        {
+            case 1:
+                if (selectedBonusRule == null || selectedDeductionRule == null)
+                {
+                    errorMessage = "Veuillez sélectionner une règle de bonus et une règle de déduction.";
+                    return false;
+                }
+                break;
+            case 2:
+                if (excelData == null || !excelData.Rows.Any())
+                {
+                    errorMessage = "Veuillez charger un fichier Excel valide.";
+                    return false;
+                }
+                break;
+            case 3:
+                if (columnMapping.NameColumnIndex < 0 || columnMapping.DateTimeColumnIndex < 0)
+                {
+                    errorMessage = "Veuillez sélectionner les colonnes nom et date/heure.";
+                    return false;
+                }
+                break;
+        }
+
+        return true;
+    }
+
+    private async Task ProcessAttendance()
+    {
+        if (!ValidateCurrentStep())
+            return;
+
+        try
+        {
+            isLoading = true;
+            loadingMessage = "Traitement des données de présence...";
+            StateHasChanged();
+
+            // Convertir les données Excel en enregistrements d'attendance
+            var attendanceRecords = await ExcelReaderService.ConvertToAttendanceRecordsAsync(excelData!, columnMapping);
+
+            // Configurer les seuils avec les IDs des règles
+            thresholds.BonusRuleId = selectedBonusRule!.Id;
+            thresholds.DeductionRuleId = selectedDeductionRule!.Id;
+
+            // Traiter les données
+            processingResult = await AttendanceProcessingService.ProcessAttendanceAsync(
+                attendanceRecords, thresholds, selectedBonusRule!, selectedDeductionRule!);
+
+            currentStep = 5;
+            successMessage = $"Traitement terminé. {processingResult.EmployeeResults.Count} employé(s) traité(s).";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors du traitement: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task SaveResults()
+    {
+        if (processingResult == null)
+            return;
+
+        try
+        {
+            isLoading = true;
+            loadingMessage = "Sauvegarde des résultats...";
+            StateHasChanged();
+
+            var selectedResults = processingResult.EmployeeResults.Where(r => r.IsSelected).ToList();
+            var appliedRules = await AttendanceProcessingService.CreateAppliedRulesAsync(
+                selectedResults, selectedBonusRule!, selectedDeductionRule!);
+
+            // Ici, vous devriez appeler un service pour sauvegarder les règles appliquées
+            // Par exemple: await PayrollService.ApplyRulesAsync(appliedRules);
+
+            successMessage = $"{appliedRules.Count} règle(s) appliquée(s) avec succès.";
+            
+            // Optionnel: Rediriger vers une autre page ou réinitialiser
+            await Task.Delay(2000);
+            ResetProcess();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors de la sauvegarde: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ResetProcess()
+    {
+        currentStep = 1;
+        selectedBonusRule = null;
+        selectedDeductionRule = null;
+        excelData = null;
+        columnMapping = new();
+        thresholds = new();
+        processingResult = null;
+        errorMessage = "";
+        successMessage = "";
+        StateHasChanged();
+    }
+}
+

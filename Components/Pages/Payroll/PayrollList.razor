@@ -1477,8 +1477,8 @@ else
         Employees = await EmployeeService.GetAllAsync();
         AllAdjustmentRules = await AdjustmentService.GetAllAsync();
 
-        var company =  CompanyService.GetAsync(); // fetch company first
-        workDaysPerMonth = company.WorKdaysInMonth;            // then access property safely
+        var company = await CompanyService.GetAsync(); // fetch company first
+        workDaysPerMonth =  company.WorKdaysInMonth;            // then access property safely
 
         if (CurrentPayroll.ManualAbsenceDays != 0)
         {
@@ -1831,10 +1831,7 @@ else
         var jobTitleId = Employees.FirstOrDefault(e => e.Id == CurrentPayroll.EmployeeId)?.JobTitleId;
         if (jobTitleId == null) return;
 
-        // Get eligible rules
-        var triggeredRules = AllAdjustmentRules
-            .Where(r => r.Type == AdjustmentType.Bonus && r.Trigger == RuleTrigger.WorkedDayOffBonus && r.JobTitles.Any(j => j.Id == jobTitleId))
-            .ToList();
+       
 
         var workedDayOffCount = await WorkedDaysOffService.GetWorkedDayOffCountAsync(
             CurrentPayroll.EmployeeId,
@@ -1842,26 +1839,7 @@ else
             CurrentPayroll.PayrollEndDate.Value
         );
 
-        foreach (var rule in triggeredRules)
-        {
-            var existing = SelectedBonusRules.FirstOrDefault(r2 => r2.RuleId == rule.Id);
-            if (existing != null)
-            {
-                existing.IsApplied = true;
-                existing.Quantity = workedDayOffCount;
-                OnCountableQuantityChanged(existing, workedDayOffCount);
-            }
-            else
-            {
-                var newRule = new SelectableRule(rule, workDaysPerMonth, isApplied: true)
-                    {
-                        Quantity = workedDayOffCount
-                    };
-                OnCountableQuantityChanged(newRule, workedDayOffCount);
-                SelectedBonusRules.Add(newRule);
-            }
-        }
-    }
+           }
 
     public class SelectableRule
     {
@@ -1877,7 +1855,7 @@ else
         public int WorkDays { get; set; }
         private DateTime? SelectedStartDate { get; set; }
         private DateTime? SelectedEndDate { get; set; }
-        public RuleTrigger Trigger { get; set; } = RuleTrigger.Manual;
+     
         public bool AutoApplied { get; set; }
         public string note { get; set; }
         public DateTime? Date { get; set; }
@@ -1897,7 +1875,7 @@ else
             IsApplied = true;
             IsEditable = appliedRule.Rule.IsEditable;
             Quantity = appliedRule.Quantity ?? 1;
-            Trigger = appliedRule.Rule.Trigger;
+            
             WorkDays = workDaysPerMonth;
             note = appliedRule.Notes;
             Date = appliedRule.Date;
@@ -1926,7 +1904,7 @@ else
             IsApplied = isApplied;
             Quantity = 1;
             WorkDays = workDaysPerMonth;
-            Trigger = rule.Trigger;
+           
             AutoApplied = rule.AutoApplied;
             
 

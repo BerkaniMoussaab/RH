@@ -13,7 +13,8 @@ namespace RH.Services
             _context = context;
         }
 
-        public CompanyInfo GetAsync()
+        public async Task<CompanyInfo> GetAsync()
+
         {
             var existing =  _context.CompanyInfos.FirstOrDefault();
             if (existing != null)

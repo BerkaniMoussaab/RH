@@ -1,0 +1,37 @@
+﻿@page "/test-upload"
+@using Microsoft.AspNetCore.Components.Forms
+
+<h3>Test File Upload</h3>
+
+<InputFile OnChange="OnFileChange" />
+
+@if (!string.IsNullOrEmpty(Message))
+{
+    <p>@Message</p>
+}
+
+@code {
+    private string Message = string.Empty;
+
+    private async Task OnFileChange(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            var file = e.File;
+            var savePath = Path.Combine("C:\\Temp", Path.GetFileName(file.Name));
+
+            Directory.CreateDirectory(Path.GetDirectoryName(savePath)!);
+
+            await using var readStream = file.OpenReadStream(maxAllowedSize: 50 * 1024 * 1024);
+            await using var writeStream = File.Create(savePath);
+
+            await readStream.CopyToAsync(writeStream);
+
+            Message = $"File saved to {savePath}";
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error: {ex.Message}";
+        }
+    }
+}
