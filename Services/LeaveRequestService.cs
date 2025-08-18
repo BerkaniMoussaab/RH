@@ -102,7 +102,7 @@ namespace RH.Services
             // 4. Calculate total remaining days
             float total = employee.InitialRemainingDays.Value + earnedDays - usedDays;
 
-            return Math.Max(total, 0);
+            return total;
         }
 
 

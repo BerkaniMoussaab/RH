@@ -389,13 +389,13 @@
         }
 
 
-        if (LeaveRequest.IsPaid && RemainingDays.HasValue)
-        {
-            if (requestedDays > RemainingDays.Value)
-            {
-                return (false, $"Congé payé demandé ({requestedDays:0.0} jours) dépasse le solde restant ({RemainingDays.Value:0.0} jours)");
-            }
-        }
+        // if (LeaveRequest.IsPaid && RemainingDays.HasValue)
+        // {
+        //     if (requestedDays > RemainingDays.Value)
+        //     {
+        //         return (false, $"Congé payé demandé ({requestedDays:0.0} jours) dépasse le solde restant ({RemainingDays.Value:0.0} jours)");
+        //     }
+        // }
 
         return (true, null);
     }
