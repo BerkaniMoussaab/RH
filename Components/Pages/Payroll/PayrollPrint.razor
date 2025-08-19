@@ -10,6 +10,7 @@
     [Parameter] public int? ManualAbsences { get; set; }
     [Parameter] public int? Transaction { get; set; }
     [Parameter] public int? Cash { get; set; }
+    [Parameter] public PayrollService.AdvanceDeductionSummary AdvanceSummary { get; set; }
     private CompanyInfo? Company;
     protected override async Task OnInitializedAsync()
     {

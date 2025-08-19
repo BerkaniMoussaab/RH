@@ -64,5 +64,16 @@
             using var context = _contextFactory.CreateDbContext();
             return await context.JobTitles.CountAsync();
         }
+        public async Task<(Stream FileStream, string FileName, string ContentType)> GetContractFileAsync(int employeeId)
+        {
+            using var context = _contextFactory.CreateDbContext();
+            var employee = await context.Employees.FindAsync(employeeId);
+            if (employee?.ContractFile == null)
+                return (null, null, null);
+
+            var stream = new MemoryStream(employee.ContractFile);
+            return (stream, $"contract_{employeeId}.pdf", "application/pdf");
+        }
+
     }
 }

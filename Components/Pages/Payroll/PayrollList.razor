@@ -15,6 +15,37 @@
 @attribute [Authorize]
 
 <PageTitle>Fiches de paie</PageTitle>
+<div class="bg-light p-3 mb-4 rounded shadow-sm">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label for="startDate" class="form-label fw-semibold">Date début</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-calendar-date"></i></span>
+                <input id="startDate" class="form-control" type="date" @bind="FilterStartDate" />
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <label for="endDate" class="form-label fw-semibold">Date fin</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
+                <input id="endDate" class="form-control" type="date" @bind="FilterEndDate" />
+            </div>
+        </div>
+
+        <div class="col-md-3 d-grid">
+            <button class="btn btn-primary" @onclick="ApplyFilter">
+                <i class="bi bi-funnel-fill me-1"></i> Appliquer le filtre
+            </button>
+        </div>
+
+        <div class="col-md-3 d-grid">
+            <button class="btn btn-outline-secondary" @onclick="ClearFilter">
+                <i class="bi bi-x-circle me-1"></i> Réinitialiser
+            </button>
+        </div>
+    </div>
+</div>
 
 <div class="d-flex justify-content-between align-items-center mb-4 p-3 bg-white rounded shadow-sm">
     <h2 class="text-primary fw-bold mb-0">
@@ -847,6 +878,9 @@ else
 </div>
 
 @code {
+    private DateTime? FilterStartDate { get; set; } = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1);
+    private DateTime? FilterEndDate { get; set; } = DateTime.Today;
+
     private List<Payroll> Payrolls = new();
     private List<Employee> Employees = new();
     private List<PayrollAdjustmentRule> AllAdjustmentRules = new();
@@ -1235,7 +1269,11 @@ else
         await LoadPayrolls();
     }
 
-    private async Task LoadPayrolls() => Payrolls = await PayrollService.GetAllAsync();
+    private async Task LoadPayrolls()
+    {
+        Payrolls = await PayrollService.GetAllAsync(FilterStartDate, FilterEndDate);
+    }
+
 
     private async Task AddPayroll()
     {
@@ -1354,15 +1392,50 @@ else
 
     private async Task SavePayroll()
     {
-        CurrentPayroll.AppliedRules = SelectedBonusRules
+        var existingAppliedRules = CurrentPayroll.AppliedRules?.ToList() ?? new List<PayrollAppliedRule>();
+
+        var updatedRules = SelectedBonusRules
             .Where(r => r.IsApplied)
             .Concat(SelectedDeductionRules.Where(r => r.IsApplied))
-            .Select(r => new PayrollAppliedRule
+            .ToList();
+
+        var finalAppliedRules = new List<PayrollAppliedRule>();
+
+        foreach (var rule in updatedRules)
+        {
+            var existing = existingAppliedRules.FirstOrDefault(ar => ar.RuleId == rule.RuleId);
+
+            if (existing != null)
+            {
+                // ✅ Update values if necessary
+                if (existing.Amount != rule.Amount || existing.Quantity != (rule.IsCountable ? rule.Quantity : null))
                 {
-                    RuleId = r.RuleId,
-                    Amount = r.Amount,
-                    Quantity = r.IsCountable ? r.Quantity : null
-                }).ToList();
+                    existing.Amount = rule.Amount;
+                    existing.Quantity = rule.IsCountable ? rule.Quantity : null;
+                }
+
+                // ✅ Always assign PayrollId in case it's not set yet
+                existing.PayrollId = CurrentPayroll.Id;
+                finalAppliedRules.Add(existing);
+            }
+            else
+            {
+                // ✅ Add new applied rule
+                finalAppliedRules.Add(new PayrollAppliedRule
+                {
+                    RuleId = rule.RuleId,
+                    Amount = rule.Amount,
+                    Quantity = rule.IsCountable ? rule.Quantity : null,
+                    EmployeeId = CurrentPayroll.EmployeeId,
+                    PayrollId = CurrentPayroll.Id, // ✅ Assign new Payroll ID
+                    Date = DateTime.Now // Optional: can help for audits
+                });
+            }
+        }
+
+        // ✅ Apply updated rules to the payroll
+        CurrentPayroll.AppliedRules = finalAppliedRules;
+
         CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workDaysPerMonth, 2);
 
         if (CurrentPayroll.Id == 0)
@@ -1374,7 +1447,6 @@ else
             await PayrollService.UpdateAsync(CurrentPayroll);
         }
 
-        // Process advance deductions after saving payroll - UPDATED property name
         if (CurrentPayroll.AdvanceDeductionsAmounts > 0)
         {
             await PayrollService.ProcessAdvanceDeductionsForPayrollAsync(CurrentPayroll);
@@ -1392,6 +1464,8 @@ else
         IsModalOpen = false;
         await LoadPayrolls();
     }
+
+
 
     private void OnAbsenceModeChanged(ChangeEventArgs e)
     {
@@ -1420,25 +1494,43 @@ else
         var employee = Employees.FirstOrDefault(e => e.Id == employeeId);
         if (employee == null) return;
 
+        CurrentPayroll.EmployeeId = employeeId;
+        CurrentPayroll.Employee = employee;
+
+        // 🔻 Fetch last payroll early so we can use its base salary in SelectableRule
+        var lastPayroll = await PayrollService.GetLastPayrollForEmployeeAsync(employeeId);
+        var lastBaseSalary = lastPayroll?.BaseSalary ?? 0;
+        CurrentPayroll.BaseSalary = lastBaseSalary;
+        CurrentPayroll.Transaction = lastPayroll?.Transaction ?? 0;
         if (employee.JobTitleId is int jobTitleId)
         {
-            SelectedBonusRules = AllAdjustmentRules
-                .Where(r => r.Type == AdjustmentType.Bonus && r.JobTitles.Any(j => j.Id == jobTitleId))
-                .Select(r => new SelectableRule(r, workDaysPerMonth, r.AutoApplied)) // Modified
-                .ToList();
+            var allJobTitleBonusRules = AllAdjustmentRules
+                .Where(r => r.Type == AdjustmentType.Bonus && r.JobTitles.Any(j => j.Id == jobTitleId));
+            var allJobTitleDeductionRules = AllAdjustmentRules
+                .Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId));
 
-            SelectedDeductionRules = AllAdjustmentRules
-                .Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId))
-                .Select(r => new SelectableRule(r, workDaysPerMonth, r.AutoApplied)) // Modified
-                .ToList();
+            var appliedRules = await PayrollService.GetAppliedRulesForEmployeeAsync(employeeId);
+
+            SelectedBonusRules = allJobTitleBonusRules.Select(rule =>
+            {
+                var applied = appliedRules.FirstOrDefault(a => a.RuleId == rule.Id);
+                return applied != null
+                    ? new SelectableRule(applied, workDaysPerMonth, lastBaseSalary)
+                    : new SelectableRule(rule, workDaysPerMonth, rule.AutoApplied);
+            }).ToList();
+
+            SelectedDeductionRules = allJobTitleDeductionRules.Select(rule =>
+            {
+                var applied = appliedRules.FirstOrDefault(a => a.RuleId == rule.Id);
+                return applied != null
+                    ? new SelectableRule(applied, workDaysPerMonth, lastBaseSalary)
+                    : new SelectableRule(rule, workDaysPerMonth, rule.AutoApplied);
+            }).ToList();
         }
-       
-        var lastPayroll = await PayrollService.GetLastPayrollForEmployeeAsync(employeeId);
-        CurrentPayroll.BaseSalary = lastPayroll?.BaseSalary ?? 0;
 
         if (CurrentPayroll.BaseSalary != 0)
         {
-            CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workDaysPerMonth, 2); // ✅ Fixed
+            CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workDaysPerMonth, 2);
         }
 
         if (CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue)
@@ -1446,12 +1538,13 @@ else
             await LoadAbsenceDates(employeeId, CurrentPayroll.PayrollStartDate.Value, CurrentPayroll.PayrollEndDate.Value);
         }
 
-        // Load advance deduction summary for the selected employee
         await RefreshAdvanceDeductionSummary();
 
         RecalculateBonusesAndDeductions();
         StateHasChanged();
     }
+
+
 
     private void OnAbsenceDeductionChanged()
     {
@@ -1550,7 +1643,10 @@ else
         public RuleTrigger Trigger { get; set; } = RuleTrigger.Manual;
         public bool AutoApplied { get; set; }
 
-        public SelectableRule(PayrollAppliedRule appliedRule, int workDaysPerMonth)
+        /// <summary>
+        /// Constructor for applied rule (with optional fallback base salary if Payroll is null).
+        /// </summary>
+        public SelectableRule(PayrollAppliedRule appliedRule, int workDaysPerMonth, decimal? lastPayrollBaseSalary = null)
         {
             RuleId = appliedRule.RuleId;
             Name = appliedRule.Rule.Name;
@@ -1563,12 +1659,19 @@ else
             Quantity = appliedRule.Quantity ?? 1;
             Trigger = appliedRule.Rule.Trigger;
             WorkDays = workDaysPerMonth;
-            CalculatedAmount = IsCountable
-                ? (IsPercentage ? appliedRule.Payroll.BaseSalary * Amount / 100 : Amount) * Quantity
-                : (IsPercentage ? appliedRule.Payroll.BaseSalary * Amount / 100 : Amount);
 
+            // ✅ Safely get the base salary
+            decimal baseSalary = appliedRule.Payroll?.BaseSalary ?? lastPayrollBaseSalary ?? 0;
+
+            // ✅ Calculate amount
+            CalculatedAmount = IsCountable
+                ? (IsPercentage ? baseSalary * Amount / 100 : Amount) * Quantity
+                : (IsPercentage ? baseSalary * Amount / 100 : Amount);
         }
 
+        /// <summary>
+        /// Constructor for default rules (not yet applied).
+        /// </summary>
         public SelectableRule(PayrollAdjustmentRule rule, int workDaysPerMonth, bool isApplied = false)
         {
             RuleId = rule.Id;
@@ -1588,6 +1691,7 @@ else
                 : Amount;
         }
     }
+
 }
 
 @code {
@@ -1602,6 +1706,18 @@ else
     {
         await JS.InvokeVoidAsync("window.print");
     }
+    private async Task ApplyFilter()
+    {
+        await LoadPayrolls();
+    }
+
+    private async Task ClearFilter()
+    {
+        FilterStartDate = null;
+        FilterEndDate = null;
+       
+    }
+
 }
 
 <style>

@@ -90,6 +90,18 @@
                                 }
                             </InputSelect>
                         </div>
+
+                        <!-- Contrat -->
+                        <div class="col-md-12">
+                            <label class="form-label">Contrat (n'importe quel fichier)</label>
+                            <InputFile OnChange="HandleFileUpload" />
+                            @if (!string.IsNullOrEmpty(Employee.ContractFileName))
+                            {
+                                <div class="mt-2 text-success">
+                                    Fichier sélectionné : <strong>@Employee.ContractFileName</strong>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
@@ -175,5 +187,16 @@
     {
         await IsOpenChanged.InvokeAsync(false);
     }
-}
 
+    private async Task HandleFileUpload(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        using var ms = new MemoryStream();
+        await file.OpenReadStream(maxAllowedSize: 20_000_000).CopyToAsync(ms); // 20 MB max
+
+        Employee.ContractFile = ms.ToArray();
+        Employee.ContractFileName = file.Name;
+        Employee.ContractContentType = file.ContentType;
+    }
+}

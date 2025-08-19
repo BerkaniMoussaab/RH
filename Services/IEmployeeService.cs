@@ -10,5 +10,8 @@ namespace RH.Services
         Task UpdateAsync(Employee employee);
         Task DeleteAsync(int id);
         Task<int> GetJobTitleCountAsync();
+        Task<(Stream FileStream, string FileName, string ContentType)> GetContractFileAsync(int employeeId);
+
+
     }
 }

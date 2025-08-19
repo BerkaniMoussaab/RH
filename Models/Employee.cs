@@ -31,7 +31,9 @@ namespace RH.Models
         public ICollection<PerformanceReview> PerformanceReviews { get; set; } = new List<PerformanceReview>();
         public float? InitialRemainingDays { get; set; }
         public DateTime? InscriptionDate { get; set; }   // date employee was added to system
-
+        public byte[]? ContractFile { get; set; }             // File content
+        public string? ContractFileName { get; set; }         // Original name
+        public string? ContractContentType { get; set; }      // MIME type (application/pdf, image/png, etc.)
     }
     public enum EmployeeStatus
     {
