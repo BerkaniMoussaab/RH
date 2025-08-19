@@ -1,0 +1,67 @@
+﻿@using RH.Models
+@using RH.Services
+@inject CompanyInfoService CompanyService
+
+@code {
+    [Parameter] public Employee Employee { get; set; }
+    private CompanyInfo? Company;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Company = await CompanyService.GetAsync();
+    }
+}
+
+<div class="payroll-sheet">
+    @if (Company != null)
+    {
+        <div class="payroll-header border rounded p-4 shadow-sm mb-4">
+            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                <div class="d-flex align-items-center">
+                    @if (Company.LogoBytes != null)
+                    {
+                        <img src="data:@Company.LogoMimeType;base64,@Convert.ToBase64String(Company.LogoBytes)"
+                             alt="Logo Entreprise"
+                             class="company-logo me-3 rounded border" />
+                    }
+                    <div class="company-info">
+                        <h5 class="mb-1 fw-bold">@Company.Name</h5>
+                        <small>@Company.Address</small><br />
+                        <small>RC : @Company.RC | NIF : @Company.NIF</small>
+                    </div>
+                </div>
+
+                <div class="text-end mt-3 mt-md-0">
+                    <h4 class="text-primary fw-bold mb-2">Attestation de Travail</h4>
+                    <p class="mb-0 text-muted"><strong>Date :</strong> @DateTime.Now.ToString("dd/MM/yyyy")</p>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="mb-4">
+        <p>Nous soussignés, <strong>@Company?.Name</strong>, certifions que :</p>
+        <p>
+            <strong>@Employee?.FullName</strong>,
+            est employé(e) dans notre entreprise en qualité de <strong>@Employee?.JobTitle?.Title</strong> depuis le
+            @Employee?.HireDate
+        </p>
+        <p>
+            La présente attestation est délivrée à l’intéressé(e) pour servir et valoir ce que de droit.
+        </p>
+    </div>
+
+    <div class="footer-section">
+        <div class="row">
+            <div class="col-6 text-start">
+                <p class="text-muted small">
+                    Fait à @Company?.Address, le @DateTime.Now.ToString("dd/MM/yyyy")
+                </p>
+            </div>
+            <div class="col-6 text-end">
+                <p class="signature-label">Signature et cachet</p>
+                <div class="signature-line"></div>
+            </div>
+        </div>
+    </div>
+</div>

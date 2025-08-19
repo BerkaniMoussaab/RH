@@ -809,9 +809,12 @@ else
                         <button type="submit" class="btn btn-success enhanced-btn primary-action">
                             <i class="bi bi-save me-2"></i> Enregistrer
                         </button>
-                        <button class="btn btn-outline-primary enhanced-btn" @onclick="ShowPrintModal">
-                            <i class="bi bi-printer me-2"></i> Aperçu impression
-                        </button>
+                    @if (CurrentPayroll != null && CurrentPayroll.Id > 0)
+                        {
+                            <button class="btn btn-outline-primary enhanced-btn" @onclick="ShowPrintModal">
+                                <i class="bi bi-printer me-2"></i> Aperçu impression
+                            </button>
+                        }
                         <button type="button" class="btn btn-outline-secondary enhanced-btn" @onclick="CloseModal">
                             <i class="bi bi-x-lg me-1"></i> Annuler
                         </button>
@@ -855,11 +858,13 @@ else
     private bool IsPrintModalOpen = false;
     private bool IsModalOpen = false;
 
-    void ShowPrintModal()
+    private async Task ShowPrintModal()
     {
+       
         IsPrintModalOpen = true;
         StateHasChanged();
     }
+
 
     void ClosePrintModal()
     {

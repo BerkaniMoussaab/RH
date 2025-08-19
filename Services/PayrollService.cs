@@ -73,9 +73,9 @@ public class PayrollService : IPayrollService
             query = query.Where(p => p.PayDate >= startDate.Value);
 
         if (endDate.HasValue)
-            query = query.Where(p => p.PayDate <= endDate.Value);
+            query = query.Where(p => p.PayDate <= endDate.Value.AddDays(1));
 
-        return await query.ToListAsync();
+        return await query.OrderByDescending(d=>d.PayDate).ToListAsync();
     }
 
 
@@ -101,6 +101,7 @@ public class PayrollService : IPayrollService
             Deductions = payroll.Deductions,
             Cash = payroll.Cash,
             Transaction = payroll.Transaction,
+            PayDate = DateTime.Now,
             
             AbsenceDays = payroll.AbsenceDays,
             AbsenceDeduction = payroll.AbsenceDeduction,
