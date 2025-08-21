@@ -4,109 +4,84 @@
 
 @using RH.Models
 @using RH.Services
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
 
 <div class="modal fade show" style="display:@(IsVisible ? "block" : "none")" tabindex="-1">
     <div class="modal-dialog modal-xl">
-        <div class="modal-content shadow-lg rounded-4 border-0">
+        <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
             <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title"><i class="bi bi-calculator-fill me-2"></i>Appliquer une Règle de Paie</h5>
+                <h5 class="modal-title"><i class="bi bi-calculator-fill me-2"></i>Appliquer des Règles de Paie</h5>
                 <button type="button" class="btn-close btn-close-white" @onclick="Close"></button>
             </div>
 
-            <div class="modal-body px-5 py-4">
+            <div class="modal-body bg-light px-5 py-4">
 
                 <!-- Employee Selection -->
-                <div class="mb-4">
-                    <label class="form-label fw-semibold">👤 Employé</label>
-                    <select class="form-select rounded-pill px-3" @onchange="e => OnEmployeeSelected(e.Value?.ToString())">
-                        <option value="">-- Choisir un employé --</option>
-                        @foreach (var emp in Employees)
-                        {
-                            <option value="@emp.Id" selected="@(emp.Id == SelectedEmployeeId)">
-                                @emp.FullName
-                            </option>
-                        }
-                    </select>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">👤 Sélectionner un employé</label>
+                        <select class="form-select rounded-pill px-3 shadow-sm" @onchange="e => OnEmployeeSelected(e.Value?.ToString())">
+                            <option value="">-- Choisir --</option>
+                            @foreach (var emp in Employees)
+                            {
+                                <option value="@emp.Id" selected="@(emp.Id == SelectedEmployeeId)">
+                                    @emp.FullName
+                                </option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold">💰 Base de calcul (DZD)</label>
+                        <div class="input-group rounded-pill shadow-sm">
+                            <span class="input-group-text bg-white border-end-0">DZD</span>
+                            <InputNumber class="form-control border-start-0" @bind-Value="BaseAmount" />
+                        </div>
+                    </div>
                 </div>
 
                 @if (Rules.Any())
                 {
-                    <!-- Base Amount -->
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold">💰 Base de calcul</label>
-                        <div class="input-group">
-                            <span class="input-group-text">DZD</span>
-                            <InputNumber class="form-control rounded-end" @bind-Value="BaseAmount" />
-                        </div>
-                    </div>
+                    <div class="row gy-4">
+                        <!-- Bonuses -->
+                        @if (Rules.Any(r => r.Type == AdjustmentType.Bonus))
+                        {
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-success text-white rounded-top">
+                                        <h6 class="m-0"><i class="bi bi-cash-coin me-2"></i> Primes</h6>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        @RenderRuleTable(Rules.Where(r => r.Type == AdjustmentType.Bonus).ToList())
+                                    </div>
+                                </div>
+                            </div>
+                        }
 
-                    <!-- Rules Table -->
-                    <div class="table-responsive">
-                        <table class="table table-bordered align-middle shadow-sm">
-                            <thead class="table-primary text-center">
-                                <tr>
-                                    <th style="width: 5%">✔️</th>
-                                    <th style="width: 25%">Règle</th>
-                                    <th style="width: 15%">Montant</th>
-                                    <th style="width: 15%">Quantité</th>
-                                    <th style="width: 15%">Total</th>
-                                    <th>Notes</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var rule in Rules)
-                                {
-                                    <tr>
-                                        <td class="text-center">
-                                            <input type="checkbox" class="form-check-input" @bind="rule.IsSelected" />
-                                        </td>
-                                        <td>
-                                            @rule.Name
-                                            @if (rule.IsPercentage)
-                                            {
-                                                <span class="badge bg-info ms-2">%</span>
-                                            }
-                                        </td>
-                                        <td>
-                                            @if (rule.IsEditable)
-                                            {
-                                                <div class="input-group">
-                                                    <span class="input-group-text">DZD</span>
-                                                    <InputNumber class="form-control" @bind-Value="rule.Amount" @oninput="_ => Recalculate(rule)" />
-                                                </div>
-                                            }
-                                            else
-                                            {
-                                                <span class="text-muted">@rule.Amount.ToString("0.##") DZD</span>
-                                            }
-                                        </td>
-                                        <td>
-                                            @if (rule.IsCountable)
-                                            {
-                                                <InputNumber class="form-control" @bind-Value="rule.Quantity" @oninput="_ => Recalculate(rule)" />
-                                            }
-                                        </td>
-                                        <td class="fw-bold text-success text-end">
-                                            @rule.CalculatedAmount.ToString("0.##") DZD
-                                        </td>
-                                        <td>
-                                            <InputText class="form-control" @bind-Value="rule.Notes" placeholder="Ajouter une remarque..." />
-                                        </td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
+                        <!-- Deductions -->
+                        @if (Rules.Any(r => r.Type == AdjustmentType.Deduction))
+                        {
+                            <div class="col-12">
+                                <div class="card border-0 shadow-sm">
+                                    <div class="card-header bg-danger text-white rounded-top">
+                                        <h6 class="m-0"><i class="bi bi-dash-circle me-2"></i> Déductions</h6>
+                                    </div>
+                                    <div class="card-body p-0">
+                                        @RenderRuleTable(Rules.Where(r => r.Type == AdjustmentType.Deduction).ToList())
+                                    </div>
+                                </div>
+                            </div>
+                        }
                     </div>
                 }
             </div>
 
-            <div class="modal-footer d-flex justify-content-between px-4">
+            <div class="modal-footer bg-white d-flex justify-content-between px-4">
                 <button class="btn btn-outline-secondary rounded-pill px-4" @onclick="Close">
                     <i class="bi bi-x-circle me-1"></i> Fermer
                 </button>
                 <button class="btn btn-success rounded-pill px-4" @onclick="ApplySelectedRules">
-                    <i class="bi bi-check2-circle me-1"></i> Appliquer les règles sélectionnées
+                    <i class="bi bi-check2-circle me-1"></i> Appliquer
                 </button>
             </div>
         </div>
@@ -119,7 +94,6 @@
 
     private List<Employee> Employees = new();
     private List<SelectableRule> Rules = new();
-
     private decimal BaseAmount;
     private int SelectedEmployeeId;
 
@@ -154,17 +128,18 @@
         Rules = allRules
             .Where(rule => rule.JobTitles.Any(jt => jt.Id == jobTitleId))
             .Select(r => new SelectableRule
-                {
-                    RuleId = r.Id,
-                    Name = r.Name,
-                    Amount = r.Amount,
-                    IsPercentage = r.IsPercentage,
-                    IsEditable = r.IsEditable,
-                    IsCountable = r.IsCountable,
-                    Quantity = r.IsCountable ? 1 : null,
-                    Notes = "",
-                    IsSelected = false
-                }).ToList();
+            {
+                RuleId = r.Id,
+                Name = r.Name,
+                Amount = r.Amount,
+                IsPercentage = r.IsPercentage,
+                IsEditable = r.IsEditable,
+                IsCountable = r.IsCountable,
+                Quantity = r.IsCountable ? 1 : null,
+                Notes = "",
+                IsSelected = false,
+                Type = r.Type
+            }).ToList();
 
         foreach (var rule in Rules)
         {
@@ -197,22 +172,20 @@
 
     private async Task ApplySelectedRules()
     {
-        if (SelectedEmployeeId == 0)
-            return;
+        if (SelectedEmployeeId == 0) return;
 
         var selected = Rules.Where(r => r.IsSelected).ToList();
-        if (!selected.Any())
-            return;
+        if (!selected.Any()) return;
 
         var appliedRules = selected.Select(r => new PayrollAppliedRule
-            {
-                EmployeeId = SelectedEmployeeId,
-                RuleId = r.RuleId,
-                Amount = r.Amount,
-                Quantity = r.Quantity ?? 1,
-                Notes = r.Notes,
-                Date=DateTime.Now
-            }).ToList();
+        {
+            EmployeeId = SelectedEmployeeId,
+            RuleId = r.RuleId,
+            Amount = r.Amount,
+            Quantity = r.Quantity ?? 1,
+            Notes = r.Notes,
+            Date = DateTime.Now
+        }).ToList();
 
         await PayrollService.ApplyRulesAsync(SelectedEmployeeId, appliedRules);
         await Close();
@@ -230,5 +203,67 @@
         public decimal CalculatedAmount { get; set; }
         public string? Notes { get; set; }
         public bool IsSelected { get; set; }
+        public AdjustmentType Type { get; set; }
     }
+
+    private RenderFragment<List<SelectableRule>> RenderRuleTable => rules => @<div class="table-responsive">
+    <table class="table table-striped table-sm m-0 align-middle">
+        <thead class="table-light">
+            <tr class="text-center">
+                <th>✔️</th>
+                <th>Règle</th>
+                <th>Montant</th>
+                <th>Quantité</th>
+                <th>Total</th>
+                <th>Remarques</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var rule in rules)
+                        {
+            <tr>
+                <td class="text-center">
+                    <input type="checkbox" class="form-check-input" @bind="rule.IsSelected" />
+                </td>
+                <td>
+                    @rule.Name
+                    @if (rule.IsPercentage)
+                                        {
+                    <span class="badge bg-info ms-2">%</span>
+                                        }
+                </td>
+                <td>
+                    @if (rule.IsEditable)
+                    {
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">DZD</span>
+                            <InputNumber class="form-control" @bind-Value="rule.Amount" @oninput="_ => Recalculate(rule)" />
+                        </div>
+                    }
+                    else
+                    {
+                        <span class="text-muted">@rule.Amount.ToString("0.##") DZD</span>
+                    }
+                </td>
+                <td>
+                    @if (rule.IsCountable)
+                    {
+                        <InputNumber class="form-control form-control-sm" @bind-Value="rule.Quantity" @oninput="_ => Recalculate(rule)" />
+                    }
+                    else
+                    {
+                        <span class="text-muted">—</span>
+                    }
+                </td>
+                <td class="fw-bold text-end text-success">
+                    @rule.CalculatedAmount.ToString("0.##") DZD
+                </td>
+                <td>
+                    <InputText class="form-control form-control-sm" @bind-Value="rule.Notes" placeholder="Remarque..." />
+                </td>
+            </tr>
+                        }
+        </tbody>
+    </table>
+</div>;
 }

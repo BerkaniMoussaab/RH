@@ -1504,17 +1504,18 @@ else
     {
         try
         {
+
             // You\'ll need to add this method to your PayrollService
             var preappliedRules = await PayrollService.GetAppliedRulesForEmployeeAsync(employeeId);
-
+            var lastPayroll = await PayrollService.GetLastPayrollForEmployeeAsync(employeeId);
             PreappliedBonusRules = preappliedRules
-                .Where(r => r.Rule.Type == AdjustmentType.Bonus)
-                .Select(r => new SelectableRule(r, workDaysPerMonth))
+                .Where(r => r.Rule.Type == AdjustmentType.Bonus && r.PayrollId == null)
+                .Select(r => new SelectableRule(r, workDaysPerMonth, lastPayroll.BaseSalary))
                 .ToList();
 
             PreappliedDeductionRules = preappliedRules
                 .Where(r => r.Rule.Type == AdjustmentType.Deduction)
-                .Select(r => new SelectableRule(r, workDaysPerMonth))
+                .Select(r => new SelectableRule(r, workDaysPerMonth, lastPayroll.BaseSalary))
                 .ToList();
         }
         catch (Exception ex)
@@ -1914,6 +1915,7 @@ else
             WorkDays = workDaysPerMonth;
             note = appliedRule.Notes;
             Date = appliedRule.Date;
+            
           
             // ✅ Safely get the base salary
             decimal baseSalary = appliedRule.Payroll?.BaseSalary ?? lastPayrollBaseSalary ?? 0;

@@ -2,6 +2,7 @@
 using RH.Data;
 using RH.Models;
 using RH.Services;
+using System.Data;
 
 public class PayrollService : IPayrollService
 {
@@ -105,32 +106,15 @@ public class PayrollService : IPayrollService
             PayrollStartDate = payroll.PayrollStartDate,
         };
 
-        // Add the payroll first so it gets an ID
         _context.Payrolls.Add(freshPayroll);
-        await _context.SaveChangesAsync(); // freshPayroll.Id is now available
+        await _context.SaveChangesAsync();
 
-        // Now attach applied rules (existing or new)
         foreach (var rule in payroll.AppliedRules)
         {
-            // Get all matching applied rules not yet attached to a payroll
-            var existingRules = await _context.PayrollAppliedRules
-                .Where(r =>
-                    r.EmployeeId == rule.EmployeeId &&
-                    r.RuleId == rule.RuleId &&
-                    r.PayrollId == null)
-                .ToListAsync();
-
-            if (existingRules.Any())
+            if (rule.Id != 0)
             {
-                // Attach all existing matching rules to the new payroll
-                foreach (var existing in existingRules)
-                {
-                    existing.PayrollId = freshPayroll.Id;
-                }
-            }
-            else
-            {
-                // No match found: create a new applied rule
+                rule.PayrollId = payroll.Id;
+            }else{
                 var newRule = new PayrollAppliedRule
                 {
                     RuleId = rule.RuleId,
@@ -143,13 +127,17 @@ public class PayrollService : IPayrollService
                 };
                 _context.PayrollAppliedRules.Add(newRule);
             }
+            
+           
         }
-
-
+        
         await _context.SaveChangesAsync();
+        var rulesWithOutPayroll =
+            _context.PayrollAppliedRules.Where(r => r.EmployeeId == payroll.EmployeeId && r.PayrollId == null);
+         _context.PayrollAppliedRules.RemoveRange(rulesWithOutPayroll);
+         await _context.SaveChangesAsync();
         return freshPayroll;
     }
-
 
     public async Task<Payroll> UpdateAsync(Payroll payroll)
     {
@@ -184,7 +172,9 @@ public class PayrollService : IPayrollService
                 Amount = rule.Amount,
                 Quantity = rule.Quantity,
                 Date = rule.Date,
-                Notes = rule.Notes
+                Notes = rule.Notes,
+                PayrollId = rule.PayrollId,
+                EmployeeId = rule.EmployeeId
             });
         }
 
