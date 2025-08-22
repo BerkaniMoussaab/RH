@@ -197,8 +197,10 @@ public class PayrollService : IPayrollService
         return await _context.Payrolls
             .Where(p => p.EmployeeId == employeeId)
             .OrderByDescending(p => p.PayDate)
+            .Include(p => p.Employee) // ✅ Include the related Employee
             .FirstOrDefaultAsync();
     }
+
 
     public async Task<int> GetPayrollCountAsync()
     {

@@ -72,7 +72,7 @@ builder.Services.AddScoped<ILeavePolicyService, LeavePolicyService>();
 builder.Services.AddScoped<ILeaveRequestService, LeaveRequestService>();
 
 builder.Services.AddScoped<EmployeeService>();
-
+builder.Services.AddScoped<AttestationGeneratorService>();
 builder.Services.AddScoped<AbsenceService>();
 builder.Services.AddScoped<RecoveryDayService>();
 builder.Services.AddScoped<WorkedDaysOffService>();

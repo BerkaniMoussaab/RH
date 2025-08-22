@@ -108,7 +108,7 @@ else
                             }
                         </td>
                         <td class="text-center">@payroll.PayDate.ToString("dd/MM/yyyy")</td>
-                        <td class="text-end">@payroll.BaseSalary.ToString() DA</td>
+                        <td class="text-end">@payroll.Employee.BaseSalary.ToString() DA</td>
                         <td class="text-end text-success">
                             <span class="fw-semibold">+@payroll.Bonus.ToString() DA</span>
                         </td>
@@ -293,9 +293,9 @@ else
                                             <div class="col-6">
                                                 <label class="form-label mb-1">Salaire de base</label>
                                                 <InputNumber TValue="decimal" class="form-control form-control-sm"
-                                                             Value="CurrentPayroll.BaseSalary"
+                                                             Value="CurrentPayroll.Employee.BaseSalary"
                                                              ValueChanged="@(value => OnBaseSalaryChanged(value, workDaysPerMonth))"
-                                                             ValueExpression="@(() => CurrentPayroll.BaseSalary)" />
+                                                             ValueExpression="@(() => CurrentPayroll.Employee.BaseSalary)" />
                                             </div>
                                             <div class="col-6">
                                                 <label class="form-label mb-1 d-flex align-items-center">
@@ -1024,7 +1024,7 @@ else
     {
         if (CurrentPayroll == null) return;
 
-        CurrentPayroll.BaseSalary = value;
+        CurrentPayroll.Employee.BaseSalary = value;
 
         // Calculate deduction per absence day based on working days in the payroll period
         var actualWorkDays = workDays;
@@ -1071,7 +1071,7 @@ else
     {
         if (CurrentPayroll.EmployeeId > 0)
         {
-            var preliminaryNetPay = CurrentPayroll.BaseSalary + CurrentPayroll.Bonus - CurrentPayroll.Deductions;
+            var preliminaryNetPay = CurrentPayroll.Employee.BaseSalary + CurrentPayroll.Bonus - CurrentPayroll.Deductions;
             CurrentAdvanceDeductionSummary = await PayrollService.GetAdvanceDeductionSummaryAsync(CurrentPayroll.EmployeeId, preliminaryNetPay);
 
             if (!_isAdvanceAmountManuallySet || CurrentPayroll.Id == 0)
@@ -1115,10 +1115,10 @@ else
         if (CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue)
         {
             // Recalculate deduction per absence day based on new period
-            if (CurrentPayroll.BaseSalary > 0)
+            if (CurrentPayroll.Employee.BaseSalary > 0)
             {
                 var workingDays = workDaysPerMonth;
-                CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workDaysPerMonth, 2);
+                CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.Employee.BaseSalary / workDaysPerMonth, 2);
             }
 
             // Refresh absences for the new period
@@ -1248,12 +1248,12 @@ else
 
         if (rule.IsCountable)
         {
-            var unitAmount = rule.IsPercentage ? CurrentPayroll.BaseSalary * rule.Amount / 100 : rule.Amount;
+            var unitAmount = rule.IsPercentage ? CurrentPayroll.Employee.BaseSalary * rule.Amount / 100 : rule.Amount;
             rule.CalculatedAmount = unitAmount * finalQuantity;
         }
         else
         {
-            rule.CalculatedAmount = rule.IsPercentage ? CurrentPayroll.BaseSalary * rule.Amount / 100 : rule.Amount;
+            rule.CalculatedAmount = rule.IsPercentage ? CurrentPayroll.Employee.BaseSalary * rule.Amount / 100 : rule.Amount;
         }
 
         RecalculateBonusesAndDeductions();
@@ -1344,7 +1344,7 @@ else
                 }
                 else if (r.IsPercentage)
                 {
-                    calculatedValue = CurrentPayroll.BaseSalary * r.Amount / 100;
+                    calculatedValue = CurrentPayroll.Employee.BaseSalary * r.Amount / 100;
                 }
                 else
                 {
@@ -1379,7 +1379,7 @@ else
                 }
                 else if (r.IsPercentage)
                 {
-                    calculatedValue = CurrentPayroll.BaseSalary * r.Amount / 100;
+                    calculatedValue = CurrentPayroll.Employee.BaseSalary * r.Amount / 100;
                 }
                 else
                 {
@@ -1455,12 +1455,12 @@ else
             var lastPayroll = await PayrollService.GetLastPayrollForEmployeeAsync(employeeId);
             PreappliedBonusRules = preappliedRules
                 .Where(r => r.Rule.Type == AdjustmentType.Bonus && r.PayrollId == null)
-                .Select(r => new SelectableRule(r, workDaysPerMonth, lastPayroll.BaseSalary))
+                .Select(r => new SelectableRule(r, workDaysPerMonth, lastPayroll.Employee.BaseSalary))
                 .ToList();
 
             PreappliedDeductionRules = preappliedRules
                 .Where(r => r.Rule.Type == AdjustmentType.Deduction)
-                .Select(r => new SelectableRule(r, workDaysPerMonth, lastPayroll.BaseSalary))
+                .Select(r => new SelectableRule(r, workDaysPerMonth, lastPayroll.Employee.BaseSalary))
                 .ToList();
         }
         catch (Exception ex)
@@ -1634,7 +1634,7 @@ else
         // Apply all rules — allow multiple instances of same rule
         CurrentPayroll.AppliedRules = finalAppliedRules;
 
-        CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workDaysPerMonth, 2);
+        CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.Employee.BaseSalary / workDaysPerMonth, 2);
 
         if (CurrentPayroll.Id == 0)
         {
@@ -1690,7 +1690,12 @@ else
         SelectedDeductionRules.Clear();
         PreappliedBonusRules.Clear();
         PreappliedDeductionRules.Clear();
-        CurrentPayroll.BaseSalary = 0;
+        if (CurrentPayroll.Id == 0)
+        {
+            CurrentPayroll.Employee = new Employee();
+            CurrentPayroll.Employee.BaseSalary = 0;
+        }
+        
         CurrentAdvanceDeductionSummary = new AdvanceDeductionSummary();
         _isAdvanceAmountManuallySet = false;
 
@@ -1701,8 +1706,8 @@ else
         CurrentPayroll.Employee = employee;
 
         var lastPayroll = await PayrollService.GetLastPayrollForEmployeeAsync(employeeId);
-        var lastBaseSalary = lastPayroll?.BaseSalary ?? 0;
-        CurrentPayroll.BaseSalary = lastBaseSalary;
+        var lastBaseSalary = lastPayroll?.Employee.BaseSalary ?? 0;
+        CurrentPayroll.Employee.BaseSalary = lastBaseSalary;
         CurrentPayroll.Transaction = lastPayroll?.Transaction ?? 0;
 
         // Load preapplied rules for the selected employee
@@ -1726,9 +1731,9 @@ else
                 .ToList();
         }
 
-        if (CurrentPayroll.BaseSalary != 0)
+        if (CurrentPayroll.Employee.BaseSalary != 0)
         {
-            CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workDaysPerMonth, 2);
+            CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.Employee.BaseSalary / workDaysPerMonth, 2);
         }
 
         if (CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue)
@@ -1755,12 +1760,12 @@ else
 
         if (rule.IsCountable)
         {
-            var unitAmount = rule.IsPercentage ? CurrentPayroll.BaseSalary * rule.Amount / 100 : rule.Amount;
+            var unitAmount = rule.IsPercentage ? CurrentPayroll.Employee.BaseSalary * rule.Amount / 100 : rule.Amount;
             rule.CalculatedAmount = unitAmount * finalQuantity;
         }
         else
         {
-            rule.CalculatedAmount = rule.IsPercentage ? CurrentPayroll.BaseSalary * rule.Amount / 100 : rule.Amount;
+            rule.CalculatedAmount = rule.IsPercentage ? CurrentPayroll.Employee.BaseSalary * rule.Amount / 100 : rule.Amount;
         }
         Console.WriteLine($"  Rule \'{rule.Name}\' - Amount: {rule.Amount}, Quantity: {rule.Quantity}, CalculatedAmount: {rule.CalculatedAmount}");
 

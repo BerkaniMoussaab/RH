@@ -91,6 +91,16 @@
                             </InputSelect>
                         </div>
 
+                        <!-- Date de fin si Terminated -->
+                        @if (Employee.Status == EmployeeStatus.Terminated)
+                        {
+                            <div class="col-md-6">
+                                <label class="form-label">Date de fin de contrat</label>
+                                <InputDate class="form-control" @bind-Value="Employee.DateOfTermination" />
+                                <ValidationMessage For="@(() => Employee.DateOfTermination)" />
+                            </div>
+                        }
+
                         <!-- Contrat -->
                         <div class="col-md-12">
                             <label class="form-label">Contrat (n'importe quel fichier)</label>
