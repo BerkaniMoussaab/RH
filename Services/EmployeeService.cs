@@ -26,7 +26,7 @@
         public async Task<Employee> GetByIdAsync(int id)
         {
             using var context = _contextFactory.CreateDbContext();
-            return await context.Employees
+            return await context.Employees.Where(p=>!p.Deleted)
                 .Include(e => e.JobTitle) // Include the related JobTitle
                 .FirstOrDefaultAsync(e => e.Id == id); // Use FirstOrDefaultAsync instead of FindAsync
         }
@@ -52,7 +52,7 @@
             var employee = await context.Employees.FindAsync(id);
             if (employee != null)
             {
-                context.Employees.Remove(employee);
+                employee.Deleted = true;
                 await context.SaveChangesAsync();
             }
         }

@@ -22,7 +22,8 @@ namespace RH.Models
         public decimal Deductions { get; set; }
 
         // Updated NetPay calculation to include advance deductions
-        public decimal NetPay => BaseSalary + Bonus - Deductions - AdvanceDeductionsAmounts;
+        public decimal NetPay =>
+            (Employee?.BaseSalary ?? BaseSalary) + Bonus - Deductions - AdvanceDeductionsAmounts;
 
         public ICollection<PayrollAppliedRule> AppliedRules { get; set; } = new List<PayrollAppliedRule>();
         public int AbsenceDays { get; set; } // how many days the employee was absent

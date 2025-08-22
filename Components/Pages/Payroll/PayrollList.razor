@@ -1328,28 +1328,29 @@ else
         }
     }
 
-    private void RecalculateBonusesAndDeductions()
+    private async Task RecalculateBonusesAndDeductions()
     {
         Console.WriteLine("--- Recalculating Bonuses and Deductions ---");
 
-        // Calculate Bonuses (including preapplied)
+        // Regular Bonuses
         var regularBonuses = SelectedBonusRules
             .Where(r => r.IsApplied)
             .Sum(r =>
             {
                 decimal calculatedValue;
-                if (r.IsCountable && r.Quantity > 0)
+                if (r.IsCountable)
                 {
-                    calculatedValue = r.CalculatedAmount;
-                }
-                else if (r.IsPercentage)
-                {
-                    calculatedValue = CurrentPayroll.Employee.BaseSalary * r.Amount / 100;
+                    calculatedValue = r.Quantity * (r.IsPercentage
+                        ? CurrentPayroll.Employee.BaseSalary * r.Amount / 100
+                        : r.Amount);
                 }
                 else
                 {
-                    calculatedValue = r.Amount;
+                    calculatedValue = r.IsPercentage
+                        ? CurrentPayroll.Employee.BaseSalary * r.Amount / 100
+                        : r.Amount;
                 }
+
                 Console.WriteLine($"  Bonus Rule: {r.Name}, Applied: {r.IsApplied}, Amount: {r.Amount}, IsPercentage: {r.IsPercentage}, IsCountable: {r.IsCountable}, Quantity: {r.Quantity}, CalculatedValue: {calculatedValue}");
                 return calculatedValue;
             });
@@ -1358,33 +1359,35 @@ else
             .Where(r => r.IsApplied)
             .Sum(r => r.CalculatedAmount);
 
-        CurrentPayroll.Bonus = regularBonuses ;
+        CurrentPayroll.Bonus = regularBonuses + preappliedBonuses;
+        CurrentPayroll.BaseSalary = CurrentPayroll.Employee.BaseSalary;
         PreappliedBonuses = preappliedBonuses;
         Console.WriteLine($"Total Bonus (Regular: {regularBonuses} + Preapplied: {preappliedBonuses}): {CurrentPayroll.Bonus}");
 
-        // Calculate Absences Deduction
+        // Absence
         var absenceDays = UseManualAbsences ? CurrentPayroll.ManualAbsenceDays : EmployeeAbsences.Count(a => a.Counted);
         var absenceDeduction = absenceDays * CurrentPayroll.DeductionPerAbsenceDay;
         Console.WriteLine($"Absence Days: {absenceDays}, Deduction Per Day: {CurrentPayroll.DeductionPerAbsenceDay}, Absence Deduction: {absenceDeduction}");
 
-        // Calculate Rule-Based Deductions (including preapplied)
+        // Rule-based deductions
         var regularDeductions = SelectedDeductionRules
             .Where(r => r.IsApplied)
             .Sum(r =>
             {
                 decimal calculatedValue;
-                if (r.IsCountable && r.Quantity > 0)
+                if (r.IsCountable)
                 {
-                    calculatedValue = r.CalculatedAmount;
-                }
-                else if (r.IsPercentage)
-                {
-                    calculatedValue = CurrentPayroll.Employee.BaseSalary * r.Amount / 100;
+                    calculatedValue = r.Quantity * (r.IsPercentage
+                        ? CurrentPayroll.Employee.BaseSalary * r.Amount / 100
+                        : r.Amount);
                 }
                 else
                 {
-                    calculatedValue = r.Amount;
+                    calculatedValue = r.IsPercentage
+                        ? CurrentPayroll.Employee.BaseSalary * r.Amount / 100
+                        : r.Amount;
                 }
+
                 Console.WriteLine($"  Deduction Rule: {r.Name}, Applied: {r.IsApplied}, Amount: {r.Amount}, IsPercentage: {r.IsPercentage}, IsCountable: {r.IsCountable}, Quantity: {r.Quantity}, CalculatedValue: {calculatedValue}");
                 return calculatedValue;
             });
@@ -1395,18 +1398,17 @@ else
 
         Console.WriteLine($"Total Rule-Based Deductions (Regular: {regularDeductions} + Preapplied: {preappliedDeductions}): {regularDeductions + preappliedDeductions}");
 
-        CurrentPayroll.Deductions = regularDeductions  + absenceDeduction;
-        Console.WriteLine($"Total Deductions (Rules + Absences): {CurrentPayroll.Deductions}");
+        CurrentPayroll.Deductions = regularDeductions + preappliedDeductions + absenceDeduction;
+        Console.WriteLine($"Total Deductions (Rules + Preapplied + Absences): {CurrentPayroll.Deductions}");
 
-        // Refresh advance deduction summary when other values change
-        InvokeAsync(async () => await RefreshAdvanceDeductionSummary());
+        await RefreshAdvanceDeductionSummary();
 
-        var netPay = CurrentPayroll.NetPay; // This now includes advance deductions automatically
-        Console.WriteLine($"Calculated Net Pay (with advances): {netPay}");
-
+      
+       
         StateHasChanged();
         Console.WriteLine("--- Recalculation Complete, StateHasChanged called ---");
     }
+
 
     private int CurrentEmployeeId
     {
@@ -1478,7 +1480,9 @@ else
                 PayDate = DateTime.Today,
                 // Set default payroll period to current month
                 PayrollStartDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1),
-                PayrollEndDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(1).AddDays(-1)
+                PayrollEndDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(1).AddDays(-1),
+                Employee = new Employee()
+                
             };
 
         SelectedBonusRules.Clear();
@@ -1499,10 +1503,10 @@ else
             .Select(r => new SelectableRule(r, workDaysPerMonth, isApplied: true))
             .ToList();
 
-        if (Employees.Any())
-        {
-            await OnEmployeeChanged(CurrentPayroll.EmployeeId);
-        }
+        // if (Employees.Any())
+        // {
+        //     await OnEmployeeChanged(CurrentPayroll.EmployeeId);
+        // }
 
         IsPrintModalOpen = false;
         IsModalOpen = true;
@@ -1690,12 +1694,7 @@ else
         SelectedDeductionRules.Clear();
         PreappliedBonusRules.Clear();
         PreappliedDeductionRules.Clear();
-        if (CurrentPayroll.Id == 0)
-        {
-            CurrentPayroll.Employee = new Employee();
-            CurrentPayroll.Employee.BaseSalary = 0;
-        }
-        
+
         CurrentAdvanceDeductionSummary = new AdvanceDeductionSummary();
         _isAdvanceAmountManuallySet = false;
 
@@ -1706,11 +1705,10 @@ else
         CurrentPayroll.Employee = employee;
 
         var lastPayroll = await PayrollService.GetLastPayrollForEmployeeAsync(employeeId);
-        var lastBaseSalary = lastPayroll?.Employee.BaseSalary ?? 0;
+        var lastBaseSalary = lastPayroll?.Employee?.BaseSalary ?? 0;
         CurrentPayroll.Employee.BaseSalary = lastBaseSalary;
         CurrentPayroll.Transaction = lastPayroll?.Transaction ?? 0;
 
-        // Load preapplied rules for the selected employee
         await LoadPreappliedRules(employeeId);
 
         if (employee.JobTitleId is int jobTitleId)
@@ -1721,7 +1719,6 @@ else
             var applicableDeductionRules = AllAdjustmentRules
                 .Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId));
 
-            // ❌ Ignore applied rules, just convert all rules into SelectableRule
             SelectedBonusRules = applicableBonusRules
                 .Select(rule => new SelectableRule(rule, workDaysPerMonth, rule.AutoApplied))
                 .ToList();
@@ -1742,10 +1739,10 @@ else
         }
 
         await RefreshAdvanceDeductionSummary();
-
-        RecalculateBonusesAndDeductions();
+        await RecalculateBonusesAndDeductions();
         StateHasChanged();
     }
+
 
     private void OnAbsenceDeductionChanged()
     {

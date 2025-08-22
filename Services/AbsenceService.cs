@@ -28,6 +28,12 @@ public class AbsenceService
         context.AbsenceRecords.Update(absence);
         await context.SaveChangesAsync();
     }
+    public async Task DeleteAsync(AbsenceRecord absence)
+    {
+        using var context = _contextFactory.CreateDbContext();
+        context.AbsenceRecords.Remove(absence);
+        await context.SaveChangesAsync();
+    }
     public async Task<List<AbsenceRecord>> GetUncountedAbsencesAsync(int employeeId, DateTime startDate, DateTime endDate)
     {
         using var context = _contextFactory.CreateDbContext();

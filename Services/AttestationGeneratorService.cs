@@ -24,7 +24,7 @@ namespace RH.Services
 
         public async Task<byte[]> GenerateWorkAttestationPdfAsync(int employeeId)
         {
-            var employee = await _context.Employees
+            var employee = await _context.Employees.Where(p=>!p.Deleted)
                 .Include(e => e.JobTitle)
                 .FirstOrDefaultAsync(e => e.Id == employeeId)
                 ?? throw new ArgumentException("Employé non trouvé.");
@@ -97,7 +97,7 @@ namespace RH.Services
 
         public async Task<byte[]> GenerateInternshipAttestationPdfAsync(int employeeId, DateTime internshipStartDate, DateTime internshipEndDate, string internshipDepartment, string supervisorName, string internshipObjectives)
         {
-            var employee = await _context.Employees
+            var employee = await _context.Employees.Where(p=>!p.Deleted)
                 .FirstOrDefaultAsync(e => e.Id == employeeId)
                 ?? throw new ArgumentException("Employé non trouvé.");
 
@@ -158,7 +158,7 @@ namespace RH.Services
 
         public async Task<string> GetAttestationFileNameAsync(int employeeId, AttestationType type)
         {
-            var employee = await _context.Employees.FirstOrDefaultAsync(e => e.Id == employeeId)
+            var employee = await _context.Employees.Where(p => !p.Deleted).FirstOrDefaultAsync(e => e.Id == employeeId)
                 ?? throw new ArgumentException("Employé non trouvé.");
 
             string baseName = type switch

@@ -36,6 +36,7 @@ namespace RH.Models
         public string? ContractContentType { get; set; }      // MIME type (application/pdf, image/png, etc.)
         public DateTime? DateOfTermination { get; set; }
         public decimal BaseSalary { get; set; }
+        public bool Deleted { get; set; }
 
     }
     public enum EmployeeStatus
