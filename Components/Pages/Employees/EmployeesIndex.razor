@@ -9,6 +9,18 @@
 <button class="btn btn-primary mb-4" @onclick="AddEmployee">Ajouter un employé</button>
 
 
+@inject NavigationManager Navigation
+
+<button class="btn btn-success mb-4" @onclick="NavigateToUrl">
+   Génerateur attestation
+</button>
+
+@code {
+    private void NavigateToUrl()
+    {
+        Navigation.NavigateTo("/attestation-generator");
+    }
+}
 
 
 <table class="table table-striped">

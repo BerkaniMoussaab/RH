@@ -4,58 +4,83 @@
 @using RH.Models
 @using RH.Services
 
-<h3>Générateur d'Attestations</h3>
+<div class="container mt-5">
+    <div class="card shadow-sm p-4">
+        <h3 class="mb-4 text-primary"><i class="bi bi-file-earmark-text"></i> Générateur d'Attestations</h3>
 
-<div class="form-group">
-    <label for="employeeId">Employé:</label>
-    <select class="form-control" id="employeeId" @bind="employeeId">
-        <option value="">-- Sélectionnez un employé --</option>
-        @foreach (var emp in employees)
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Employé</label>
+                <select class="form-select" @bind="employeeId">
+                    <option value="">-- Sélectionnez un employé --</option>
+                    @foreach (var emp in employees)
+                    {
+                        <option value="@emp.Id">@emp.FullName (@emp.JobTitle?.Title)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label fw-bold">Type d'Attestation</label>
+                <select class="form-select" @bind="attestationType">
+                    <option value="@AttestationType.Work">Attestation de Travail</option>
+                    <option value="@AttestationType.Internship">Attestation de Stage</option>
+                </select>
+            </div>
+        </div>
+
+        @if (attestationType == AttestationType.Internship)
         {
-            <option value="@emp.Id">@emp.FullName (@emp.JobTitle?.Title)</option>
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Date de début</label>
+                    <input type="date" class="form-control" @bind="internshipStartDate" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Date de fin</label>
+                    <input type="date" class="form-control" @bind="internshipEndDate" />
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Département</label>
+                    <input type="text" class="form-control" @bind="internshipDepartment" />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-bold">Nom du superviseur</label>
+                    <input type="text" class="form-control" @bind="supervisorName" />
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-bold">Objectifs du stage</label>
+                <textarea class="form-control" rows="3" @bind="internshipObjectives"></textarea>
+            </div>
         }
-    </select>
+
+        <button class="btn btn-primary w-100 mt-2" @onclick="GenerateAttestation">
+            <i class="bi bi-gear-fill me-1"></i> Générer l'Attestation
+        </button>
+
+        @if (!string.IsNullOrEmpty(message))
+        {
+            <div class="alert alert-info mt-3">@message</div>
+        }
+
+        @if (!string.IsNullOrEmpty(pdfBase64DataUrl))
+        {
+            <div class="card mt-4 shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-secondary"><i class="bi bi-eye"></i> Aperçu</h5>
+                  
+                </div>
+                <div class="card-body p-0" style="height: 600px;">
+                    <iframe src="@pdfBase64DataUrl" width="100%" height="100%" style="border: none;"></iframe>
+                </div>
+            </div>
+        }
+    </div>
 </div>
-
-
-<div class="form-group">
-    <label for="attestationType">Type d'Attestation:</label>
-    <select class="form-control" id="attestationType" @bind="attestationType">
-        <option value="@AttestationType.Work">Attestation de Travail</option>
-        <option value="@AttestationType.Internship">Attestation de Stage</option>
-    </select>
-</div>
-
-@if (attestationType == AttestationType.Internship)
-{
-    <div class="form-group">
-        <label for="internshipStartDate">Date de début du stage:</label>
-        <input type="date" class="form-control" id="internshipStartDate" @bind="internshipStartDate" />
-    </div>
-    <div class="form-group">
-        <label for="internshipEndDate">Date de fin du stage:</label>
-        <input type="date" class="form-control" id="internshipEndDate" @bind="internshipEndDate" />
-    </div>
-    <div class="form-group">
-        <label for="internshipDepartment">Département:</label>
-        <input type="text" class="form-control" id="internshipDepartment" @bind="internshipDepartment" />
-    </div>
-    <div class="form-group">
-        <label for="supervisorName">Nom du superviseur:</label>
-        <input type="text" class="form-control" id="supervisorName" @bind="supervisorName" />
-    </div>
-    <div class="form-group">
-        <label for="internshipObjectives">Objectifs du stage:</label>
-        <textarea class="form-control" id="internshipObjectives" @bind="internshipObjectives"></textarea>
-    </div>
-}
-
-<button class="btn btn-primary" @onclick="GenerateAttestation">Générer l'Attestation</button>
-
-@if (!string.IsNullOrEmpty(message))
-{
-    <div class="alert alert-info mt-3">@message</div>
-}
 
 @code {
     private int employeeId;
@@ -67,15 +92,17 @@
     private string internshipObjectives = string.Empty;
     private string message = string.Empty;
 
-    [Inject] private EmployeeService EmployeeService { get; set; }
-
     private List<Employee> employees = new();
-    
+    private string? pdfBase64DataUrl;
+    private string? generatedFileName;
+
+    [Inject] private EmployeeService EmployeeService { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        employees = await EmployeeService.GetAllAsync(); // Or your method to fetch employees
+        employees = await EmployeeService.GetAllAsync();
     }
+
     private async Task GenerateAttestation()
     {
         message = string.Empty;
@@ -96,41 +123,61 @@
                     message = "Veuillez remplir tous les champs pour l'attestation de stage.";
                     return;
                 }
-                pdfBytes = await AttestationService.GenerateInternshipAttestationPdfAsync(employeeId, internshipStartDate, internshipEndDate, internshipDepartment, supervisorName, internshipObjectives);
+
+                pdfBytes = await AttestationService.GenerateInternshipAttestationPdfAsync(
+                    employeeId, internshipStartDate, internshipEndDate, internshipDepartment, supervisorName, internshipObjectives);
                 fileName = $"Attestation_Stage_{employeeId}_{DateTime.Now:yyyyMMddHHmmss}.pdf";
             }
 
-            await JSRuntime.InvokeVoidAsync("saveAsFile", fileName, Convert.ToBase64String(pdfBytes));
-            message = "Attestation générée avec succès et téléchargée.";
-        }
-        catch (ArgumentException ex)
-        {
-            message = $"Erreur: {ex.Message}";
-        }
-        catch (InvalidOperationException ex)
-        {
-            message = $"Erreur de configuration: {ex.Message}";
+            var base64 = Convert.ToBase64String(pdfBytes);
+            pdfBase64DataUrl = $"data:application/pdf;base64,{base64}";
+            generatedFileName = fileName;
+
+            message = "Aperçu de l'attestation générée.";
         }
         catch (Exception ex)
         {
-            message = $"Une erreur inattendue est survenue: {ex.Message}";
+            message = $"Erreur : {ex.Message}";
         }
     }
+
+    private async Task PrintAttestation()
+    {
+        if (!string.IsNullOrEmpty(pdfBase64DataUrl))
+        {
+            await JSRuntime.InvokeVoidAsync("printPdfFromDataUrl", pdfBase64DataUrl);
+        }
+    }
+
+    private async Task DownloadAttestation()
+    {
+        if (!string.IsNullOrEmpty(pdfBase64DataUrl) && !string.IsNullOrEmpty(generatedFileName))
+        {
+            await JSRuntime.InvokeVoidAsync("downloadPdfFromDataUrl", pdfBase64DataUrl, generatedFileName);
+        }
+    }
+
     public enum AttestationType
     {
-        Work, // Attestation de travail
-        Internship // Attestation de stage
+        Work,
+        Internship
     }
 }
-
-
 <script>
-    window.saveAsFile = function (fileName, base64) {
-        var link = document.createElement('a');
-        link.download = fileName;
-        link.href = "data:application/octet-stream;base64," + base64;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    window.printPdfFromDataUrl = function (dataUrl) {
+        var win = window.open();
+        win.document.write('<iframe src="' + dataUrl + '" frameborder="0" style="border:0;width:100%;height:100%;" allowfullscreen></iframe>');
+        win.document.close();
+        win.focus();
+        win.print();
+    };
+
+    window.downloadPdfFromDataUrl = function (dataUrl, fileName) {
+        var a = document.createElement("a");
+        a.href = dataUrl;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
     };
 </script>

@@ -9,6 +9,7 @@ using iText.IO.Image;
 using RH.Data;
 using iText.Kernel.Font;
 using iText.IO.Font.Constants;
+using iText.Layout.Borders;
 
 namespace RH.Services
 {
@@ -58,7 +59,6 @@ namespace RH.Services
                     .SetFont(boldFont)
                     .SetMarginBottom(20));
             }
-
 
             var content = new Paragraph()
                 .SetFontSize(12)
@@ -156,6 +156,26 @@ namespace RH.Services
             return memoryStream.ToArray();
         }
 
+        public async Task<string> GetAttestationFileNameAsync(int employeeId, AttestationType type)
+        {
+            var employee = await _context.Employees.FirstOrDefaultAsync(e => e.Id == employeeId)
+                ?? throw new ArgumentException("Employé non trouvé.");
+
+            string baseName = type switch
+            {
+                AttestationType.Work when employee.Status == EmployeeStatus.Terminated => "Certificat_Travail",
+                AttestationType.Work => "Attestation_Travail",
+                AttestationType.Internship => "Attestation_Stage",
+                _ => "Attestation"
+            };
+
+            string safeName = string.Join("_", employee.FullName
+                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                .Select(n => n.Replace("/", "-")));
+
+            return $"{baseName}_{safeName}_{DateTime.Now:yyyyMMdd}.pdf";
+        }
+
         private void AddCompanyHeader(Document document, CompanyInfo companyInfo, PdfFont boldFont, PdfFont normalFont)
         {
             if (companyInfo.LogoBytes != null && !string.IsNullOrEmpty(companyInfo.LogoMimeType))
@@ -187,5 +207,11 @@ namespace RH.Services
             document.Add(new LineSeparator(new iText.Kernel.Pdf.Canvas.Draw.SolidLine()));
             document.Add(new Paragraph("\n"));
         }
+    }
+
+    public enum AttestationType
+    {
+        Work,
+        Internship
     }
 }
