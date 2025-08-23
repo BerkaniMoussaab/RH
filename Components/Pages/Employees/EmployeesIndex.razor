@@ -33,6 +33,7 @@
             <th>Contrat</th>
            
             <th></th>
+            <th></th>
         </tr>
     </thead>
     <tbody>
@@ -70,6 +71,9 @@
                    
                     <td>
                         <button class="btn btn-sm btn-outline-secondary" @onclick="() => Edit(emp.Id)">Modifier</button>
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" @onclick="() => deleteEmployee(emp.Id)">Supprimer</button>
                     </td>
                 </tr>
             }
@@ -363,6 +367,11 @@
     {
         ErrorMessage = string.Empty;
         SuccessMessage = string.Empty;
+    }
+    private void deleteEmployee(int Id)
+    {
+        EmployeeService.DeleteAsync(Id);
+        StateHasChanged();
     }
 }
 

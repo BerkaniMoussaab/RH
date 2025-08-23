@@ -18,7 +18,7 @@
         public async Task<List<Employee>> GetAllAsync()
         {
             using var context = _contextFactory.CreateDbContext();
-            return await context.Employees.Include(j => j.JobTitle).ToListAsync();
+            return await context.Employees.Where(e=>e.Deleted == false).Include(j => j.JobTitle).ToListAsync();
         }
 
 
