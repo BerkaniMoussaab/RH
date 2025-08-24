@@ -118,11 +118,12 @@
 
     private async Task LoadRules()
     {
-        var lastPayroll = await PayrollService.GetLastPayrollForEmployeeAsync(SelectedEmployeeId);
-        BaseAmount = lastPayroll?.BaseSalary ?? 0;
+        
+        
 
         var allRules = await PayrollRuleService.GetAllAsync();
         var employee = await EmployeeService.GetByIdAsync(SelectedEmployeeId);
+        BaseAmount = employee?.BaseSalary ?? 0;
         var jobTitleId = employee.JobTitleId;
 
         Rules = allRules

@@ -6,6 +6,7 @@ using RH.Components;
 using RH.Components.Account;
 using RH.Data;
 using RH.Services;
+using RH.Services.Interfaces;
 using System.Globalization;
 using System.IO; // Required for Path.Combine
 
@@ -96,7 +97,9 @@ void ConfigureServices(WebApplicationBuilder builder)
     builder.Services.AddScoped<IPayrollService, PayrollService>();
     builder.Services.AddScoped<IAdvanceService, AdvanceService>();
     builder.Services.AddScoped<IStatisticsService, StatisticsService>();
-
+    builder.Services.AddScoped<IAttendanceProcessingService, AttendanceProcessingService>();
+    builder.Services.AddScoped<IExcelReaderService, ExcelReaderService>();
+ 
     // Note: Some services were registered multiple times (e.g., EmployeeService).
     // This is harmless but redundant. I've kept one registration for each.
     // If a service is registered with both its interface and class, ensure that's intended.

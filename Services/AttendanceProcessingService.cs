@@ -130,7 +130,7 @@ namespace RH.Services
                 return 0;
 
             decimal baseAmount = rule.IsPercentage 
-                ? employee.MonthlySalary * (rule.Amount / 100) 
+                ? employee.BaseSalary * (rule.Amount / 100) 
                 : rule.Amount;
 
             // Si la règle est comptable, multiplier par la quantité

@@ -36,6 +36,16 @@ namespace RH.Services
             _context.WorkedDaysOff.Add(entry);
             await _context.SaveChangesAsync();
         }
+        public async Task DeleteAsync(int id)
+        {
+            var entry = await _context.WorkedDaysOff.FindAsync(id);
+            if (entry != null)
+            {
+                _context.WorkedDaysOff.Remove(entry);
+                await _context.SaveChangesAsync();
+            }
+        }
+
 
         public async Task ConvertToRecovery(int workedDayId)
         {

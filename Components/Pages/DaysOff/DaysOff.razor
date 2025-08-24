@@ -597,7 +597,7 @@
         try
         {
             // Implement delete in WorkedDayOffService if needed
-            // await WorkedService.DeleteAsync(id);
+            await WorkedService.DeleteAsync(id);
             await LoadData();
             ShowToast("Jour travaillé supprimé", "success");
         }

@@ -1,10 +1,12 @@
 @page "/punctuality-management"
 @using RH.Models
 @using RH.Models.Attendance
+@using RH.Services
 @using RH.Services.Interfaces
 @inject IPayrollAdjustmentRuleService PayrollRuleService
 @inject IExcelReaderService ExcelReaderService
 @inject IAttendanceProcessingService AttendanceProcessingService
+@inject IPayrollService PayrollService
 @inject IJSRuntime JSRuntime
 
 <PageTitle>Gestion de la Ponctualité</PageTitle>
@@ -241,7 +243,21 @@
                 selectedResults, selectedBonusRule!, selectedDeductionRule!);
 
             // Ici, vous devriez appeler un service pour sauvegarder les règles appliquées
-            // Par exemple: await PayrollService.ApplyRulesAsync(appliedRules);
+            // Par exemple: 
+            
+            // Group rules by employee
+            var rulesByEmployee = appliedRules
+                .Where(r => r.EmployeeId.HasValue) // skip nulls
+                .GroupBy(r => r.EmployeeId.Value);
+
+            // Apply all rules per employee
+            foreach (var group in rulesByEmployee)
+            {
+                int employeeId = group.Key;
+                var employeeRules = group.ToList();
+
+                await PayrollService.ApplyRulesAsync(employeeId, employeeRules);
+            }
 
             successMessage = $"{appliedRules.Count} règle(s) appliquée(s) avec succès.";
             

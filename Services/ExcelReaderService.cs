@@ -16,33 +16,33 @@ namespace RH.Services
 
             try
             {
-                // Configuration EPPlus pour éviter les problèmes de licence
-                ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
+                // Copier le flux en mémoire pour éviter l'erreur
+                using var memoryStream = new MemoryStream();
+                await stream.CopyToAsync(memoryStream);
+                memoryStream.Position = 0;
 
-                using var package = new ExcelPackage(stream);
+                ExcelPackage.License.SetNonCommercialPersonal("MOSSAAB");
+
+                using var package = new ExcelPackage(memoryStream);
                 var worksheet = package.Workbook.Worksheets.FirstOrDefault();
 
                 if (worksheet == null)
-                {
                     throw new InvalidOperationException("Le fichier Excel ne contient aucune feuille de calcul.");
-                }
 
                 var rowCount = worksheet.Dimension?.Rows ?? 0;
                 var colCount = worksheet.Dimension?.Columns ?? 0;
 
                 if (rowCount == 0 || colCount == 0)
-                {
                     throw new InvalidOperationException("La feuille de calcul est vide.");
-                }
 
-                // Lecture des en-têtes (première ligne)
+                // Lecture des en-têtes
                 for (int col = 1; col <= colCount; col++)
                 {
                     var headerValue = worksheet.Cells[1, col].Value?.ToString() ?? $"Colonne {col}";
                     excelData.Headers.Add(headerValue);
                 }
 
-                // Lecture des données (à partir de la deuxième ligne)
+                // Lecture des données
                 for (int row = 2; row <= rowCount; row++)
                 {
                     var rowData = new List<string>();
@@ -52,18 +52,13 @@ namespace RH.Services
                     {
                         var cellValue = worksheet.Cells[row, col].Value?.ToString() ?? string.Empty;
                         rowData.Add(cellValue);
-                        
+
                         if (!string.IsNullOrWhiteSpace(cellValue))
-                        {
                             hasData = true;
-                        }
                     }
 
-                    // N'ajouter que les lignes qui contiennent des données
                     if (hasData)
-                    {
                         excelData.Rows.Add(rowData);
-                    }
                 }
 
                 return excelData;
@@ -73,6 +68,7 @@ namespace RH.Services
                 throw new InvalidOperationException($"Erreur lors de la lecture du fichier Excel: {ex.Message}", ex);
             }
         }
+
 
         public async Task<List<AttendanceRecord>> ConvertToAttendanceRecordsAsync(ExcelData excelData, ColumnMapping columnMapping)
         {

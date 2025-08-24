@@ -1,6 +1,7 @@
 ﻿@using RH.Models
 @using RH.Services
 @inject IJobTitleService JobTitleService
+@inject IEmployeeService EmployeeService
 @rendermode InteractiveServer
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
@@ -208,11 +209,40 @@
 
     private async Task HandleValidSubmit()
     {
-        if (Employee.InscriptionDate == null)
-            Employee.InscriptionDate = DateTime.Today;
+        try
+        {
+            // Ensure the JobTitle is properly set based on JobTitleId
+            if (Employee.JobTitleId > 0)
+            {
+                // Load the JobTitle object from the selected ID
+                var selectedJobTitle = JobTitles.FirstOrDefault(j => j.Id == Employee.JobTitleId);
+                if (selectedJobTitle != null)
+                {
+                    Employee.JobTitle = selectedJobTitle;
+                }
+            }
 
-        await OnSave.InvokeAsync(Employee);
-        await Close();
+            if (Employee.InscriptionDate == null)
+                Employee.InscriptionDate = DateTime.Today;
+
+            if (Employee.Id == 0)
+            {
+                await EmployeeService.AddAsync(Employee);
+            }
+            else
+            {
+                await EmployeeService.UpdateAsync(Employee);
+            }
+
+            await OnSave.InvokeAsync(Employee);
+            await Close();
+
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving employee: {ex.Message}");
+        }
     }
 
     private async Task AddJobTitle()
