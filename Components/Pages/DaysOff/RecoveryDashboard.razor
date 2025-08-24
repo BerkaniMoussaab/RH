@@ -1,4 +1,5 @@
 ﻿@page "/recovery-dashboard"
+@using RH.Models
 @using RH.Services
 @inject RecoveryDayService RecoveryService
 @inject WorkedDaysOffService WorkedService
@@ -82,21 +83,21 @@
                     {
                         <tr>
                             <td><strong>@summary.FullName</strong></td>
-                            <td>@summary.TotalWorkedDays</td>
-                            <td>@summary.TotalRecoveryDays</td>
+                            <td>@summary.TotalWorkedDays.ToString("F1")</td>
+                            <td>@summary.TotalRecoveryDays.ToString("F1")</td>
                             <td>
                                 <span class="summary-badge badge-available">
-                                    @summary.UnusedRecoveryDays
+                                    @summary.UnusedRecoveryDays.ToString("F1")
                                 </span>
                             </td>
                             <td>
                                 <span class="summary-badge badge-paid">
-                                    @summary.BonusPaid
+                                    @summary.BonusPaid.ToString("F1")
                                 </span>
                             </td>
                             <td>
                                 <span class="summary-badge badge-pending">
-                                    @summary.BonusPending
+                                    @summary.BonusPending.ToString("F1")
                                 </span>
                             </td>
                             <td>
@@ -106,7 +107,6 @@
                                     Gérer
                                 </button>
                             </td>
-
                         </tr>
                     }
                 </tbody>
@@ -115,38 +115,51 @@
     }
 </div>
 
-
 @code {
     private void OpenEmployeeRecovery(int employeeId)
     {
         var url = $"/recuperation?employeeId={employeeId}";
-        NavManager.NavigateTo(url, true); // true = force reload
+        NavManager.NavigateTo(url, true);
     }
-
 
     private List<EmployeeSummaryViewModel>? EmployeeSummaries;
 
     protected override async Task OnInitializedAsync()
     {
         var employees = await EmployeeService.GetAllAsync();
-        var allWorked = await WorkedService.GetAllAsync(); // new method to fetch all
+        var allWorked = await WorkedService.GetAllAsync();
         var allRecovery = await RecoveryService.GetAllAsync();
 
         EmployeeSummaries = employees.Select(emp =>
         {
-            var worked = allWorked.Where(w => w.EmployeeId == emp.Id).ToList();
-            var recovery = allRecovery.Where(r => r.EmployeeId == emp.Id).ToList();
+            var workedDays = allWorked.Where(w => w.EmployeeId == emp.Id).ToList();
+            var recoveryDays = allRecovery.Where(r => r.EmployeeId == emp.Id).ToList();
+
+            // Calculate total quantities instead of just counts
+            float totalWorkedQuantity = workedDays.Sum(w => w.Quantity);
+            float totalRecoveryQuantity = recoveryDays.Sum(r => r.Quantity);
+            float totalUsedRecoveryQuantity = recoveryDays.Sum(r => r.UsedQuantity);
+            float unusedRecoveryQuantity = totalRecoveryQuantity - totalUsedRecoveryQuantity;
+
+            // Calculate bonus quantities
+            float bonusPaidQuantity = workedDays
+                .Where(w => w.GrantsBonus && w.BonusPaid)
+                .Sum(w => w.Quantity);
+
+            float bonusPendingQuantity = workedDays
+                .Where(w => w.GrantsBonus && !w.BonusPaid)
+                .Sum(w => w.Quantity);
 
             return new EmployeeSummaryViewModel
-                {
-                    EmployeeId = emp.Id,
-                    FullName = emp.FullName,
-                    TotalWorkedDays = worked.Count,
-                    TotalRecoveryDays = recovery.Count,
-                   
-                    BonusPaid = worked.Count(w => w.GrantsBonus && w.BonusPaid),
-                    BonusPending = worked.Count(w => w.GrantsBonus && !w.BonusPaid)
-                };
+            {
+                EmployeeId = emp.Id,
+                FullName = emp.FullName,
+                TotalWorkedDays = totalWorkedQuantity,
+                TotalRecoveryDays = totalRecoveryQuantity,
+                UnusedRecoveryDays = unusedRecoveryQuantity,
+                BonusPaid = bonusPaidQuantity,
+                BonusPending = bonusPendingQuantity
+            };
         }).OrderBy(e => e.FullName).ToList();
     }
 
@@ -154,10 +167,10 @@
     {
         public int EmployeeId { get; set; }
         public string FullName { get; set; } = "";
-        public int TotalWorkedDays { get; set; }
-        public int TotalRecoveryDays { get; set; }
-        public int UnusedRecoveryDays { get; set; }
-        public int BonusPaid { get; set; }
-        public int BonusPending { get; set; }
+        public float TotalWorkedDays { get; set; }
+        public float TotalRecoveryDays { get; set; }
+        public float UnusedRecoveryDays { get; set; }
+        public float BonusPaid { get; set; }
+        public float BonusPending { get; set; }
     }
 }
