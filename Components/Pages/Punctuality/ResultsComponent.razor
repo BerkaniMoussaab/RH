@@ -40,8 +40,8 @@
         <div class="card bg-info text-white">
             <div class="card-body text-center">
                 <i class="fas fa-plus-circle fa-2x mb-2"></i>
-                <h4 class="mb-1">@ProcessingResult.EmployeeResults.Sum(r => r.EarlyArrivals)</h4>
-                <small>Arrivées Précoces</small>
+                <h4 class="mb-1">@ProcessingResult.EmployeeResults.Sum(r => r.TotalEarlyMinutes)</h4>
+                <small>Minutes Précoces</small>
             </div>
         </div>
     </div>
@@ -49,8 +49,8 @@
         <div class="card bg-warning text-white">
             <div class="card-body text-center">
                 <i class="fas fa-minus-circle fa-2x mb-2"></i>
-                <h4 class="mb-1">@ProcessingResult.EmployeeResults.Sum(r => r.LateArrivals)</h4>
-                <small>Retards</small>
+                <h4 class="mb-1">@ProcessingResult.EmployeeResults.Sum(r => r.TotalLateMinutes)</h4>
+                <small>Minutes de Retard</small>
             </div>
         </div>
     </div>
@@ -82,15 +82,15 @@
                         <thead class="table-dark">
                             <tr>
                                 <th style="width: 50px;">
-                                    <input type="checkbox" 
-                                           class="form-check-input" 
-                                           @onchange="ToggleSelectAll" 
+                                    <input type="checkbox"
+                                           class="form-check-input"
+                                           @onchange="ToggleSelectAll"
                                            checked="@allSelected" />
                                 </th>
                                 <th>Employé</th>
                                 <th style="width: 100px;">Statut</th>
-                                <th style="width: 120px;">Arrivées Précoces</th>
-                                <th style="width: 120px;">Retards</th>
+                                <th style="width: 120px;">Minutes Précoces</th>
+                                <th style="width: 120px;">Minutes de Retard</th>
                                 <th style="width: 120px;">Bonus</th>
                                 <th style="width: 120px;">Déduction</th>
                                 <th style="width: 100px;">Actions</th>
@@ -101,9 +101,9 @@
                             {
                                 <tr class="@(result.IsSelected ? "" : "table-secondary")">
                                     <td>
-                                        <input type="checkbox" 
-                                               class="form-check-input" 
-                                               @bind="result.IsSelected" 
+                                        <input type="checkbox"
+                                               class="form-check-input"
+                                               @bind="result.IsSelected"
                                                disabled="@(!result.HasMatchingEmployee)" />
                                     </td>
                                     <td>
@@ -140,9 +140,9 @@
                                         }
                                     </td>
                                     <td class="text-center">
-                                        @if (result.EarlyArrivals > 0)
+                                        @if (result.TotalEarlyMinutes > 0)
                                         {
-                                            <span class="badge bg-success fs-6">@result.EarlyArrivals</span>
+                                            <span class="badge bg-success fs-6">@result.TotalEarlyMinutes</span>
                                         }
                                         else
                                         {
@@ -150,9 +150,9 @@
                                         }
                                     </td>
                                     <td class="text-center">
-                                        @if (result.LateArrivals > 0)
+                                        @if (result.TotalLateMinutes > 0)
                                         {
-                                            <span class="badge bg-warning fs-6">@result.LateArrivals</span>
+                                            <span class="badge bg-warning fs-6">@result.TotalLateMinutes</span>
                                         }
                                         else
                                         {
@@ -180,7 +180,7 @@
                                         }
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-info" 
+                                        <button class="btn btn-sm btn-outline-info"
                                                 @onclick="() => ShowDetails(result)"
                                                 title="Voir les détails">
                                             <i class="fas fa-eye"></i>
@@ -212,7 +212,7 @@
                     <p class="mb-3">
                         Les enregistrements suivants n'ont pas pu être traités en raison d'erreurs de format ou de données manquantes.
                     </p>
-                    
+
                     <div class="table-responsive" style="max-height: 300px;">
                         <table class="table table-sm table-striped">
                             <thead class="table-warning">
@@ -244,7 +244,7 @@
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <div class="mt-3">
                         <button class="btn btn-outline-warning" @onclick="DownloadInvalidRecords">
                             <i class="fas fa-download me-2"></i>
@@ -309,8 +309,8 @@
                     Recommencer
                 </button>
             </div>
-            <button class="btn btn-success btn-lg" 
-                    @onclick="OnSave" 
+            <button class="btn btn-success btn-lg"
+                    @onclick="OnSave"
                     disabled="@(selectedEmployeesCount == 0)">
                 <i class="fas fa-save me-2"></i>
                 Sauvegarder (@selectedEmployeesCount règle(s))
@@ -341,14 +341,14 @@
     private void UpdateSummary()
     {
         var selectedResults = ProcessingResult.EmployeeResults.Where(r => r.IsSelected && r.HasMatchingEmployee);
-        
+
         selectedEmployeesCount = selectedResults.Count();
         totalBonusAmount = selectedResults.Sum(r => r.BonusAmount);
         totalDeductionAmount = selectedResults.Sum(r => r.DeductionAmount);
         netImpact = totalBonusAmount - totalDeductionAmount;
-        
+
         allSelected = ProcessingResult.EmployeeResults.Where(r => r.HasMatchingEmployee).All(r => r.IsSelected);
-        
+
         StateHasChanged();
     }
 
@@ -373,12 +373,12 @@
     private void ToggleSelectAll(ChangeEventArgs e)
     {
         var isChecked = (bool)(e.Value ?? false);
-        
+
         foreach (var result in ProcessingResult.EmployeeResults.Where(r => r.HasMatchingEmployee))
         {
             result.IsSelected = isChecked;
         }
-        
+
         UpdateSummary();
     }
 
@@ -388,9 +388,9 @@
         // Pour l'instant, on affiche juste une alerte
         var details = $"Employé: {result.EmployeeName}\n" +
                      $"Enregistrements: {result.Records.Count}\n" +
-                     $"Arrivées précoces: {result.EarlyArrivals}\n" +
-                     $"Retards: {result.LateArrivals}";
-        
+                     $"Minutes précoces: {result.TotalEarlyMinutes}\n" +
+                     $"Minutes de retard: {result.TotalLateMinutes}";
+
         JSRuntime.InvokeVoidAsync("alert", details);
     }
 
@@ -398,8 +398,7 @@
     {
         var csvContent = AttendanceProcessingService.GenerateInvalidRecordsCsv(ProcessingResult.InvalidRecords);
         var fileName = $"enregistrements_invalides_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-        
+
         await JSRuntime.InvokeVoidAsync("downloadFile", fileName, csvContent, "text/csv");
     }
 }
-

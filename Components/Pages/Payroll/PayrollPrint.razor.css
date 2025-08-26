@@ -1,27 +1,23 @@
-﻿/* Base container */
-.payroll-sheet {
-    width: 210mm; /* A4 width */
-    min-height: auto;
-    max-height: none;
-    padding: 20mm;
+﻿.payroll-sheet {
+    width: 148mm; /* A5 width */
+    padding: 12mm; /* balanced padding for A5 */
     background-color: #fff;
     color: #333;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 10pt;
+    font-size: 9pt;
     line-height: 1.4;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
     margin: 20px auto;
-    overflow: visible;
 }
 
 /* Header */
 .company-logo {
-    max-width: 120px;
+    max-width: 100px;
     height: auto;
 }
 
 .section-title {
-    font-size: 1.1em;
+    font-size: 1em;
     font-weight: 600;
     color: #0056b3;
     border-bottom: 1px solid #eee;
@@ -40,19 +36,19 @@
     background-color: #f8f9fa;
     border: 1px solid #e9ecef;
     border-radius: 4px;
-    padding: 8px 12px;
+    padding: 7px 10px;
     text-align: center;
     margin-bottom: 8px;
 }
 
     .salary-summary-section .summary-item .label {
-        font-size: 0.85em;
+        font-size: 0.8em;
         color: #555;
         margin-bottom: 2px;
     }
 
     .salary-summary-section .summary-item .value {
-        font-size: 1.2em;
+        font-size: 1.1em;
         font-weight: 700;
         color: #333;
     }
@@ -62,41 +58,35 @@
     background-color: #e0f7fa;
     border: 2px solid #00bcd4;
     border-radius: 6px;
-    padding: 12px 15px;
+    padding: 10px 12px;
     text-align: center;
     margin-top: 15px;
 }
 
 .net-pay-label {
-    font-size: 1em;
+    font-size: 0.9em;
     font-weight: 600;
     color: #007bff;
     margin-bottom: 3px;
 }
 
 .net-pay-value {
-    font-size: 2em;
+    font-size: 1.8em;
     font-weight: 800;
     color: #0056b3;
 }
 
 /* Details tables */
-.table-container {
-    max-height: none;
-    overflow: visible;
-    page-break-inside: auto;
-}
-
 .details-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 5px;
-    font-size: 0.9em;
+    font-size: 0.85em;
 }
 
     .details-table th,
     .details-table td {
-        padding: 6px 8px;
+        padding: 5px 7px;
         border: 1px solid #dee2e6;
         vertical-align: top;
     }
@@ -105,7 +95,7 @@
         background-color: #f2f2f2;
         font-weight: 600;
         color: #495057;
-        font-size: 0.85em;
+        font-size: 0.8em;
     }
 
     .details-table tbody tr:nth-child(even) {
@@ -114,7 +104,7 @@
 
 /* Limit long text */
 .description-cell {
-    max-width: 120px;
+    max-width: 100px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -122,22 +112,22 @@
 
 /* Footer */
 .footer-section {
-    margin-top: 30px;
-    padding-top: 15px;
+    margin-top: 20px;
+    padding-top: 10px;
     border-top: 1px solid #eee;
-    font-size: 0.8em;
+    font-size: 0.75em;
     color: #777;
 }
 
 .signature-label {
     font-weight: 600;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
 }
 
 .signature-line {
     border-bottom: 1px dashed #999;
-    width: 150px;
-    height: 30px;
+    width: 120px;
+    height: 25px;
     margin-left: auto;
 }
 
@@ -158,19 +148,11 @@
     }
 
     .payroll-sheet {
-        width: 100%;
+        width: 148mm; /* keep A5 */
+        margin: 0 auto;
+        padding: 10mm; /* keep padding for margins */
         box-shadow: none;
-        margin: 0;
-        padding: 10mm;
-        min-height: auto;
-        max-height: none;
-        overflow: visible;
-        font-size: 9pt;
-    }
-
-    .table-container {
-        max-height: none;
-        overflow: visible;
+        font-size: 8pt;
     }
 
     .no-print {
@@ -181,18 +163,18 @@
     .footer-section,
     .section-title {
         page-break-inside: avoid;
-        break-inside: avoid;
+        break-inside: avoid-page; /* Chrome/Edge */
     }
 
     .details-table {
-        font-size: 0.8em;
+        font-size: 0.75em;
     }
 
     .net-pay-value {
-        font-size: 1.8em;
+        font-size: 1.6em;
     }
 
     .title {
-        font-size: 1.6em;
+        font-size: 1.3em;
     }
 }

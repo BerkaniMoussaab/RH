@@ -22,18 +22,20 @@ namespace RH.Services
         Task<List<Advance>> GetAllWithDeductionsAsync();
         Task DeleteDeductionAsync(int deductionId);
     }
+
     public class AdvanceService : IAdvanceService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-        public AdvanceService(ApplicationDbContext context)
+        public AdvanceService(IDbContextFactory<ApplicationDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public async Task<List<Advance>> GetAllAsync()
         {
-            return await _context.Advances
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Advances
                 .Include(a => a.Employee)
                 .Include(a => a.Deductions)
                 .OrderByDescending(a => a.CreatedAt)
@@ -42,33 +44,37 @@ namespace RH.Services
 
         public async Task<List<Advance>> GetByEmployeeIdAsync(int employeeId)
         {
-            return await _context.Advances
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Advances
                 .Include(a => a.Employee)
                 .Include(a => a.Deductions)
                 .Where(a => a.EmployeeId == employeeId)
                 .OrderByDescending(a => a.CreatedAt)
                 .ToListAsync();
         }
+
         public async Task DeleteDeductionAsync(int deductionId)
         {
-            var deduction = await _context.AdvanceDeductions.FindAsync(deductionId);
+            using var context = await _contextFactory.CreateDbContextAsync();
+
+            var deduction = await context.AdvanceDeductions.FindAsync(deductionId);
             if (deduction == null)
                 return;
 
-            var advance = await _context.Advances.FindAsync(deduction.AdvanceId);
+            var advance = await context.Advances.FindAsync(deduction.AdvanceId);
             if (advance != null)
             {
                 advance.RemainingAmount += deduction.DeductedAmount;
             }
 
-            _context.AdvanceDeductions.Remove(deduction);
-            await _context.SaveChangesAsync();
+            context.AdvanceDeductions.Remove(deduction);
+            await context.SaveChangesAsync();
         }
-
 
         public async Task<List<Advance>> GetActiveAdvancesForEmployeeAsync(int employeeId)
         {
-            return await _context.Advances
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Advances
                 .Include(a => a.Employee)
                 .Include(a => a.Deductions)
                 .Where(a => a.EmployeeId == employeeId &&
@@ -77,19 +83,20 @@ namespace RH.Services
                 .OrderBy(a => a.Date)
                 .ToListAsync();
         }
+
         public async Task<List<AdvanceDeduction>> GetDeductionsForPayroll(int payrollId)
         {
-            return await _context.AdvanceDeductions
-                
-                
-                .Where(a => a.PayrollId == payrollId 
-                          ).Include(a => a.Advance)
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.AdvanceDeductions
+                .Where(a => a.PayrollId == payrollId)
+                .Include(a => a.Advance)
                 .ToListAsync();
         }
 
         public async Task<Advance> GetByIdAsync(int id)
         {
-            return await _context.Advances
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Advances
                 .Include(a => a.Employee)
                 .Include(a => a.Deductions)
                     .ThenInclude(d => d.Payroll)
@@ -98,24 +105,30 @@ namespace RH.Services
 
         public async Task<Advance> CreateAsync(Advance advance)
         {
+            using var context = await _contextFactory.CreateDbContextAsync();
+
             advance.CreatedAt = DateTime.UtcNow;
             advance.RemainingAmount = advance.Amount;
             advance.Status = AdvanceStatus.Active;
 
-            _context.Advances.Add(advance);
-            await _context.SaveChangesAsync();
+            context.Advances.Add(advance);
+            await context.SaveChangesAsync();
             return advance;
         }
 
         public async Task<Advance> UpdateAsync(Advance advance)
         {
-            _context.Entry(advance).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
+            using var context = await _contextFactory.CreateDbContextAsync();
+
+            context.Entry(advance).State = EntityState.Modified;
+            await context.SaveChangesAsync();
             return advance;
         }
+
         public async Task<List<Advance>> GetAllWithDeductionsAsync()
         {
-            return await _context.Advances
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Advances
                 .Include(a => a.Employee)
                 .Include(a => a.Deductions)
                 .ToListAsync();
@@ -123,10 +136,12 @@ namespace RH.Services
 
         public async Task<bool> DeleteAsync(int id)
         {
-            var advance = await _context.Advances.FindAsync(id);
+            using var context = await _contextFactory.CreateDbContextAsync();
+
+            var advance = await context.Advances.FindAsync(id);
             if (advance == null) return false;
 
-            var hasDeductions = await _context.AdvanceDeductions
+            var hasDeductions = await context.AdvanceDeductions
                 .AnyAsync(d => d.AdvanceId == id);
 
             if (hasDeductions)
@@ -134,26 +149,29 @@ namespace RH.Services
                 throw new InvalidOperationException("Cannot delete advance with existing deductions. Use cancel instead.");
             }
 
-            _context.Advances.Remove(advance);
-            await _context.SaveChangesAsync();
+            context.Advances.Remove(advance);
+            await context.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> CancelAdvanceAsync(int id)
         {
-            var advance = await _context.Advances.FindAsync(id);
+            using var context = await _contextFactory.CreateDbContextAsync();
+
+            var advance = await context.Advances.FindAsync(id);
             if (advance == null) return false;
 
             advance.Status = AdvanceStatus.Cancelled;
             advance.CompletedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
 
         public async Task<decimal> GetTotalActiveAdvancesAsync(int employeeId)
         {
-            return await _context.Advances
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Advances
                 .Where(a => a.EmployeeId == employeeId &&
                            a.Status == AdvanceStatus.Active)
                 .SumAsync(a => a.RemainingAmount);
@@ -161,7 +179,8 @@ namespace RH.Services
 
         public async Task<List<AdvanceDeduction>> GetDeductionHistoryAsync(int advanceId)
         {
-            return await _context.AdvanceDeductions
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.AdvanceDeductions
                 .Include(d => d.Payroll)
                 .Where(d => d.AdvanceId == advanceId)
                 .OrderByDescending(d => d.DeductionDate)
@@ -176,15 +195,24 @@ namespace RH.Services
 
         public async Task<List<AdvanceDeduction>> ProcessAdvanceDeductionsAsync(int employeeId, int payrollId, decimal maxDeductionAmount)
         {
-            var executionStrategy = _context.Database.CreateExecutionStrategy();
+            using var context = await _contextFactory.CreateDbContextAsync();
+            var executionStrategy = context.Database.CreateExecutionStrategy();
 
             return await executionStrategy.ExecuteAsync(async () =>
             {
-                using var transaction = await _context.Database.BeginTransactionAsync();
+                using var transaction = await context.Database.BeginTransactionAsync();
 
                 try
                 {
-                    var activeAdvances = await GetActiveAdvancesForEmployeeAsync(employeeId);
+                    var activeAdvances = await context.Advances
+                        .Include(a => a.Employee)
+                        .Include(a => a.Deductions)
+                        .Where(a => a.EmployeeId == employeeId &&
+                                   a.Status == AdvanceStatus.Active &&
+                                   a.RemainingAmount > 0)
+                        .OrderBy(a => a.Date)
+                        .ToListAsync();
+
                     var deductions = new List<AdvanceDeduction>();
                     var remainingDeductionAmount = maxDeductionAmount;
 
@@ -204,7 +232,7 @@ namespace RH.Services
                                 DeductionDate = DateTime.UtcNow,
                             };
 
-                            _context.AdvanceDeductions.Add(deduction);
+                            context.AdvanceDeductions.Add(deduction);
                             deductions.Add(deduction);
 
                             advance.RemainingAmount -= deductionAmount;
@@ -215,12 +243,12 @@ namespace RH.Services
                                 advance.CompletedAt = DateTime.UtcNow;
                             }
 
-                            _context.Entry(advance).State = EntityState.Modified;
+                            context.Entry(advance).State = EntityState.Modified;
                             remainingDeductionAmount -= deductionAmount;
                         }
                     }
 
-                    await _context.SaveChangesAsync();
+                    await context.SaveChangesAsync();
                     await transaction.CommitAsync();
 
                     return deductions;
@@ -235,14 +263,23 @@ namespace RH.Services
 
         public async Task ApplyDeductionToAdvancesAsync(int employeeId, decimal deductionAmount)
         {
-            var executionStrategy = _context.Database.CreateExecutionStrategy();
+            using var context = await _contextFactory.CreateDbContextAsync();
+            var executionStrategy = context.Database.CreateExecutionStrategy();
 
             await executionStrategy.ExecuteAsync(async () =>
             {
-                using var transaction = await _context.Database.BeginTransactionAsync();
+                using var transaction = await context.Database.BeginTransactionAsync();
                 try
                 {
-                    var activeAdvances = await GetActiveAdvancesForEmployeeAsync(employeeId);
+                    var activeAdvances = await context.Advances
+                        .Include(a => a.Employee)
+                        .Include(a => a.Deductions)
+                        .Where(a => a.EmployeeId == employeeId &&
+                                   a.Status == AdvanceStatus.Active &&
+                                   a.RemainingAmount > 0)
+                        .OrderBy(a => a.Date)
+                        .ToListAsync();
+
                     decimal remainingDeduction = deductionAmount;
 
                     foreach (var advance in activeAdvances)
@@ -257,10 +294,10 @@ namespace RH.Services
                             advance.Status = AdvanceStatus.Completed;
                             advance.CompletedAt = DateTime.UtcNow;
                         }
-                        _context.Entry(advance).State = EntityState.Modified;
+                        context.Entry(advance).State = EntityState.Modified;
                         remainingDeduction -= amountToDeduct;
                     }
-                    await _context.SaveChangesAsync();
+                    await context.SaveChangesAsync();
                     await transaction.CommitAsync();
                 }
                 catch (Exception)
@@ -270,9 +307,11 @@ namespace RH.Services
                 }
             });
         }
+
         public async Task<List<Advance>> GetActiveAdvancesByEmployeeIdAsync(int employeeId)
         {
-            return await _context.Advances
+            using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.Advances
                 .Include(a => a.Employee)
                 .Include(a => a.Deductions)
                 .Where(a => a.EmployeeId == employeeId &&
@@ -281,7 +320,5 @@ namespace RH.Services
                 .OrderBy(a => a.Date)
                 .ToListAsync();
         }
-
     }
-
 }

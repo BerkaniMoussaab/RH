@@ -9,11 +9,11 @@ namespace RH.Services
         Task<List<AdvanceDeduction>> ProcessAdvanceDeductionsForPayrollAsync(Payroll payroll);
         Task<List<PayrollAppliedRule>> GetAppliedRulesForEmployeeAsync(int employeeId);
         Task<AdvanceDeductionSummary> GetAdvanceDeductionSummaryAsync(int employeeId, decimal preliminaryNetPay);
-        Task deleteAppliedRule(int Id);
+        Task DeleteAppliedRule(int id);
         Task<List<PayrollAppliedRule>> GetAppliedRulesForEmployeeAsync(
             int employeeId, DateTime? fromDate, DateTime? toDate);
         Task<Payroll?> GetByIdAsync(int id);
-        void DeleteAsync(int id , bool deleteAppliedRules);
+        Task DeleteAsync(int payrollId, bool deleteAppliedRules);
         Task<Payroll> GeneratePayrollForEmployee(int employeeId, DateTime payDate);
         Task<Payroll> CreateAsync(Payroll payroll);
         Task<Payroll> UpdateAsync(Payroll payroll);

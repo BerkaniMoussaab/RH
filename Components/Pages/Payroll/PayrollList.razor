@@ -5,6 +5,7 @@
 @using RH.Services
 @using System.Text.Json
 @using static PayrollService
+Z
 @inject IPayrollService PayrollService
 @inject IEmployeeService EmployeeService
 @inject PayrollAdjustmentRuleService AdjustmentService
@@ -986,7 +987,7 @@ else
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
-                    <button class="btn btn-success" @onclick="Print">Imprimer</button>
+                    
                     <button class="btn btn-outline-secondary" @onclick="ClosePrintModal">Fermer</button>
                 </div>
             </div>

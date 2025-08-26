@@ -31,11 +31,11 @@ namespace RH.Services
             PayrollAdjustmentRule deductionRule)
         {
             var result = new AttendanceProcessingResult();
-            
+
             // Séparer les enregistrements valides et invalides
             var validRecords = attendanceRecords.Where(r => r.IsValid).ToList();
             result.InvalidRecords = attendanceRecords.Where(r => !r.IsValid).ToList();
-            
+
             result.TotalRecordsProcessed = attendanceRecords.Count;
             result.ValidRecordsCount = validRecords.Count;
             result.InvalidRecordsCount = result.InvalidRecords.Count;
@@ -53,7 +53,7 @@ namespace RH.Services
 
                 // Rechercher l'employé dans la base de données
                 var employee = await FindEmployeeByNameAsync(group.Key);
-                
+
                 if (employee != null)
                 {
                     employeeResult.EmployeeId = employee.Id;
@@ -68,27 +68,31 @@ namespace RH.Services
                         var firstArrival = dayGroup.OrderBy(r => r.AttendanceDateTime.TimeOfDay).First();
                         var arrivalTime = firstArrival.AttendanceDateTime.TimeOfDay;
 
-                        // Vérifier si c'est une arrivée précoce
+                        // Calculer les minutes par rapport aux seuils
                         if (arrivalTime <= thresholds.EarlyThreshold)
                         {
-                            employeeResult.EarlyArrivals++;
+                            // Arrivée précoce : calculer les minutes avant le seuil
+                            var minutesEarly = (thresholds.EarlyThreshold - arrivalTime).TotalMinutes;
+                            employeeResult.TotalEarlyMinutes +=(decimal) Math.Floor(minutesEarly); ;
                         }
                         // Vérifier si c'est une arrivée tardive
                         else if (arrivalTime > thresholds.LateThreshold)
                         {
-                            employeeResult.LateArrivals++;
+                            // Arrivée tardive : calculer les minutes après le seuil
+                            var minutesLate = (arrivalTime - thresholds.LateThreshold).TotalMinutes;
+                            employeeResult.TotalLateMinutes += (decimal) Math.Floor(minutesLate);
                         }
                     }
 
                     // Calculer les montants
-                    if (employeeResult.EarlyArrivals > 0)
+                    if (employeeResult.TotalEarlyMinutes > 0)
                     {
-                        employeeResult.BonusAmount = CalculateAmount(bonusRule, employee, employeeResult.EarlyArrivals);
+                        employeeResult.BonusAmount = CalculateAmount(bonusRule, employee, (int)employeeResult.TotalEarlyMinutes);
                     }
 
-                    if (employeeResult.LateArrivals > 0)
+                    if (employeeResult.TotalLateMinutes > 0)
                     {
-                        employeeResult.DeductionAmount = CalculateAmount(deductionRule, employee, employeeResult.LateArrivals);
+                        employeeResult.DeductionAmount = CalculateAmount(deductionRule, employee, (int)employeeResult.TotalLateMinutes);
                     }
                 }
                 else
@@ -129,8 +133,8 @@ namespace RH.Services
             if (rule == null || employee == null || quantity <= 0)
                 return 0;
 
-            decimal baseAmount = rule.IsPercentage 
-                ? employee.BaseSalary * (rule.Amount / 100) 
+            decimal baseAmount = rule.IsPercentage
+                ? employee.BaseSalary * (rule.Amount / 100)
                 : rule.Amount;
 
             // Si la règle est comptable, multiplier par la quantité
@@ -148,41 +152,41 @@ namespace RH.Services
             foreach (var result in selectedResults.Where(r => r.IsSelected && r.HasMatchingEmployee))
             {
                 // Créer la règle de bonus si applicable
-                if (result.EarlyArrivals > 0 && result.BonusAmount > 0)
+                if (result.TotalEarlyMinutes > 0 && result.BonusAmount > 0)
                 {
                     // Vérifier les doublons
                     var bonusDuplicate = await CheckForDuplicateAsync(result.EmployeeId!.Value, bonusRule.Id, currentDate);
-                    
+
                     if (!bonusDuplicate)
                     {
                         appliedRules.Add(new PayrollAppliedRule
                         {
                             EmployeeId = result.EmployeeId.Value,
                             RuleId = bonusRule.Id,
-                            Quantity = result.EarlyArrivals,
+                            Quantity = result.TotalEarlyMinutes,
                             Amount = result.BonusAmount,
                             Date = currentDate,
-                            Notes = $"Bonus ponctualité - {result.EarlyArrivals} arrivée(s) précoce(s)"
+                            Notes = $"Bonus ponctualité - {result.TotalEarlyMinutes} minute(s) d'arrivée précoce"
                         });
                     }
                 }
 
                 // Créer la règle de déduction si applicable
-                if (result.LateArrivals > 0 && result.DeductionAmount > 0)
+                if (result.TotalLateMinutes > 0 && result.DeductionAmount > 0)
                 {
                     // Vérifier les doublons
                     var deductionDuplicate = await CheckForDuplicateAsync(result.EmployeeId!.Value, deductionRule.Id, currentDate);
-                    
+
                     if (!deductionDuplicate)
                     {
                         appliedRules.Add(new PayrollAppliedRule
                         {
                             EmployeeId = result.EmployeeId.Value,
                             RuleId = deductionRule.Id,
-                            Quantity = result.LateArrivals,
+                            Quantity = result.TotalLateMinutes,
                             Amount = result.DeductionAmount,
                             Date = currentDate,
-                            Notes = $"Déduction retard - {result.LateArrivals} arrivée(s) tardive(s)"
+                            Notes = $"Déduction retard - {result.TotalLateMinutes} minute(s) de retard"
                         });
                     }
                 }
@@ -194,11 +198,11 @@ namespace RH.Services
         public async Task<bool> CheckForDuplicateAsync(int employeeId, int ruleId, DateTime date)
         {
             using var context = _contextFactory.CreateDbContext();
-            
+
             return await context.PayrollAppliedRules
-                .AnyAsync(r => r.EmployeeId == employeeId && 
-                              r.RuleId == ruleId && 
-                              r.Date.HasValue && 
+                .AnyAsync(r => r.EmployeeId == employeeId &&
+                              r.RuleId == ruleId &&
+                              r.Date.HasValue &&
                               r.Date.Value.Date == date.Date);
         }
 
@@ -208,7 +212,7 @@ namespace RH.Services
                 return string.Empty;
 
             var csv = new StringBuilder();
-            
+
             // En-têtes
             csv.AppendLine("Ligne,Nom Employé,Date/Heure Originale,Erreur");
 
@@ -222,4 +226,3 @@ namespace RH.Services
         }
     }
 }
-

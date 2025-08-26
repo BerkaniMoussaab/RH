@@ -14,117 +14,258 @@
 <div class="container-fluid py-4">
     <div class="row">
         <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="card-title mb-0">
-                        <i class="fas fa-clock me-2"></i>
-                        Gestion des Bonus et Déductions de Ponctualité
-                    </h3>
+            <div class="simple-stepper-container">
+
+                <!-- Header -->
+                <div class="text-center mb-4">
+                    <h2 class="mb-2" style="color: #1e293b; font-weight: 600;">
+                        <i class="fas fa-clock me-2" style="color: #3b82f6;"></i>
+                        Gestion de la Ponctualité
+                    </h2>
+                    <p style="color: #64748b; margin: 0;">Configurez vos règles de bonus et déductions en 5 étapes simples</p>
                 </div>
-                <div class="card-body">
-                    
-                    <!-- Stepper Navigation -->
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <div class="stepper-wrapper">
-                                <div class="stepper-item @(currentStep >= 1 ? "completed" : "") @(currentStep == 1 ? "active" : "")">
-                                    <div class="step-counter">1</div>
-                                    <div class="step-name">Configuration</div>
-                                </div>
-                                <div class="stepper-item @(currentStep >= 2 ? "completed" : "") @(currentStep == 2 ? "active" : "")">
-                                    <div class="step-counter">2</div>
-                                    <div class="step-name">Upload Excel</div>
-                                </div>
-                                <div class="stepper-item @(currentStep >= 3 ? "completed" : "") @(currentStep == 3 ? "active" : "")">
-                                    <div class="step-counter">3</div>
-                                    <div class="step-name">Colonnes</div>
-                                </div>
-                                <div class="stepper-item @(currentStep >= 4 ? "completed" : "") @(currentStep == 4 ? "active" : "")">
-                                    <div class="step-counter">4</div>
-                                    <div class="step-name">Seuils</div>
-                                </div>
-                                <div class="stepper-item @(currentStep >= 5 ? "completed" : "") @(currentStep == 5 ? "active" : "")">
-                                    <div class="step-counter">5</div>
-                                    <div class="step-name">Résultats</div>
-                                </div>
-                            </div>
+
+                <!-- Progress Section -->
+                <div class="progress-section">
+                    <div class="progress-text">
+                        Étape @currentStep sur 5 - @(((double)currentStep / 5) * 100):F0% terminé
+                    </div>
+                    <div class="progress-bar-simple">
+                        <div class="progress-fill" style="width:@(((double)currentStep / 5) * 100):F0%"></div>
+                    </div>
+                </div>
+
+
+                <!-- Simple Stepper -->
+                <div class="stepper-simple">
+
+                    <!-- Step 1 -->
+                    <div class="step-simple @GetStepClass(1)">
+                        <div class="step-circle">
+                            @if (currentStep > 1)
+                            {
+                                <i class="fas fa-check"></i>
+                            }
+                            else
+                            {
+                                <span>1</span>
+                            }
+                            @if (currentStep == 1)
+                            {
+                                <div class="current-indicator">●</div>
+                            }
                         </div>
+                        <div class="step-label">Configuration</div>
                     </div>
 
-                    <!-- Step Content -->
+                    <!-- Step 2 -->
+                    <div class="step-simple @GetStepClass(2)">
+                        <div class="step-circle">
+                            @if (currentStep > 2)
+                            {
+                                <i class="fas fa-check"></i>
+                            }
+                            else
+                            {
+                                <span>2</span>
+                            }
+                            @if (currentStep == 2)
+                            {
+                                <div class="current-indicator">●</div>
+                            }
+                        </div>
+                        <div class="step-label">Upload Excel</div>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="step-simple @GetStepClass(3)">
+                        <div class="step-circle">
+                            @if (currentStep > 3)
+                            {
+                                <i class="fas fa-check"></i>
+                            }
+                            else
+                            {
+                                <span>3</span>
+                            }
+                            @if (currentStep == 3)
+                            {
+                                <div class="current-indicator">●</div>
+                            }
+                        </div>
+                        <div class="step-label">Colonnes</div>
+                    </div>
+
+                    <!-- Step 4 -->
+                    <div class="step-simple @GetStepClass(4)">
+                        <div class="step-circle">
+                            @if (currentStep > 4)
+                            {
+                                <i class="fas fa-check"></i>
+                            }
+                            else
+                            {
+                                <span>4</span>
+                            }
+                            @if (currentStep == 4)
+                            {
+                                <div class="current-indicator">●</div>
+                            }
+                        </div>
+                        <div class="step-label">Seuils</div>
+                    </div>
+
+                    <!-- Step 5 -->
+                    <div class="step-simple @GetStepClass(5)">
+                        <div class="step-circle">
+                            @if (currentStep > 5)
+                            {
+                                <i class="fas fa-check"></i>
+                            }
+                            else
+                            {
+                                <span>5</span>
+                            }
+                            @if (currentStep == 5)
+                            {
+                                <div class="current-indicator">●</div>
+                            }
+                        </div>
+                        <div class="step-label">Résultats</div>
+                    </div>
+
+                </div>
+
+                <!-- Step Content -->
+                <div class="step-content">
                     @if (currentStep == 1)
                     {
-                        <RuleSelectionComponent @bind-BonusRule="selectedBonusRule" 
-                                              @bind-DeductionRule="selectedDeductionRule"
-                                              OnNext="() => NextStep()" />
+                        <div class="step-title">
+                            <i class="fas fa-cog step-icon"></i>
+                            Configuration des Règles
+                        </div>
+                        <div class="step-description">
+                            Sélectionnez les règles de bonus et de déduction à appliquer pour le calcul de la ponctualité.
+                        </div>
+                        <RuleSelectionComponent @bind-BonusRule="selectedBonusRule"
+                                                @bind-DeductionRule="selectedDeductionRule"
+                                                OnNext="() => NextStep()" />
                     }
                     else if (currentStep == 2)
                     {
+                        <div class="step-title">
+                            <i class="fas fa-upload step-icon"></i>
+                            Import du Fichier Excel
+                        </div>
+                        <div class="step-description">
+                            Téléchargez votre fichier Excel contenant les données d'attendance des employés.
+                        </div>
                         <FileUploadComponent @bind-ExcelData="excelData"
-                                           OnNext="() => NextStep()"
-                                           OnPrevious="() => PreviousStep()" />
+                                             OnNext="() => NextStep()"
+                                             OnPrevious="() => PreviousStep()" />
                     }
                     else if (currentStep == 3)
                     {
+                        <div class="step-title">
+                            <i class="fas fa-columns step-icon"></i>
+                            Mapping des Colonnes
+                        </div>
+                        <div class="step-description">
+                            Associez les colonnes de votre fichier Excel aux champs requis pour le traitement.
+                        </div>
                         <ColumnSelectorComponent ExcelData="excelData"
-                                               @bind-ColumnMapping="columnMapping"
-                                               OnNext="() => NextStep()"
-                                               OnPrevious="() => PreviousStep()" />
+                                                 @bind-ColumnMapping="columnMapping"
+                                                 OnNext="() => NextStep()"
+                                                 OnPrevious="() => PreviousStep()" />
                     }
                     else if (currentStep == 4)
                     {
+                        <div class="step-title">
+                            <i class="fas fa-sliders-h step-icon"></i>
+                            Configuration des Seuils
+                        </div>
+                        <div class="step-description">
+                            Définissez les seuils de ponctualité qui détermineront l'application des bonus et déductions.
+                        </div>
                         <ThresholdConfigComponent @bind-Thresholds="thresholds"
-                                                OnNext="() => ProcessAttendance()"
-                                                OnPrevious="() => PreviousStep()" />
+                                                  OnNext="() => ProcessAttendance()"
+                                                  OnPrevious="() => PreviousStep()" />
                     }
                     else if (currentStep == 5)
                     {
+                        <div class="step-title">
+                            <i class="fas fa-chart-bar step-icon"></i>
+                            Résultats du Traitement
+                        </div>
+                        <div class="step-description">
+                            Consultez les résultats calculés et validez les modifications avant la sauvegarde.
+                        </div>
                         <ResultsComponent ProcessingResult="processingResult"
-                                        BonusRule="selectedBonusRule"
-                                        DeductionRule="selectedDeductionRule"
-                                        OnSave="() => SaveResults()"
-                                        OnPrevious="() => PreviousStep()"
-                                        OnReset="() => ResetProcess()" />
+                                          BonusRule="selectedBonusRule"
+                                          DeductionRule="selectedDeductionRule"
+                                          OnSave="() => SaveResults()"
+                                          OnPrevious="() => PreviousStep()"
+                                          OnReset="() => ResetProcess()" />
                     }
-
-                    <!-- Loading Overlay -->
-                    @if (isLoading)
-                    {
-                        <div class="loading-overlay">
-                            <div class="loading-spinner">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Chargement...</span>
-                                </div>
-                                <p class="mt-2">@loadingMessage</p>
-                            </div>
-                        </div>
-                    }
-
-                    <!-- Error Messages -->
-                    @if (!string.IsNullOrEmpty(errorMessage))
-                    {
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            @errorMessage
-                            <button type="button" class="btn-close" @onclick="() => errorMessage = string.Empty"></button>
-                        </div>
-                    }
-
-                    <!-- Success Messages -->
-                    @if (!string.IsNullOrEmpty(successMessage))
-                    {
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            <i class="fas fa-check-circle me-2"></i>
-                            @successMessage
-                            <button type="button" class="btn-close" @onclick="() => successMessage = string.Empty"></button>
-                        </div>
-                    }
-
                 </div>
+
+                <!-- Navigation -->
+               @*  <div class="nav-section">
+                    <button class="btn-simple btn-secondary-simple"
+                            @onclick="PreviousStep"
+                            disabled="@(currentStep <= 1)">
+                        <i class="fas fa-arrow-left"></i>
+                        Précédent
+                    </button>
+
+                    @if (currentStep < 5)
+                    {
+                        <button class="btn-simple btn-primary-simple" @onclick="NextStep">
+                            Suivant
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn-simple btn-primary-simple" @onclick="SaveResults">
+                            <i class="fas fa-save"></i>
+                            Sauvegarder
+                        </button>
+                    }
+                </div> *@
+
+                <!-- Alerts -->
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert-simple alert-error">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        @errorMessage
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(successMessage))
+                {
+                    <div class="alert-simple alert-success">
+                        <i class="fas fa-check-circle"></i>
+                        @successMessage
+                    </div>
+                }
+
             </div>
         </div>
     </div>
 </div>
+
+<!-- Loading Overlay -->
+@if (isLoading)
+{
+    <div class="loading-simple">
+        <div class="loading-content">
+            <div class="spinner-simple"></div>
+            <div style="color: #64748b; font-weight: 500;">@loadingMessage</div>
+        </div>
+    </div>
+}
 
 @code {
     private int currentStep = 1;
@@ -141,11 +282,19 @@
     private PunctualityThresholds thresholds = new();
     private AttendanceProcessingResult? processingResult;
 
+    private string GetStepClass(int step)
+    {
+        if (step < currentStep) return "completed";
+        if (step == currentStep) return "active";
+        return "pending";
+    }
+
     private void NextStep()
     {
         if (ValidateCurrentStep())
         {
             currentStep++;
+            ClearMessages();
             StateHasChanged();
         }
     }
@@ -155,8 +304,15 @@
         if (currentStep > 1)
         {
             currentStep--;
+            ClearMessages();
             StateHasChanged();
         }
+    }
+
+    private void ClearMessages()
+    {
+        errorMessage = "";
+        successMessage = "";
     }
 
     private bool ValidateCurrentStep()
@@ -199,26 +355,23 @@
         try
         {
             isLoading = true;
-            loadingMessage = "Traitement des données de présence...";
+            loadingMessage = "Traitement des données en cours...";
             StateHasChanged();
 
-            // Convertir les données Excel en enregistrements d'attendance
             var attendanceRecords = await ExcelReaderService.ConvertToAttendanceRecordsAsync(excelData!, columnMapping);
 
-            // Configurer les seuils avec les IDs des règles
             thresholds.BonusRuleId = selectedBonusRule!.Id;
             thresholds.DeductionRuleId = selectedDeductionRule!.Id;
 
-            // Traiter les données
             processingResult = await AttendanceProcessingService.ProcessAttendanceAsync(
                 attendanceRecords, thresholds, selectedBonusRule!, selectedDeductionRule!);
 
             currentStep = 5;
-            successMessage = $"Traitement terminé. {processingResult.EmployeeResults.Count} employé(s) traité(s).";
+            successMessage = $"Traitement terminé! {processingResult.EmployeeResults.Count} employé(s) traité(s).";
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erreur lors du traitement: {ex.Message}";
+            errorMessage = $"Erreur: {ex.Message}";
         }
         finally
         {
@@ -235,33 +388,26 @@
         try
         {
             isLoading = true;
-            loadingMessage = "Sauvegarde des résultats...";
+            loadingMessage = "Sauvegarde en cours...";
             StateHasChanged();
 
             var selectedResults = processingResult.EmployeeResults.Where(r => r.IsSelected).ToList();
             var appliedRules = await AttendanceProcessingService.CreateAppliedRulesAsync(
                 selectedResults, selectedBonusRule!, selectedDeductionRule!);
 
-            // Ici, vous devriez appeler un service pour sauvegarder les règles appliquées
-            // Par exemple: 
-            
-            // Group rules by employee
             var rulesByEmployee = appliedRules
-                .Where(r => r.EmployeeId.HasValue) // skip nulls
+                .Where(r => r.EmployeeId.HasValue)
                 .GroupBy(r => r.EmployeeId.Value);
 
-            // Apply all rules per employee
             foreach (var group in rulesByEmployee)
             {
                 int employeeId = group.Key;
                 var employeeRules = group.ToList();
-
                 await PayrollService.ApplyRulesAsync(employeeId, employeeRules);
             }
 
-            successMessage = $"{appliedRules.Count} règle(s) appliquée(s) avec succès.";
-            
-            // Optionnel: Rediriger vers une autre page ou réinitialiser
+            successMessage = $"Succès! {appliedRules.Count} règle(s) appliquée(s).";
+
             await Task.Delay(2000);
             ResetProcess();
         }
@@ -285,8 +431,7 @@
         columnMapping = new();
         thresholds = new();
         processingResult = null;
-        errorMessage = "";
-        successMessage = "";
+        ClearMessages();
         StateHasChanged();
     }
 }

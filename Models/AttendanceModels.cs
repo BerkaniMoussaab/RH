@@ -42,10 +42,10 @@ namespace RH.Models.Attendance
     {
         [Required]
         public TimeSpan EarlyThreshold { get; set; } = new TimeSpan(8, 0, 0); // 08:00
-        
+
         [Required]
         public TimeSpan LateThreshold { get; set; } = new TimeSpan(8, 30, 0); // 08:30
-        
+
         public int BonusRuleId { get; set; }
         public int DeductionRuleId { get; set; }
     }
@@ -58,8 +58,8 @@ namespace RH.Models.Attendance
         public string EmployeeName { get; set; } = string.Empty;
         public int? EmployeeId { get; set; }
         public List<AttendanceRecord> Records { get; set; } = new();
-        public int EarlyArrivals { get; set; }
-        public int LateArrivals { get; set; }
+        public decimal TotalEarlyMinutes { get; set; }
+        public decimal TotalLateMinutes { get; set; }
         public bool HasMatchingEmployee { get; set; }
         public string ValidationMessage { get; set; } = string.Empty;
         public bool IsSelected { get; set; } = true;
@@ -118,4 +118,3 @@ namespace RH.Models.Attendance
         };
     }
 }
-

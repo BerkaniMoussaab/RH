@@ -6,25 +6,27 @@ using System.Data;
 
 public class PayrollService : IPayrollService
 {
-    private readonly ApplicationDbContext _context;
+    private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
     private readonly IAdvanceService _advanceService;
 
-    public PayrollService(ApplicationDbContext context, IAdvanceService advanceService)
+    public PayrollService(IDbContextFactory<ApplicationDbContext> contextFactory, IAdvanceService advanceService)
     {
-        _context = context;
+        _contextFactory = contextFactory;
         _advanceService = advanceService ?? throw new ArgumentNullException(nameof(advanceService));
     }
 
     public async Task<Payroll> GeneratePayrollForEmployee(int employeeId, DateTime payDate)
     {
-        var employee = await _context.Employees
+        using var context = await _contextFactory.CreateDbContextAsync();
+
+        var employee = await context.Employees
             .Include(e => e.JobTitle)
             .FirstOrDefaultAsync(e => e.Id == employeeId);
 
         if (employee == null)
             throw new Exception("Employee not found");
 
-        var rules = await _context.PayrollAdjustmentRules
+        var rules = await context.PayrollAdjustmentRules
             .Where(r => r.JobTitles.Any(j => j.Id == employee.JobTitleId))
             .ToListAsync();
 
@@ -51,14 +53,16 @@ public class PayrollService : IPayrollService
             Deductions = deduction
         };
 
-        _context.Payrolls.Add(payroll);
-        await _context.SaveChangesAsync();
+        context.Payrolls.Add(payroll);
+        await context.SaveChangesAsync();
         return payroll;
     }
 
     public async Task<List<Payroll>> GetAllAsync(DateTime? startDate, DateTime? endDate)
     {
-        var query = _context.Payrolls
+        using var context = await _contextFactory.CreateDbContextAsync();
+
+        var query = context.Payrolls
             .Include(p => p.Employee)
             .ThenInclude(e => e.JobTitle)
             .Include(p => p.AppliedRules)
@@ -74,19 +78,20 @@ public class PayrollService : IPayrollService
         return await query.OrderByDescending(d => d.PayDate).ToListAsync();
     }
 
-
-
     public async Task<Payroll?> GetByIdAsync(int id)
     {
-        return await _context.Payrolls
+        using var context = await _contextFactory.CreateDbContextAsync();
+
+        return await context.Payrolls
             .Include(p => p.AppliedRules)
                 .ThenInclude(ar => ar.Rule)
             .FirstOrDefaultAsync(p => p.Id == id);
     }
 
-    // CORRIGÉ : Utilisation directe de _context
     public async Task<Payroll> CreateAsync(Payroll payroll)
     {
+        using var context = await _contextFactory.CreateDbContextAsync();
+
         var freshPayroll = new Payroll
         {
             EmployeeId = payroll.EmployeeId,
@@ -106,15 +111,17 @@ public class PayrollService : IPayrollService
             PayrollStartDate = payroll.PayrollStartDate,
         };
 
-        _context.Payrolls.Add(freshPayroll);
-        await _context.SaveChangesAsync();
+        context.Payrolls.Add(freshPayroll);
+        await context.SaveChangesAsync();
 
         foreach (var rule in payroll.AppliedRules)
         {
             if (rule.Id != 0)
             {
                 rule.PayrollId = payroll.Id;
-            }else{
+            }
+            else
+            {
                 var newRule = new PayrollAppliedRule
                 {
                     RuleId = rule.RuleId,
@@ -125,23 +132,25 @@ public class PayrollService : IPayrollService
                     Date = DateTime.Now,
                     Notes = rule.Notes
                 };
-                _context.PayrollAppliedRules.Add(newRule);
+                context.PayrollAppliedRules.Add(newRule);
             }
-            
-           
         }
-        
-        await _context.SaveChangesAsync();
-        var rulesWithOutPayroll =
-            _context.PayrollAppliedRules.Where(r => r.EmployeeId == payroll.EmployeeId && r.PayrollId == null);
-         _context.PayrollAppliedRules.RemoveRange(rulesWithOutPayroll);
-         await _context.SaveChangesAsync();
+
+        await context.SaveChangesAsync();
+
+        var rulesWithOutPayroll = context.PayrollAppliedRules
+            .Where(r => r.EmployeeId == payroll.EmployeeId && r.PayrollId == null);
+        context.PayrollAppliedRules.RemoveRange(rulesWithOutPayroll);
+        await context.SaveChangesAsync();
+
         return freshPayroll;
     }
 
     public async Task<Payroll> UpdateAsync(Payroll payroll)
     {
-        var existing = await _context.Payrolls
+        using var context = await _contextFactory.CreateDbContextAsync();
+
+        var existing = await context.Payrolls
             .Include(p => p.AppliedRules)
             .FirstOrDefaultAsync(p => p.Id == payroll.Id);
 
@@ -162,7 +171,7 @@ public class PayrollService : IPayrollService
         existing.PayrollStartDate = payroll.PayrollStartDate;
         existing.PayrollEndDate = payroll.PayrollEndDate;
 
-        _context.PayrollAppliedRules.RemoveRange(existing.AppliedRules);
+        context.PayrollAppliedRules.RemoveRange(existing.AppliedRules);
 
         foreach (var rule in payroll.AppliedRules)
         {
@@ -178,67 +187,72 @@ public class PayrollService : IPayrollService
             });
         }
 
-        await _context.SaveChangesAsync();
+        await context.SaveChangesAsync();
         return existing;
     }
 
-    public  void DeleteAsync(int payrollId, bool deleteAppliedRules)
+    public async Task DeleteAsync(int payrollId, bool deleteAppliedRules)
     {
-        var payroll =  _context.Payrolls.Find(payrollId);
+        using var context = await _contextFactory.CreateDbContextAsync();
+
+        var payroll = await context.Payrolls.FindAsync(payrollId);
         if (payroll != null)
         {
             if (deleteAppliedRules)
             {
-                var appliedRules =  _context.PayrollAppliedRules
+                var appliedRules = await context.PayrollAppliedRules
                     .Where(r => r.PayrollId == payrollId)
-                    .ToList();
-
-                _context.PayrollAppliedRules.RemoveRange(appliedRules);
+                    .ToListAsync();
+                context.PayrollAppliedRules.RemoveRange(appliedRules);
             }
-            _context.AdvanceDeductions.RemoveRange(
-                _context.AdvanceDeductions.Where(d => d.PayrollId == payrollId));
-            _context.Payrolls.Remove(payroll);
-            _context.SaveChanges();
+
+            var advanceDeductions = await context.AdvanceDeductions
+                .Where(d => d.PayrollId == payrollId)
+                .ToListAsync();
+            context.AdvanceDeductions.RemoveRange(advanceDeductions);
+
+            context.Payrolls.Remove(payroll);
+            await context.SaveChangesAsync();
         }
     }
 
-
     public async Task<Payroll?> GetLastPayrollForEmployeeAsync(int employeeId)
     {
-        return await _context.Payrolls
+        using var context = await _contextFactory.CreateDbContextAsync();
+
+        return await context.Payrolls
             .Where(p => p.EmployeeId == employeeId)
             .OrderByDescending(p => p.PayDate)
-            .Include(p => p.Employee) // ✅ Include the related Employee
+            .Include(p => p.Employee)
             .FirstOrDefaultAsync();
     }
 
-
     public async Task<int> GetPayrollCountAsync()
     {
-        return await _context.Payrolls.CountAsync();
+        using var context = await _contextFactory.CreateDbContextAsync();
+
+        return await context.Payrolls.CountAsync();
     }
 
-
-
-    // CORRIGÉ : Utilisation directe de _context
-    // Existing one
     public async Task<List<PayrollAppliedRule>> GetAppliedRulesForEmployeeAsync(int employeeId)
     {
-        return await _context.PayrollAppliedRules
+        using var context = await _contextFactory.CreateDbContextAsync();
+
+        return await context.PayrollAppliedRules
             .Include(r => r.Rule)
-            .Include(r => r.Employee) // ✅ Inclure l'employé
+            .Include(r => r.Employee)
             .Where(r => r.EmployeeId == employeeId && r.PayrollId == null)
             .ToListAsync();
     }
 
-
-    // Overload with date range
     public async Task<List<PayrollAppliedRule>> GetAppliedRulesForEmployeeAsync(
         int employeeId, DateTime? fromDate, DateTime? toDate)
     {
-        var query = _context.PayrollAppliedRules
+        using var context = await _contextFactory.CreateDbContextAsync();
+
+        var query = context.PayrollAppliedRules
             .Include(r => r.Rule)
-            .Where(r => r.EmployeeId == employeeId );
+            .Where(r => r.EmployeeId == employeeId);
 
         if (fromDate.HasValue)
         {
@@ -250,22 +264,26 @@ public class PayrollService : IPayrollService
             query = query.Where(r => r.Date != null && r.Date <= toDate.Value);
         }
 
-        return await query.OrderByDescending(d=>d.Date).ToListAsync();
+        return await query.OrderByDescending(d => d.Date).ToListAsync();
     }
-
-
-
 
     public async Task<List<Payroll>> GetEmployeePayrollsByDateRangeAsync(int employeeId, DateTime startDate, DateTime endDate)
     {
-        var allPayrolls = await GetAllAsync(null, null);
-        return allPayrolls
+        using var context = await _contextFactory.CreateDbContextAsync();
+
+        var allPayrolls = await context.Payrolls
+            .Include(p => p.Employee)
+            .ThenInclude(e => e.JobTitle)
+            .Include(p => p.AppliedRules)
+            .ThenInclude(ar => ar.Rule)
             .Where(p => p.EmployeeId == employeeId &&
-                        p.PayrollStartDate.HasValue && p.PayrollEndDate.HasValue &&
-                        p.PayrollStartDate.Value <= endDate &&
-                        p.PayrollEndDate.Value >= startDate)
+                       p.PayrollStartDate.HasValue && p.PayrollEndDate.HasValue &&
+                       p.PayrollStartDate.Value <= endDate &&
+                       p.PayrollEndDate.Value >= startDate)
             .OrderByDescending(p => p.PayrollStartDate)
-            .ToList();
+            .ToListAsync();
+
+        return allPayrolls;
     }
 
     public async Task<bool> ValidatePayrollPeriodAsync(int employeeId, DateTime startDate, DateTime endDate, int? excludePayrollId = null)
@@ -284,13 +302,14 @@ public class PayrollService : IPayrollService
 
     public async Task<Payroll?> GetLastPayrollBeforeDateAsync(int employeeId, DateTime beforeDate)
     {
-        var allPayrolls = await GetAllAsync(null, null);
-        return allPayrolls
+        using var context = await _contextFactory.CreateDbContextAsync();
+
+        return await context.Payrolls
             .Where(p => p.EmployeeId == employeeId &&
-                        p.PayrollEndDate.HasValue &&
-                        p.PayrollEndDate.Value < beforeDate)
+                       p.PayrollEndDate.HasValue &&
+                       p.PayrollEndDate.Value < beforeDate)
             .OrderByDescending(p => p.PayrollEndDate)
-            .FirstOrDefault();
+            .FirstOrDefaultAsync();
     }
 
     public async Task<(DateTime StartDate, DateTime EndDate)> GetSuggestedPayrollPeriodAsync(int employeeId)
@@ -311,11 +330,19 @@ public class PayrollService : IPayrollService
             return (startDate, endDate);
         }
     }
-    public async Task RemoveAppliedRuleAsync (int AppliedRuleId)
+
+    public async Task RemoveAppliedRuleAsync(int appliedRuleId)
     {
-        _context.Remove(int.Parse(AppliedRuleId.ToString()));
-        await _context.SaveChangesAsync();
+        using var context = await _contextFactory.CreateDbContextAsync();
+
+        var rule = await context.PayrollAppliedRules.FindAsync(appliedRuleId);
+        if (rule != null && rule.PayrollId == null)
+        {
+            context.PayrollAppliedRules.Remove(rule);
+            await context.SaveChangesAsync();
+        }
     }
+
     public async Task<decimal> CalculateAdvanceDeductionsAsync(int employeeId, decimal preliminaryNetPay)
     {
         try
@@ -378,9 +405,11 @@ public class PayrollService : IPayrollService
 
     public async Task ReverseAdvanceDeductionsAsync(int payrollId)
     {
+        using var context = await _contextFactory.CreateDbContextAsync();
+
         try
         {
-            var deductions = await _context.AdvanceDeductions
+            var deductions = await context.AdvanceDeductions
                 .Where(d => d.PayrollId == payrollId)
                 .ToListAsync();
 
@@ -399,8 +428,8 @@ public class PayrollService : IPayrollService
                 }
             }
 
-            _context.AdvanceDeductions.RemoveRange(deductions);
-            await _context.SaveChangesAsync();
+            context.AdvanceDeductions.RemoveRange(deductions);
+            await context.SaveChangesAsync();
         }
         catch (Exception ex)
         {
@@ -409,16 +438,19 @@ public class PayrollService : IPayrollService
         }
     }
 
-    public List<AdvanceDeduction> GetDeductionsForPayroll(int payrollId)
+    public async Task<List<AdvanceDeduction>> GetDeductionsForPayroll(int payrollId)
     {
-        return _context.AdvanceDeductions
+        using var context = await _contextFactory.CreateDbContextAsync();
+
+        return await context.AdvanceDeductions
             .Where(d => d.PayrollId == payrollId)
-            .ToList();
+            .ToListAsync();
     }
 
-    // CORRIGÉ : Utilisation directe de _context
     public async Task ApplyRulesAsync(int employeeId, List<PayrollAppliedRule> rules)
     {
+        using var context = await _contextFactory.CreateDbContextAsync();
+
         var appliedEntities = rules.Select(r => new PayrollAppliedRule
         {
             EmployeeId = employeeId,
@@ -427,22 +459,24 @@ public class PayrollService : IPayrollService
             Quantity = r.Quantity,
             Notes = r.Notes,
             Date = DateTime.Now
-
         });
 
-        _context.PayrollAppliedRules.AddRange(appliedEntities);
-        await _context.SaveChangesAsync();
+        context.PayrollAppliedRules.AddRange(appliedEntities);
+        await context.SaveChangesAsync();
     }
-    public async Task deleteAppliedRule(int Id)
+
+    public async Task DeleteAppliedRule(int id)
     {
-        var rule = _context.PayrollAppliedRules.Find(Id);
-        if (rule.PayrollId == null)
+        using var context = await _contextFactory.CreateDbContextAsync();
+
+        var rule = await context.PayrollAppliedRules.FindAsync(id);
+        if (rule != null && rule.PayrollId == null)
         {
-            _context.PayrollAppliedRules.Remove(rule);
-            await _context.SaveChangesAsync();
+            context.PayrollAppliedRules.Remove(rule);
+            await context.SaveChangesAsync();
         }
-     
     }
+
     public class AdvanceDeductionSummary
     {
         public List<Advance> ActiveAdvances { get; set; } = new();

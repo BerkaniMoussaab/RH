@@ -530,7 +530,7 @@
     {
         try
         {
-            PayrollService.deleteAppliedRule(ruleId);
+            await PayrollService.DeleteAppliedRule(ruleId);
             await RefreshAllData();
         }
         catch (Exception ex)
