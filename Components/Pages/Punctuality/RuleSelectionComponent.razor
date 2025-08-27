@@ -32,7 +32,7 @@
                         <select class="form-select @(BonusRule != null ? "is-valid" : "")" 
                                 @onchange="OnBonusRuleChanged">
                             <option value="">-- Choisir une règle --</option>
-                            @foreach (var rule in bonusRules)
+                            @foreach (var rule in bonusRules.Where(rule =>rule.IsCountable))
                             {
                                 <option value="@rule.Id" selected="@(BonusRule?.Id == rule.Id)">
                                     @rule.Name (@(rule.IsPercentage ? $"{rule.Amount}%" : $"{rule.Amount:C}"))
@@ -81,7 +81,7 @@
                         <select class="form-select @(DeductionRule != null ? "is-valid" : "")" 
                                 @onchange="OnDeductionRuleChanged">
                             <option value="">-- Choisir une règle --</option>
-                            @foreach (var rule in deductionRules)
+                            @foreach (var rule in deductionRules.Where(rule => rule.IsCountable))
                             {
                                 <option value="@rule.Id" selected="@(DeductionRule?.Id == rule.Id)">
                                     @rule.Name (@(rule.IsPercentage ? $"{rule.Amount}%" : $"{rule.Amount:C}"))

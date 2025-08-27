@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RH.Models;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 public class PayrollAdjustmentRule
 {
@@ -12,7 +13,7 @@ public class PayrollAdjustmentRule
     public AdjustmentType Type { get; set; }
 
     [Range(0, double.MaxValue)]
-    [Precision(18, 2)] // Ensures correct precision in the database
+    [Column(TypeName = "decimal(18,6)")]
     public decimal Amount { get; set; }
 
     public bool IsPercentage { get; set; }

@@ -130,16 +130,21 @@ namespace RH.Services
 
         public decimal CalculateAmount(PayrollAdjustmentRule rule, Employee employee, int quantity)
         {
-            if (rule == null || employee == null || quantity <= 0)
-                return 0;
+            if (rule == null || employee == null)
+                return 0m;
 
+            // If the rule is percentage-based, calculate percentage of salary
             decimal baseAmount = rule.IsPercentage
-                ? employee.BaseSalary * (rule.Amount / 100)
+                ? employee.BaseSalary * (rule.Amount / 100m)
                 : rule.Amount;
 
-            // Si la règle est comptable, multiplier par la quantité
-            return rule.IsCountable ? baseAmount * quantity : baseAmount;
+            // If rule is countable, multiply by quantity (but guard against <= 0)
+            if (rule.IsCountable && quantity > 0)
+                return baseAmount * quantity;
+
+            return baseAmount;
         }
+
 
         public async Task<List<PayrollAppliedRule>> CreateAppliedRulesAsync(
             List<EmployeeAttendanceResult> selectedResults,

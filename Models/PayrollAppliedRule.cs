@@ -17,11 +17,11 @@ namespace RH.Models
         public PayrollAdjustmentRule Rule { get; set; }
 
         // ✅ Quantity with explicit precision
-        [Precision(18, 4)]
+        [Column(TypeName = "decimal(18,6)")]
         public decimal? Quantity { get; set; }
 
         // ✅ Final calculated amount with precision
-        [Precision(18, 4)]
+        [Column(TypeName = "decimal(18,6)")]
         public decimal Amount { get; set; }
 
         public string? Notes { get; set; }
