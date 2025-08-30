@@ -24,185 +24,197 @@
         CurrentPayroll.AdvanceDeductions = await AdvanceService.GetDeductionsForPayroll(CurrentPayroll.Id);
     }
 
-    private async Task PrintPage()
-    {
-        await JSRuntime.InvokeVoidAsync("printDiv", "printable-area");
-    }
+    
 }
 
-<div class="print-controls no-print">
-    <button class="print-button" @onclick="PrintPage">
-        <i class="bi bi-printer"></i>
-        <span>Imprimer A5</span>
-    </button>
-</div>
 
-<div id="printable-area" class="payroll-document-a5">
-    @if (Company != null)
-    {
-        <header class="document-header">
-            <div class="header-content">
-                <div class="company-section">
-                    @if (Company.LogoBytes != null)
-                    {
-                        <img src="data:@Company.LogoMimeType;base64,@Convert.ToBase64String(Company.LogoBytes)"
-                             alt="Logo Entreprise"
-                             class="company-logo" />
-                    }
-                    <div class="company-details">
-                        <h1 class="company-name">@Company.Name</h1>
-                        <div class="company-info">
-                            <p>@Company.Address</p>
-                            <p>RC : @Company.RC | NIF : @Company.NIF</p>
+
+<div >
+    
+    <div id="printable-area" class="payroll-document-a5">
+        @if (Company != null)
+        {
+            <header class="document-header">
+                <div class="header-content">
+                    <div class="company-section">
+                        @if (Company.LogoBytes != null)
+                        {
+                            <img src="data:@Company.LogoMimeType;base64,@Convert.ToBase64String(Company.LogoBytes)"
+                                 alt="Logo Entreprise"
+                                 class="company-logo"/>
+                        }
+                        <div class="company-details">
+                            <h1 class="company-name">@Company.Name</h1>
+                            <div class="company-info">
+                                <p>@Company.Address</p>
+                                <p>RC : @Company.RC | NIF : @Company.NIF</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="document-info">
+                        <h2 class="document-title">FICHE DE PAIE</h2>
+                        <div class="document-details">
+                            <p><strong>Période :</strong> @CurrentPayroll?.PayDate.ToString("MMMM yyyy")</p>
+                            <p><strong>Émission :</strong> @DateTime.Now.ToString("dd/MM/yyyy")</p>
                         </div>
                     </div>
                 </div>
-                
-                <div class="document-info">
-                    <h2 class="document-title">FICHE DE PAIE</h2>
-                    <div class="document-details">
-                        <p><strong>Période :</strong> @CurrentPayroll?.PayDate.ToString("MMMM yyyy")</p>
-                        <p><strong>Émission :</strong> @DateTime.Now.ToString("dd/MM/yyyy")</p>
-                    </div>
+            </header>
+        }
+
+        <section class="employee-section">
+            <h3 class="section-title">INFORMATIONS EMPLOYÉ</h3>
+            <div class="employee-grid">
+                <div class="info-item">
+                    <span class="label">Nom :</span>
+                    <span class="value">@Employee?.FullName</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">ID :</span>
+                    <span class="value">@Employee?.Id</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Poste :</span>
+                    <span class="value">@Employee?.JobTitle.Title</span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Embauche :</span>
+                    <span class="value">@Employee?.HireDate</span>
                 </div>
             </div>
-        </header>
-    }
+        </section>
 
-    <section class="employee-section">
-        <h3 class="section-title">INFORMATIONS EMPLOYÉ</h3>
-        <div class="employee-grid">
-            <div class="info-item">
-                <span class="label">Nom :</span>
-                <span class="value">@Employee?.FullName</span>
-            </div>
-            <div class="info-item">
-                <span class="label">ID :</span>
-                <span class="value">@Employee?.Id</span>
-            </div>
-            <div class="info-item">
-                <span class="label">Poste :</span>
-                <span class="value">@Employee?.JobTitle.Title</span>
-            </div>
-            <div class="info-item">
-                <span class="label">Embauche :</span>
-                <span class="value">@Employee?.HireDate</span>
-            </div>
-        </div>
-    </section>
+        <section class="salary-section">
+            <h3 class="section-title">RÉCAPITULATIF SALAIRE</h3>
 
-    <section class="salary-section">
-        <h3 class="section-title">RÉCAPITULATIF SALAIRE</h3>
-        
-        <div class="salary-grid">
-            <div class="salary-item">
-                <div class="salary-label">Salaire de base</div>
-                <div class="salary-amount">@CurrentPayroll.BaseSalary.ToString("N0") DA</div>
+            <div class="salary-grid">
+                <div class="salary-item">
+                    <div class="salary-label">Salaire de base</div>
+                    <div class="salary-amount">@CurrentPayroll.BaseSalary.ToString("N0") DA</div>
+                </div>
+                <div class="salary-item bonus">
+                    <div class="salary-label">Primes</div>
+                    <div class="salary-amount positive">@CurrentPayroll.Bonus.ToString("N0") DA</div>
+                </div>
+                <div class="salary-item deduction">
+                    <div class="salary-label">Retenues</div>
+                    <div class="salary-amount negative">@CurrentPayroll.Deductions.ToString("N0") DA</div>
+                </div>
             </div>
-            <div class="salary-item bonus">
-                <div class="salary-label">Primes</div>
-                <div class="salary-amount positive">@CurrentPayroll.Bonus.ToString("N0") DA</div>
-            </div>
-            <div class="salary-item deduction">
-                <div class="salary-label">Retenues</div>
-                <div class="salary-amount negative">@CurrentPayroll.Deductions.ToString("N0") DA</div>
-            </div>
-        </div>
 
-        <div class="net-pay-section">
-            <div class="net-pay-label">NET À PAYER</div>
-            <div class="net-pay-amount">@CurrentPayroll.NetPay.ToString("N0") DA</div>
-        </div>
+            <div class="net-pay-section">
+                <div class="net-pay-label">NET À PAYER</div>
+                <div class="net-pay-amount">@CurrentPayroll.NetPay.ToString("N0") DA</div>
+            </div>
 
-        @if (CurrentPayroll.Cash != null || CurrentPayroll.Transaction != null)
+            @if (CurrentPayroll.Cash != null || CurrentPayroll.Transaction != null)
+            {
+                <div class="payment-methods">
+                    @if (CurrentPayroll.Cash != null)
+                    {
+                        <div class="payment-item">
+                            <div class="payment-label">Espèces</div>
+                            <div class="payment-amount">@CurrentPayroll.Cash.ToString("N0") DA</div>
+                        </div>
+                    }
+                    @if (CurrentPayroll.Transaction != null)
+                    {
+                        <div class="payment-item">
+                            <div class="payment-label">Virement</div>
+                            <div class="payment-amount">@CurrentPayroll.Transaction.ToString("N0") DA</div>
+                        </div>
+                    }
+                </div>
+            }
+        </section>
+
+        @if (Bonuses?.Any(b => b.IsApplied) == true)
         {
-            <div class="payment-methods">
-                @if (CurrentPayroll.Cash != null)
-                {
-                    <div class="payment-item">
-                        <div class="payment-label">Espèces</div>
-                        <div class="payment-amount">@CurrentPayroll.Cash.ToString("N0") DA</div>
-                    </div>
-                }
-                @if (CurrentPayroll.Transaction != null)
-                {
-                    <div class="payment-item">
-                        <div class="payment-label">Virement</div>
-                        <div class="payment-amount">@CurrentPayroll.Transaction.ToString("N0") DA</div>
-                    </div>
-                }
-            </div>
-        }
-    </section>
-
-    @if (Bonuses?.Any(b => b.IsApplied) == true)
-    {
-        <section class="details-section">
-            <h3 class="section-title">PRIMES</h3>
-            <table class="details-table">
-                <thead>
+            <section class="details-section">
+                <h3 class="section-title">PRIMES</h3>
+                <table class="details-table">
+                    <thead>
                     <tr>
                         <th>Description</th>
-                        <th>Montant</th>
+                        <th>Date</th>
+                        <th>Quantité</th>
+                        <th>Montant unitaire</th>
+                        <th>Commentaire</th>
+                        <th>Total</th>
                     </tr>
-                </thead>
-                <tbody>
+                    </thead>
+                    <tbody>
                     @foreach (var b in Bonuses.Where(b => b.IsApplied))
                     {
                         <tr>
                             <td class="description">@b.Name</td>
+                            <td>@b.Date?.ToString("dd/MM/yyyy")</td>
+                            <td>@(b.IsCountable ? b.Quantity.ToString("N0") : "-")</td>
+                            <td>@(b.IsPercentage ? b.Amount + " %" : b.Amount.ToString("N0") + " DA")</td>
+                            <td>@b.note</td>
                             <td class="amount positive">@b.CalculatedAmount.ToString("N0") DA</td>
                         </tr>
                     }
-                </tbody>
-            </table>
-        </section>
-    }
+                    </tbody>
+                </table>
+            </section>
+        }
 
-    @if (Deductions?.Any(d => d.IsApplied) == true)
-    {
-        <section class="details-section">
-            <h3 class="section-title">RETENUES</h3>
-            <table class="details-table">
-                <thead>
+
+        @if (Deductions?.Any(d => d.IsApplied) == true)
+        {
+            <section class="details-section">
+                <h3 class="section-title">RETENUES</h3>
+                <table class="details-table">
+                    <thead>
                     <tr>
                         <th>Description</th>
-                        <th>Montant</th>
+                        <th>Date</th>
+                        <th>Quantité</th>
+                        <th>Montant unitaire</th>
+                        <th>Commentaire</th>
+                        <th>Total</th>
                     </tr>
-                </thead>
-                <tbody>
+                    </thead>
+                    <tbody>
                     @foreach (var d in Deductions.Where(d => d.IsApplied))
                     {
                         <tr>
                             <td class="description">@d.Name</td>
+                            <td>@d.Date?.ToString("dd/MM/yyyy")</td>
+                            <td>@(d.IsCountable ? d.Quantity.ToString("N0") : "-")</td>
+                            <td>@(d.IsPercentage ? d.Amount + " %" : d.Amount.ToString("N0") + " DA")</td>
+                            <td>@d.note</td>
                             <td class="amount negative">@d.CalculatedAmount.ToString("N0") DA</td>
                         </tr>
                     }
-                </tbody>
-            </table>
-        </section>
-    }
+                    </tbody>
+                </table>
+            </section>
+        }
 
-    @if (CurrentPayroll?.AdvanceDeductions?.Any() == true)
-    {
-        var deductions = CurrentPayroll.AdvanceDeductions
-            .Where(d => d.Advance != null)
-            .ToList();
 
-        if (deductions.Any())
+        @if (CurrentPayroll?.AdvanceDeductions?.Any() == true)
         {
-            <section class="details-section">
-                <h3 class="section-title">AVANCES</h3>
-                <table class="details-table">
-                    <thead>
+            var deductions = CurrentPayroll.AdvanceDeductions
+                .Where(d => d.Advance != null)
+                .ToList();
+
+            if (deductions.Any())
+            {
+                <section class="details-section">
+                    <h3 class="section-title">AVANCES</h3>
+                    <table class="details-table">
+                        <thead>
                         <tr>
                             <th>Date</th>
                             <th>Avance</th>
                             <th>Déduit</th>
                             <th>Restant</th>
                         </tr>
-                    </thead>
-                    <tbody>
+                        </thead>
+                        <tbody>
                         @foreach (var deduction in deductions)
                         {
                             var adv = deduction.Advance;
@@ -219,35 +231,35 @@
                                 <td class="amount">@remaining.ToString("N0") DA</td>
                             </tr>
                         }
-                    </tbody>
-                </table>
-            </section>
-        }
-    }
-
-    @if (Absences?.Any() == true || ManualAbsences > 0)
-    {
-        <section class="details-section">
-            <h3 class="section-title">ABSENCES</h3>
-
-            @if (ManualAbsences > 0)
-            {
-                <div class="absence-alert">
-                    <strong>Absences : </strong> @ManualAbsences jour(s)
-                </div>
+                        </tbody>
+                    </table>
+                </section>
             }
+        }
 
-            @if (Absences?.Any() == true)
-            {
-                <table class="details-table">
-                    <thead>
+        @if (Absences?.Any() == true || ManualAbsences > 0)
+        {
+            <section class="details-section">
+                <h3 class="section-title">ABSENCES</h3>
+
+                @if (ManualAbsences > 0)
+                {
+                    <div class="absence-alert">
+                        <strong>Absences : </strong> @ManualAbsences jour(s)
+                    </div>
+                }
+
+                @if (Absences?.Any() == true)
+                {
+                    <table class="details-table">
+                        <thead>
                         <tr>
                             <th>Date</th>
                             <th>Motif</th>
                             <th>Comptée</th>
                         </tr>
-                    </thead>
-                    <tbody>
+                        </thead>
+                        <tbody>
                         @foreach (var a in Absences)
                         {
                             <tr>
@@ -256,23 +268,24 @@
                                 <td class="center">@(a.Counted ? "Oui" : "Non")</td>
                             </tr>
                         }
-                    </tbody>
-                </table>
-            }
-        </section>
-    }
+                        </tbody>
+                    </table>
+                }
+            </section>
+        }
 
-    <footer class="document-footer">
-        <div class="footer-content">
-            <div class="footer-note">
-                <p>Document généré automatiquement - Service RH</p>
+        <footer class="document-footer">
+            <div class="footer-content">
+                <div class="footer-note">
+                    <p>Document généré automatiquement - Service RH</p>
+                </div>
+                <div class="signature-section">
+                    <p class="signature-label">Signature</p>
+                    <div class="signature-line"></div>
+                </div>
             </div>
-            <div class="signature-section">
-                <p class="signature-label">Signature</p>
-                <div class="signature-line"></div>
-            </div>
-        </div>
-    </footer>
+        </footer>
+    </div>
 </div>
 
 <style>

@@ -12,7 +12,7 @@ Z
 @inject AbsenceService AbsenceService
 @inject WorkedDaysOffService WorkedDaysOffService
 @inject IAdvanceService AdvanceService
-@inject IJSRuntime JS
+@inject IJSRuntime JSRuntime
 @attribute [Authorize]
 
 <PageTitle>Fiches de paie</PageTitle>
@@ -987,9 +987,19 @@ else
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
-                    
-                    <button class="btn btn-outline-secondary" @onclick="ClosePrintModal">Fermer</button>
+                    <!-- Close Button -->
+                    <button type="button" class="btn btn-outline-secondary" @onclick="ClosePrintModal">
+                        <i class="bi bi-x-circle me-1"></i>
+                        Fermer
+                    </button>
+
+                    <!-- Print Button -->
+                    <button type="button" class="btn btn-primary" @onclick="PrintPage">
+                        <i class="bi bi-printer me-1"></i>
+                        Imprimer A5
+                    </button>
                 </div>
+
             </div>
         </div>
     </div>
@@ -1015,7 +1025,7 @@ else
 
     async Task Print()
     {
-        await JS.InvokeVoidAsync("printSection", "printable-area");
+        await JSRuntime.InvokeVoidAsync("printSection", "printable-area");
     }
 }
 
@@ -1050,7 +1060,10 @@ else
     private DateTime? SelectedEndDate { get; set; }
 
     private bool UseManualAbsences = false;
-
+    private async Task PrintPage()
+    {
+        await JSRuntime.InvokeVoidAsync("printDiv", "printable-area");
+    }
     private async Task PrintPreview()
     {
         var payload = new
@@ -1064,8 +1077,8 @@ else
         };
 
         var json = JsonSerializer.Serialize(payload);
-        await JS.InvokeVoidAsync("sessionStorage.setItem", "payroll-print-data", json);
-        await JS.InvokeVoidAsync("open", "/print-payroll", "_blank");
+        await JSRuntime.InvokeVoidAsync("sessionStorage.setItem", "payroll-print-data", json);
+        await JSRuntime.InvokeVoidAsync("open", "/print-payroll", "_blank");
     }
 
     private void OnBaseSalaryChanged(decimal value, int workDays)
@@ -1927,7 +1940,7 @@ else
 
     async Task TriggerPrint()
     {
-        await JS.InvokeVoidAsync("window.print");
+        await JSRuntime.InvokeVoidAsync("window.print");
     }
     private async Task ApplyFilter()
     {
