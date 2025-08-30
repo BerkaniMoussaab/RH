@@ -66,7 +66,7 @@ namespace RH.Services
         {
             using var context = _contextFactory.CreateDbContext();
 
-            var employee = await context.Employees
+            var employee = await context.Employees.Include(J => J.JobTitle).ThenInclude(LeavePolicy => LeavePolicy.LeavePolicy)
                 .FirstOrDefaultAsync(e => e.Id == employeeId);
 
             if (employee == null || employee.InscriptionDate == null || employee.InitialRemainingDays == null)
@@ -86,7 +86,7 @@ namespace RH.Services
             monthsElapsed = Math.Max(monthsElapsed, 0);
 
             // 2. Calculate earned leave days (2.5 days per completed month)
-            float earnedDays = monthsElapsed * 2.5f;
+            float earnedDays = monthsElapsed * (employee.JobTitle.LeavePolicy.AnnualLeaveDays/12);
 
             // 3. Calculate used paid leave days
             var approvedLeaves = await context.LeaveRequests
