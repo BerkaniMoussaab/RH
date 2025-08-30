@@ -2,10 +2,13 @@
 @using RH.Models
 @using RH.Services
 @inject ILeaveRequestService LeaveRequestService
-@inject IEmployeeService EmployeeService // Inject EmployeeService to get employee details
+@inject IEmployeeService EmployeeService
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
+@inject RH.Services.AttestationGeneratorService AttestationService
+@inject IJSRuntime JS
 
+<link href="css/Leave.css" rel="stylesheet" />
 <h2 class="mb-4">Demandes de congé</h2>
 <button class="btn btn-primary mb-3" @onclick="CreateNew">Nouvelle demande</button>
 
@@ -19,11 +22,10 @@ else
         <thead>
             <tr>
                 <th>Employé</th>
-
                 <th>Dates</th>
                 <th>Statut</th>
                 <th>Motif</th>
-                <th>Jours Restants</th> @* New column for remaining days *@
+                <th>Jours Restants</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -34,9 +36,8 @@ else
                 {
                     <tr>
                         <td>@request.Employee?.FullName</td>
-
                         <td>@request.StartDate.ToString("dd MMM yyyy") - @request.EndDate.ToString("dd MMM yyyy")</td>
-                        <td>@GetStatusDisplayName(request.Status)</td> @* Use helper for display name *@
+                        <td>@GetStatusDisplayName(request.Status)</td>
                         <td>@request.Reason</td>
                         <td>
                             @if (employeeRemainingDays.TryGetValue(request.EmployeeId, out float remaining))
@@ -49,48 +50,56 @@ else
                             }
                         </td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowPrint(request)">Imprimer</button>
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowModal(request.Id)">Imprimer</button>
                             <button class="btn btn-sm btn-outline-secondary" @onclick="() => Edit(request.Id)">Modifier</button>
                             <button class="btn btn-sm btn-outline-danger" @onclick="() => Delete(request.Id)">Supprimer</button>
-
                         </td>
                     </tr>
                 }
             }
             else
             {
-                <tr><td colspan="6">Aucune demande de congé trouvée.</td></tr> @* Updated colspan *@
+                <tr><td colspan="6">Aucune demande de congé trouvée.</td></tr>
             }
         </tbody>
     </table>
 }
-@if (PrintVisible && Selected != null)
+
+@if (showModal)
 {
-    <PrintableLeaveRequest LeaveRequest="Selected" OnClose="() => PrintVisible = false" />
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Aperçu de l'attestation</h5>
+                    <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (leaveRequestData != null)
+                    {
+                        <div class="printable-content">
+                            <LeaveRequestPrint LeaveData="leaveRequestData" />
+                        </div>
+                    }
+                    else
+                    {
+                        <p>Chargement de l'attestation...</p>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseModal">Fermer</button>
+                    <button class="btn btn-success" @onclick="Print">Imprimer</button>
+                </div>
+            </div>
+        </div>
+    </div>
 }
-
-
-
 
 <LeaveRequestForm LeaveRequest="Selected" IsOpen="ShowForm" IsOpenChanged="HandleClose" OnSave="Save" />
 
 @code {
-    @inject IJSRuntime JS
-
-    
-        private bool PrintVisible = false;
-
-        private void ShowPrint(LeaveRequest request)
-        {
-            Selected = request;
-            PrintVisible = true;
-        }
-
-        private async Task TriggerPrint()
-        {
-            await JS.InvokeVoidAsync("window.print");
-        }
-    
+    private bool showModal = false;
+    private LeaveRequestData? leaveRequestData; // Nullable to handle loading state
 
     private List<LeaveRequest> Requests = new();
     private LeaveRequest Selected = new();
@@ -108,9 +117,8 @@ else
         isLoading = true;
         Requests = await LeaveRequestService.GetAllAsync();
 
-        // Fetch remaining days for each unique employee in the requests
         var uniqueEmployeeIds = Requests.Select(r => r.EmployeeId).Distinct().ToList();
-        employeeRemainingDays.Clear(); // Clear previous data
+        employeeRemainingDays.Clear();
 
         foreach (var empId in uniqueEmployeeIds)
         {
@@ -122,8 +130,7 @@ else
             catch (Exception ex)
             {
                 Console.Error.WriteLine($"Error loading remaining days for employee {empId}: {ex.Message}");
-                // Optionally, set a default or error value
-                employeeRemainingDays[empId] = 0.0f; // Or some other indicator
+                employeeRemainingDays[empId] = 0.0f;
             }
         }
         isLoading = false;
@@ -131,26 +138,26 @@ else
 
     private void CreateNew()
     {
-        Selected = new LeaveRequest(){
+        Selected = new LeaveRequest()
+        {
             StartDate = DateTime.Today,
             EndDate = DateTime.Today
-           
-        }; // Always create a new instance for new requests
+        };
         ShowForm = true;
         StateHasChanged();
     }
 
     private async Task Edit(int id)
     {
-        // FIX: Fetch the LeaveRequest first, THEN show the form.
         Selected = await LeaveRequestService.GetByIdAsync(id);
         ShowForm = true;
+        StateHasChanged(); // Ensure UI updates after fetching data
     }
 
     private async Task Delete(int id)
     {
         await LeaveRequestService.DeleteAsync(id);
-        await LoadAsync(); // Reload all requests after deletion
+        await LoadAsync();
     }
 
     private async Task Save(LeaveRequest req)
@@ -164,23 +171,52 @@ else
             await LeaveRequestService.UpdateAsync(req);
         }
 
-        await LoadAsync(); // Reload all requests after save/update
-        ShowForm = false; // Close the form
+        await LoadAsync();
+        ShowForm = false;
     }
 
     private void HandleClose(bool isOpen)
     {
         ShowForm = isOpen;
-        // If the form is closed, and it was an edit, you might want to reset 'Selected'
-        // to prevent stale data if the user re-opens the form for a new request without
-        // explicitly clicking 'CreateNew'.
         if (!isOpen)
         {
             Selected = new LeaveRequest();
         }
     }
 
-    // Helper method for status display
+    private async Task ShowModal(int requestId)
+    {
+        leaveRequestData = null; // Clear previous data and show loading state
+        showModal = true;
+        StateHasChanged(); // Update UI to show loading
+
+        leaveRequestData = await AttestationService.GenerateLeaveRequestAttestationAsync(requestId);
+        StateHasChanged(); // Update UI with loaded data
+    }
+
+    void CloseModal() => showModal = false;
+    private IJSObjectReference? jsModule;
+    async Task Print()
+    {
+        await jsModule.InvokeVoidAsync("printLeaveContent");
+    }
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                jsModule = await JS.InvokeAsync<IJSObjectReference>("import", "/js/attestation-utils.js");
+
+
+            }
+            catch (Exception ex)
+            {
+              
+                StateHasChanged();
+            }
+        }
+    }
     private string GetStatusDisplayName(LeaveStatus status)
     {
         return status switch
@@ -192,14 +228,15 @@ else
         };
     }
 
-    // Helper method for remaining days badge class (similar to child component)
     private string GetRemainingDaysBadgeClass(float remainingDays)
     {
         if (remainingDays <= 0)
             return "bg-danger";
-        else if (remainingDays < 5) // Example threshold for warning
+        else if (remainingDays < 5)
             return "bg-warning";
         else
             return "bg-success";
     }
 }
+
+

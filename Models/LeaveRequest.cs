@@ -28,7 +28,9 @@ namespace RH.Models
         public string? Reason { get; set; }
         public bool IsPaid { get; set; } = true;
 
-        
+        [DisplayFormat(DataFormatString = "{0:dd/MM/yyyy}", ApplyFormatInEditMode = true)]
+        public DateTime DateTime { get; set; }
+
     }
 
     public enum LeaveStatus

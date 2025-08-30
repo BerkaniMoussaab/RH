@@ -340,7 +340,10 @@
                 ValidationMessage = validationResult.message;
                 return;
             }
-
+            if (LeaveRequest.Id == 0)
+            {
+                LeaveRequest.DateTime = DateTime.Now;
+            }
             await OnSave.InvokeAsync(LeaveRequest);
             // Close is handled by the parent after OnSave completes and reloads data
         }

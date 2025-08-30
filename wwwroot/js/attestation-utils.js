@@ -54,7 +54,7 @@ export function saveAttestationAsPdf(fileName = "attestation.pdf") {
             }).from(element).save();
         });
 }
-export function previewLeaveRequest() {
+export function previewLeave() {
     const content = document.querySelector('.printable-content');
     if (!content) return;
 
@@ -62,33 +62,35 @@ export function previewLeaveRequest() {
     win.document.write(`
         <html>
             <head>
-                <title>Aperçu Demande de Congé</title>
-                <link rel="stylesheet" href="/css/leave-request.css">
+                <title>Aperçu Attestation</title>
+                <link rel="stylesheet" href="/css/attestation.css">
             </head>
             <body>
                 <div class="printable-content">${content.innerHTML}</div>
             </body>
         </html>
     `);
-    
     win.document.close();
 }
-export function previewLeaveRequest() {
-    
+
+
+export function printLeaveContent() {
     const content = document.querySelector('.printable-content');
     if (!content) return;
 
-    const win = window.open('', '_blank', 'width=800,height=1000');
-    win.document.write(`
+    const printWindow = window.open('', '', 'width=800,height=1000');
+    printWindow.document.write(`
         <html>
             <head>
-                <title>Aperçu Demande de Congé</title>
-                <link rel="stylesheet" href="/css/leave-print.css">
+                <title>Impression Attestation</title>
+                <link rel="stylesheet" type="text/css" href="/css/attestation.css" />
             </head>
-            <body>
-                <div class="printable-content">${content.innerHTML}</div>
+            <body onload="window.print(); window.close();">
+                <div class="printable-content">
+                    ${content.innerHTML}
+                </div>
             </body>
         </html>
     `);
-    win.document.close();
+    printWindow.document.close();
 }

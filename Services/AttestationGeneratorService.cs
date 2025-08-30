@@ -83,6 +83,24 @@ namespace RH.Services
 
             return $"{baseName}_{safeName}_{DateTime.Now:yyyyMMdd}";
         }
+        public async Task<LeaveRequestData> GenerateLeaveRequestAttestationAsync(int leaveRequestId)
+        {
+            var leave = await _context.LeaveRequests
+                            .Include(l => l.Employee)
+                            .ThenInclude(e => e.JobTitle)
+                            .FirstOrDefaultAsync(l => l.Id == leaveRequestId && l.Status == LeaveStatus.Approved)
+                        ?? throw new ArgumentException("Demande de congé approuvée non trouvée.");
+
+            var companyInfo = await _context.CompanyInfos.FirstOrDefaultAsync()
+                              ?? throw new InvalidOperationException("Les informations de l'entreprise ne sont pas configurées.");
+
+            return new LeaveRequestData
+            {
+                Leave = leave,
+                CompanyInfo = companyInfo
+            };
+        }
+
     }
 }
 
