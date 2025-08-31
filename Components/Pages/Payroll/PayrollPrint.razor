@@ -137,25 +137,26 @@
                     <thead>
                     <tr>
                         <th>Description</th>
-                        <th>Date</th>
+                       
                         <th>Quantité</th>
-                        <th>Montant unitaire</th>
+                       
                         <th>Commentaire</th>
-                        <th>Total</th>
+                        
                     </tr>
                     </thead>
                     <tbody>
-                    @foreach (var b in Bonuses.Where(b => b.IsApplied))
-                    {
-                        <tr>
-                            <td class="description">@b.Name</td>
-                            <td>@b.Date?.ToString("dd/MM/yyyy")</td>
-                            <td>@(b.IsCountable ? b.Quantity.ToString("N0") : "-")</td>
-                            <td>@(b.IsPercentage ? b.Amount + " %" : b.Amount.ToString("N0") + " DA")</td>
-                            <td>@b.note</td>
-                            <td class="amount positive">@b.CalculatedAmount.ToString("N0") DA</td>
-                        </tr>
-                    }
+                        @foreach (var b in Bonuses.Where(b => b.IsApplied))
+                        {
+                            <tr>
+                                <td class="description">@b.Name</td>
+                        
+                                <td>@(b.IsCountable? b.Quantity.ToString("G29") : "-")</td>
+                               
+                                <td>@b.note</td>
+                            
+                            </tr>
+                        }
+
                     </tbody>
                 </table>
             </section>
@@ -170,11 +171,11 @@
                     <thead>
                     <tr>
                         <th>Description</th>
-                        <th>Date</th>
+                      
                         <th>Quantité</th>
-                        <th>Montant unitaire</th>
+                        
                         <th>Commentaire</th>
-                        <th>Total</th>
+                      
                     </tr>
                     </thead>
                     <tbody>
@@ -182,11 +183,11 @@
                     {
                         <tr>
                             <td class="description">@d.Name</td>
-                            <td>@d.Date?.ToString("dd/MM/yyyy")</td>
-                            <td>@(d.IsCountable ? d.Quantity.ToString("N0") : "-")</td>
-                            <td>@(d.IsPercentage ? d.Amount + " %" : d.Amount.ToString("N0") + " DA")</td>
+                            
+                                <td>@(d.IsCountable? d.Quantity.ToString("G29") : "-")</td>
+                              
                             <td>@d.note</td>
-                            <td class="amount negative">@d.CalculatedAmount.ToString("N0") DA</td>
+                             
                         </tr>
                     }
                     </tbody>
