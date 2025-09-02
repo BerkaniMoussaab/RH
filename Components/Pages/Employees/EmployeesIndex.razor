@@ -3,25 +3,23 @@
 @using RH.Services
 @inject IEmployeeService EmployeeService
 @inject IJSRuntime JS
+@inject NavigationManager Navigation
 
 <h1 class="text-2xl font-bold mb-4">Employés</h1>
 
-<button class="btn btn-primary mb-4" @onclick="AddEmployee">Ajouter un employé</button>
+<div class="flex gap-4 mb-4">
+    <button class="btn btn-primary" @onclick="AddEmployee">Ajouter un employé</button>
+    <button class="btn btn-success" @onclick="NavigateToUrl">Générateur d'attestation</button>
+</div>
 
-
-@inject NavigationManager Navigation
-
-<button class="btn btn-success mb-4" @onclick="NavigateToUrl">
-   Génerateur attestation
-</button>
-
-@code {
-    private void NavigateToUrl()
-    {
-        Navigation.NavigateTo("/attestation-generator");
-    }
+@if (!string.IsNullOrWhiteSpace(ErrorMessage))
+{
+    <div class="alert alert-danger">@ErrorMessage</div>
 }
-
+@if (!string.IsNullOrWhiteSpace(SuccessMessage))
+{
+    <div class="alert alert-success">@SuccessMessage</div>
+}
 
 <table class="table table-striped">
     <thead>
@@ -31,7 +29,6 @@
             <th>Email</th>
             <th>Statut</th>
             <th>Contrat</th>
-           
             <th></th>
             <th></th>
         </tr>
@@ -47,8 +44,6 @@
                     <td>@emp.Email</td>
                     <td>@emp.Status</td>
                     <td>
-                       
-
                         @if (emp.ContractFile != null)
                         {
                             <button class="btn btn-sm btn-outline-primary"
@@ -65,15 +60,13 @@
                         else
                         {
                             <span class="text-muted">Aucun contrat</span>
-
                         }
                     </td>
-                   
                     <td>
                         <button class="btn btn-sm btn-outline-secondary" @onclick="() => Edit(emp.Id)">Modifier</button>
                     </td>
                     <td>
-                        <button class="btn btn-sm btn-danger" @onclick="() => deleteEmployee(emp.Id)">Supprimer</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => ConfirmDelete(emp.Id)">Supprimer</button>
                     </td>
                 </tr>
             }
@@ -85,8 +78,10 @@
     </tbody>
 </table>
 
-
-<EmployeeForm Employee="SelectedEmployee" IsOpen="IsModalOpen" IsOpenChanged="HandleModalClose" OnSave="HandleEmployeeSave" />
+<EmployeeForm Employee="SelectedEmployee"
+              IsOpen="IsModalOpen"
+              IsOpenChanged="HandleModalClose"
+              OnSave="HandleEmployeeSave" />
 
 @code {
     private List<Employee> Employees = new();
@@ -96,11 +91,9 @@
     private int CurrentDownloadId;
     private string ErrorMessage = string.Empty;
     private string SuccessMessage = string.Empty;
-    private string LastAction = "Page loaded";
 
     protected override async Task OnInitializedAsync()
     {
-        LastAction = "OnInitializedAsync called";
         await LoadEmployeesAsync();
     }
 
@@ -108,30 +101,16 @@
     {
         try
         {
-            LastAction = "Loading employees...";
             Employees = await EmployeeService.GetAllAsync();
-            LastAction = $"Loaded {Employees?.Count ?? 0} employees";
-
-            // Debug: Log contract file info
-            if (Employees != null)
-            {
-                foreach (var emp in Employees)
-                {
-                    Console.WriteLine($"Employee {emp.Id} ({emp.FullName}): ContractFile = {(emp.ContractFile != null ? $"{emp.ContractFile.Length} bytes" : "null")}");
-                }
-            }
         }
         catch (Exception ex)
         {
-            LastAction = $"Error loading employees: {ex.Message}";
             ErrorMessage = $"Erreur lors du chargement des employés : {ex.Message}";
-            Console.WriteLine($"LoadEmployeesAsync error: {ex}");
         }
     }
 
     private void AddEmployee()
     {
-        LastAction = "AddEmployee called";
         SelectedEmployee = new Employee();
         IsModalOpen = true;
     }
@@ -140,13 +119,11 @@
     {
         try
         {
-            LastAction = $"Edit called for ID {id}";
             SelectedEmployee = await EmployeeService.GetByIdAsync(id);
             IsModalOpen = true;
         }
         catch (Exception ex)
         {
-            LastAction = $"Edit error for ID {id}: {ex.Message}";
             ErrorMessage = $"Erreur lors du chargement de l'employé : {ex.Message}";
         }
     }
@@ -155,7 +132,6 @@
     {
         try
         {
-            LastAction = $"Saving employee {employee.Id}";
             if (employee.Id == 0)
                 await EmployeeService.AddAsync(employee);
             else
@@ -164,33 +140,27 @@
             await LoadEmployeesAsync();
             IsModalOpen = false;
             SuccessMessage = "Employé sauvegardé avec succès.";
-            LastAction = "Employee saved successfully";
         }
         catch (Exception ex)
         {
-            LastAction = $"Save error: {ex.Message}";
             ErrorMessage = $"Erreur lors de la sauvegarde : {ex.Message}";
         }
     }
 
     private void HandleModalClose(bool isOpen)
     {
-        LastAction = $"Modal close: {isOpen}";
         IsModalOpen = isOpen;
     }
 
-    // MÉTHODE PRINCIPALE DE TÉLÉCHARGEMENT AVEC DEBUG
+    private void NavigateToUrl()
+    {
+        Navigation.NavigateTo("/attestation-generator");
+    }
+
     private async Task DownloadContract(int employeeId)
     {
-        Console.WriteLine($"=== DownloadContract CALLED for employee {employeeId} ===");
-        LastAction = $"DownloadContract called for employee {employeeId}";
-
         if (IsDownloading)
-        {
-            Console.WriteLine("Already downloading, returning");
-            LastAction = "Download already in progress";
             return;
-        }
 
         IsDownloading = true;
         CurrentDownloadId = employeeId;
@@ -198,192 +168,78 @@
 
         try
         {
-            Console.WriteLine($"Starting download process for employee {employeeId}");
-            LastAction = $"Starting download for employee {employeeId}";
-
             var result = await EmployeeService.GetContractFileAsync(employeeId);
-
-           
-            Console.WriteLine($"FileStream: {(result.FileStream != null ? "present" : "null")}");
 
             if (result.FileStream == null)
             {
-                Console.WriteLine("FileStream is null, showing error");
                 ErrorMessage = "Le fichier de contrat n'est pas disponible ou n'existe pas.";
-                LastAction = "FileStream was null";
                 return;
             }
 
-            var fileName = !string.IsNullOrEmpty(result.FileName)
-    ? result.FileName.Trim()
-    : $"contrat_employe_{employeeId}";
+            var fileName = EnsureFileNameHasExtension(result.FileName ?? $"contrat_employe_{employeeId}", result.ContentType);
+            var contentType = result.ContentType ?? "application/pdf";
 
-            fileName = EnsureFileNameHasExtension(fileName, result.ContentType);
-
-
-            var contentType = !string.IsNullOrEmpty(result.ContentType)
-                ? result.ContentType
-                : "application/pdf";
-
-            Console.WriteLine($"File details - Name: {fileName}, Type: {contentType}");
-            LastAction = $"Processing file: {fileName}";
-
-            // Test JavaScript availability
             var jsAvailable = await JS.InvokeAsync<bool>("eval", "typeof downloadFileFromStream === 'function'");
-            Console.WriteLine($"JavaScript function available: {jsAvailable}");
-
             if (jsAvailable)
             {
-                Console.WriteLine("Using JavaScript method");
-                await DownloadUsingJavaScript(result.FileStream, fileName, contentType);
+                using var streamRef = new DotNetStreamReference(result.FileStream);
+                await JS.InvokeVoidAsync("downloadFileFromStream", fileName, contentType, streamRef);
             }
             else
             {
-                Console.WriteLine("Using fallback method");
-                await DownloadUsingFallback(result.FileStream, fileName, contentType);
+                using var memoryStream = new MemoryStream();
+                await result.FileStream.CopyToAsync(memoryStream);
+                var base64 = Convert.ToBase64String(memoryStream.ToArray());
+                await JS.InvokeVoidAsync("downloadFileFromBase64", fileName, contentType, base64);
             }
 
-            SuccessMessage = $"Téléchargement du contrat initié : {fileName}";
-            LastAction = $"Download completed: {fileName}";
-            Console.WriteLine("=== Download process completed successfully ===");
+            SuccessMessage = $"Téléchargement du contrat : {fileName}";
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"=== Download error: {ex} ===");
-            LastAction = $"Download error: {ex.Message}";
             ErrorMessage = $"Erreur lors du téléchargement : {ex.Message}";
         }
         finally
         {
             IsDownloading = false;
             CurrentDownloadId = 0;
-            StateHasChanged();
-            Console.WriteLine("=== Download process finished (finally block) ===");
         }
     }
+
     private string EnsureFileNameHasExtension(string fileName, string contentType)
     {
-        if (Path.HasExtension(fileName))
-            return fileName;
+        if (Path.HasExtension(fileName)) return fileName;
 
-        var extension = contentType switch
+        var ext = contentType switch
         {
             "application/pdf" => ".pdf",
             "application/msword" => ".doc",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document" => ".docx",
             "image/png" => ".png",
             "image/jpeg" => ".jpg",
-            "image/jpg" => ".jpg",
-            "image/gif" => ".gif",
             "application/zip" => ".zip",
-            _ => ".bin" // fallback if unknown
+            _ => ".bin"
         };
 
-        return fileName + extension;
+        return fileName + ext;
     }
 
-    // MÉTHODES DE TEST
-    private void TestMethod()
+    private async Task ConfirmDelete(int id)
     {
-        Console.WriteLine("=== TestMethod CALLED ===");
-        LastAction = "TestMethod called";
-        SuccessMessage = "Test method executed successfully!";
-        StateHasChanged();
-    }
-
-    private async Task TestDownload(int employeeId)
-    {
-        Console.WriteLine($"=== TestDownload CALLED for employee {employeeId} ===");
-        LastAction = $"TestDownload called for employee {employeeId}";
-
-        try
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Êtes-vous sûr de vouloir supprimer cet employé ?");
+        if (confirmed)
         {
-            // Test si le service fonctionne
-            var result = await EmployeeService.GetContractFileAsync(employeeId);
-            var message = result.FileStream != null
-                ? $"Service OK - File available for employee {employeeId}"
-                : $"Service returned null FileStream for employee {employeeId}";
-
-            SuccessMessage = message;
-            Console.WriteLine(message);
-            LastAction = message;
+            try
+            {
+                await EmployeeService.DeleteAsync(id);
+                await LoadEmployeesAsync();
+                SuccessMessage = "Employé supprimé avec succès.";
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = $"Erreur lors de la suppression : {ex.Message}";
+            }
         }
-        catch (Exception ex)
-        {
-            var message = $"Service error for employee {employeeId}: {ex.Message}";
-            ErrorMessage = message;
-            Console.WriteLine(message);
-            LastAction = message;
-        }
-
-        StateHasChanged();
-    }
-
-    private async Task TestDownloadDirect(int employeeId)
-    {
-        Console.WriteLine($"=== TestDownloadDirect CALLED for employee {employeeId} ===");
-        LastAction = $"TestDownloadDirect called for employee {employeeId}";
-
-        // Appel direct sans vérification
-        await DownloadContract(employeeId);
-    }
-
-    private async Task RefreshData()
-    {
-        LastAction = "Refreshing data...";
-        await LoadEmployeesAsync();
-        StateHasChanged();
-    }
-
-    private async Task DownloadUsingJavaScript(Stream fileStream, string fileName, string contentType)
-    {
-        try
-        {
-            Console.WriteLine($"DownloadUsingJavaScript: {fileName}");
-            using var streamRef = new DotNetStreamReference(fileStream);
-            await JS.InvokeVoidAsync("downloadFileFromStream",
-                (object)fileName,
-                (object)contentType,
-                (object)streamRef);
-            Console.WriteLine("JavaScript download completed");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"JavaScript download error: {ex}");
-            throw new Exception($"Erreur JavaScript lors du téléchargement : {ex.Message}");
-        }
-    }
-
-    private async Task DownloadUsingFallback(Stream fileStream, string fileName, string contentType)
-    {
-        try
-        {
-            Console.WriteLine($"DownloadUsingFallback: {fileName}");
-            using var memoryStream = new MemoryStream();
-            await fileStream.CopyToAsync(memoryStream);
-            var base64 = Convert.ToBase64String(memoryStream.ToArray());
-
-            await JS.InvokeVoidAsync("downloadFileFromBase64",
-                (object)fileName,
-                (object)contentType,
-                (object)base64);
-            Console.WriteLine("Fallback download completed");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Fallback download error: {ex}");
-            throw new Exception($"Erreur lors du téléchargement alternatif : {ex.Message}");
-        }
-    }
-
-    private void ClearError()
-    {
-        ErrorMessage = string.Empty;
-    }
-
-    private void ClearSuccess()
-    {
-        SuccessMessage = string.Empty;
     }
 
     private void ClearMessages()
@@ -391,109 +247,4 @@
         ErrorMessage = string.Empty;
         SuccessMessage = string.Empty;
     }
-    private void deleteEmployee(int Id)
-    {
-        EmployeeService.DeleteAsync(Id);
-        StateHasChanged();
-    }
 }
-
-@* JavaScript avec logs étendus *@
-<script>
-    console.log("=== Download JavaScript loaded ===");
-
-    window.downloadFileFromStream = async (fileName, contentType, contentStreamReference) => {
-        try {
-            console.log(`=== downloadFileFromStream called ===`);
-            console.log(`fileName: ${fileName}`);
-            console.log(`contentType: ${contentType}`);
-            console.log(`contentStreamReference:`, contentStreamReference);
-
-            if (!contentStreamReference) {
-                throw new Error('Stream reference is null or undefined');
-            }
-
-            console.log("Getting array buffer...");
-            const arrayBuffer = await contentStreamReference.arrayBuffer();
-            console.log(`Array buffer size: ${arrayBuffer.byteLength} bytes`);
-
-            if (!arrayBuffer || arrayBuffer.byteLength === 0) {
-                throw new Error('File content is empty or invalid');
-            }
-
-            console.log("Creating blob...");
-            const blob = new Blob([arrayBuffer], { type: contentType || 'application/octet-stream' });
-            const url = URL.createObjectURL(blob);
-            console.log(`Blob URL created: ${url}`);
-
-            console.log("Creating download link...");
-            const anchor = document.createElement('a');
-            anchor.href = url;
-            anchor.download = fileName || 'download';
-            anchor.style.display = 'none';
-
-            document.body.appendChild(anchor);
-            console.log("Triggering download...");
-            anchor.click();
-            document.body.removeChild(anchor);
-
-            setTimeout(() => {
-                URL.revokeObjectURL(url);
-                console.log("Blob URL revoked");
-            }, 1000);
-
-            console.log(`=== Download completed: ${fileName} ===`);
-        } catch (error) {
-            console.error('=== Download error ===', error);
-            alert(`Erreur lors du téléchargement: ${error.message}`);
-            throw error;
-        }
-    };
-
-    window.downloadFileFromBase64 = (fileName, contentType, base64Data) => {
-        try {
-            console.log(`=== downloadFileFromBase64 called ===`);
-            console.log(`fileName: ${fileName}`);
-            console.log(`contentType: ${contentType}`);
-            console.log(`base64Data length: ${base64Data ? base64Data.length : 0}`);
-
-            if (!base64Data) {
-                throw new Error('Base64 data is empty');
-            }
-
-            console.log("Converting base64...");
-            const byteCharacters = atob(base64Data);
-            const byteNumbers = new Array(byteCharacters.length);
-
-            for (let i = 0; i < byteCharacters.length; i++) {
-                byteNumbers[i] = byteCharacters.charCodeAt(i);
-            }
-
-            const byteArray = new Uint8Array(byteNumbers);
-            const blob = new Blob([byteArray], { type: contentType || 'application/octet-stream' });
-            const url = URL.createObjectURL(blob);
-
-            const anchor = document.createElement('a');
-            anchor.href = url;
-            anchor.download = fileName || 'download';
-            anchor.style.display = 'none';
-
-            document.body.appendChild(anchor);
-            anchor.click();
-            document.body.removeChild(anchor);
-
-            setTimeout(() => URL.revokeObjectURL(url), 1000);
-
-            console.log(`=== Base64 download completed: ${fileName} ===`);
-        } catch (error) {
-            console.error('=== Base64 download error ===', error);
-            alert(`Erreur lors du téléchargement: ${error.message}`);
-            throw error;
-        }
-    };
-
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('=== Download functions ready ===');
-    });
-</script>
-

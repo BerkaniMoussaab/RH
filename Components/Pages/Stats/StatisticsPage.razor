@@ -1,0 +1,541 @@
+@page "/statistics"
+@using Plotly.Blazor
+@using Plotly.Blazor.Traces
+@using Plotly.Blazor.Traces.BarLib
+@using Plotly.Blazor.Traces.PieLib
+@using Plotly.Blazor.Traces.ScatterLib
+@using RH.Models
+@using RH.Services
+@using Layout = Plotly.Blazor.Layout
+
+@inject IStatisticsService StatisticsService
+
+<PageTitle>Statistiques RH</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h1 class="mb-4">Tableau de Bord - Statistiques RH</h1>
+        </div>
+    </div>
+
+    <!-- Filtres de Date -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Filtres de Période</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="predefinedRange" class="form-label">Période prédéfinie</label>
+                            <select id="predefinedRange" class="form-select" @bind="selectedPredefinedRange">
+                                @foreach (var range in Enum.GetValues<PredefinedDateRange>())
+                                {
+                                    <option value="@range.ToString()">@DateRangeHelper.GetDisplayName(range)</option>
+                                }
+                            </select>
+
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="startDate" class="form-label">Date de début</label>
+                            <input type="date" id="startDate" class="form-control" @bind="startDate" @bind:event="oninput" @onchange="OnDateChanged" disabled="@(selectedPredefinedRange != PredefinedDateRange.Custom)" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="endDate" class="form-label">Date de fin</label>
+                            <input type="date" id="endDate" class="form-control" @bind="endDate" @bind:event="oninput" @onchange="OnDateChanged" disabled="@(selectedPredefinedRange != PredefinedDateRange.Custom)" />
+                        </div>
+                        <div class="col-md-3 mb-3 d-flex align-items-end">
+                            <button class="btn btn-primary me-2" @onclick="ApplyFilters" disabled="@isLoading">
+                                @if (isLoading)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                }
+                                Appliquer
+                            </button>
+                            <button class="btn btn-outline-secondary" @onclick="ClearFilters" disabled="@isLoading">Effacer</button>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(filterPeriodDisplay))
+                    {
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="alert alert-info mb-0">
+                                    <strong>Période sélectionnée :</strong> @filterPeriodDisplay
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Statistiques des Employés -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2 class="mb-3">Statistiques des Employés</h2>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <!-- Graphique des employés par statut -->
+            <div class="col-lg-6 col-md-12 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Répartition des Employés par Statut</h5>
+                    </div>
+                    <div class="card-body">
+                        <PlotlyChart Data="employeeStatusData" Layout="employeeStatusLayout" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Indicateurs numériques des employés -->
+            <div class="col-lg-6 col-md-12 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Indicateurs Employés</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6 text-center">
+                                <h3 class="text-primary">@employeeStats.TotalEmployees</h3>
+                                <p class="mb-0">Total Employés</p>
+                            </div>
+                            <div class="col-6 text-center">
+                                <h3 class="text-success">@employeeStats.AverageSalary.ToString("C", System.Globalization.CultureInfo.CreateSpecificCulture("fr-DZ"))</h3>
+                                <p class="mb-0">Salaire Moyen</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistiques de la Paie -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2 class="mb-3">Statistiques de la Paie</h2>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <!-- Indicateurs numériques de la paie -->
+            <div class="col-lg-8 col-md-12 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Indicateurs Financiers</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3 col-6 mb-3">
+                                <h4 class="text-primary">@payrollStats.TotalGrossSalary.ToString("C", System.Globalization.CultureInfo.CreateSpecificCulture("fr-DZ"))</h4>
+                                <p class="mb-0 small">Masse Salariale Brute</p>
+                            </div>
+                            <div class="col-md-3 col-6 mb-3">
+                                <h4 class="text-success">@payrollStats.TotalNetPay.ToString("C", System.Globalization.CultureInfo.CreateSpecificCulture("fr-DZ"))</h4>
+                                <p class="mb-0 small">Salaire Net Total</p>
+                            </div>
+                           
+                            <div class="col-md-3 col-6 mb-3">
+                                <h4 class="text-info">@payrollStats.AverageGrossSalary.ToString("C", System.Globalization.CultureInfo.CreateSpecificCulture("fr-DZ"))</h4>
+                                <p class="mb-0 small">Salaire Brut Moyen</p>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row text-center">
+                            <div class="col-md-4 col-12 mb-2">
+                                <h5 class="text-danger">@payrollStats.TotalDeductions.ToString("C", System.Globalization.CultureInfo.CreateSpecificCulture("fr-DZ"))</h5>
+                                <p class="mb-0 small">Total Déductions</p>
+                            </div>
+                            <div class="col-md-4 col-12 mb-2">
+                                <h5 class="text-success">@payrollStats.TotalBonuses.ToString("C", System.Globalization.CultureInfo.CreateSpecificCulture("fr-DZ"))</h5>
+                                <p class="mb-0 small">Total Bonus</p>
+                            </div>
+                            <div class="col-md-4 col-12 mb-2">
+                                <h5 class="text-warning">@payrollStats.TotalAdvanceDeductions.ToString("C", System.Globalization.CultureInfo.CreateSpecificCulture("fr-DZ"))</h5>
+                                <p class="mb-0 small">Avances Déduites</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graphique de répartition des paiements -->
+            <div class="col-lg-4 col-md-12 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Répartition des Paiements</h5>
+                    </div>
+                    <div class="card-body">
+                        <PlotlyChart Data="paymentTypeData" Layout="paymentTypeLayout" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Évolution de la Masse Salariale -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Évolution de la Masse Salariale</h5>
+                    </div>
+                    <div class="card-body">
+                        <PlotlyChart Data="payrollEvolutionData" Layout="payrollEvolutionLayout" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistiques des Avances -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2 class="mb-3">Statistiques des Avances</h2>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <!-- Graphique des avances par statut -->
+            <div class="col-lg-6 col-md-12 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Répartition des Avances par Statut</h5>
+                    </div>
+                    <div class="card-body">
+                        <PlotlyChart Data="advanceStatusData" Layout="advanceStatusLayout" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Indicateurs numériques des avances -->
+            <div class="col-lg-6 col-md-12 mb-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Indicateurs Avances</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <h4 class="text-info">@advanceStats.TotalAdvances</h4>
+                                <p class="mb-0 small">Total Avances</p>
+                            </div>
+                            <div class="col-4">
+                                <h4 class="text-warning">@advanceStats.TotalAmount.ToString("C", System.Globalization.CultureInfo.CreateSpecificCulture("fr-DZ"))</h4>
+                                <p class="mb-0 small">Montant Total</p>
+                            </div>
+                            <div class="col-4">
+                                <h4 class="text-danger">@advanceStats.TotalRemaining.ToString("C", System.Globalization.CultureInfo.CreateSpecificCulture("fr-DZ"))</h4>
+                                <p class="mb-0 small">Restant à Payer</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Évolution des Avances par Mois -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">Évolution des Avances par Mois</h5>
+                    </div>
+                    <div class="card-body">
+                        <PlotlyChart Data="monthlyAdvancesData" Layout="monthlyAdvancesLayout" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isLoading = true;
+    private EmployeeStatistics employeeStats = new();
+    private AdvanceStatistics advanceStats = new();
+    private PayrollStatistics payrollStats = new();
+
+    // Variables pour les filtres de date
+    private PredefinedDateRange _selectedPredefinedRange = PredefinedDateRange.Last30Days;
+
+    private PredefinedDateRange selectedPredefinedRange
+    {
+        get => _selectedPredefinedRange;
+        set
+        {
+            if (_selectedPredefinedRange != value)
+            {
+                _selectedPredefinedRange = value;
+                OnPredefinedRangeChanged(value);
+            }
+        }
+    }
+
+    private async void OnPredefinedRangeChanged(PredefinedDateRange range)
+    {
+        if (range != PredefinedDateRange.Custom)
+        {
+            var dateRange = DateRangeHelper.GetDateRange(range);
+            startDate = dateRange.StartDate;
+            endDate = dateRange.EndDate;
+
+            await ApplyFilters();
+        }
+    }
+
+
+    private DateTime? startDate;
+    private DateTime? endDate;
+    private string filterPeriodDisplay = "";
+
+    // Variables pour les graphiques
+    private Layout employeeStatusLayout = new();
+    private IList<ITrace> employeeStatusData = new List<ITrace>();
+
+    private Layout advanceStatusLayout = new();
+    private IList<ITrace> advanceStatusData = new List<ITrace>();
+
+    private Layout monthlyAdvancesLayout = new();
+    private IList<ITrace> monthlyAdvancesData = new List<ITrace>();
+
+    private Layout paymentTypeLayout = new();
+    private IList<ITrace> paymentTypeData = new List<ITrace>();
+
+    private Layout payrollEvolutionLayout = new();
+    private IList<ITrace> payrollEvolutionData = new List<ITrace>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Initialiser avec la plage prédéfinie par défaut
+        var defaultRange = DateRangeHelper.GetDateRange(selectedPredefinedRange);
+        startDate = defaultRange.StartDate;
+        endDate = defaultRange.EndDate;
+        
+        await LoadStatistics();
+        SetupCharts();
+        isLoading = false;
+    }
+
+    private async Task LoadStatistics()
+    {
+        employeeStats = await StatisticsService.GetEmployeeStatisticsAsync();
+        advanceStats = await StatisticsService.GetAdvanceStatisticsAsync();
+        payrollStats = await StatisticsService.GetPayrollStatisticsAsync(startDate, endDate);
+        
+        filterPeriodDisplay = payrollStats.FilterPeriodDisplay;
+    }
+
+    private void SetupCharts()
+    {
+        SetupEmployeeStatusChart();
+        SetupAdvanceStatusChart();
+        SetupMonthlyAdvancesChart();
+        SetupPaymentTypeChart();
+        SetupPayrollEvolutionChart();
+    }
+
+    
+
+    private async Task OnDateChanged()
+    {
+        if (selectedPredefinedRange == PredefinedDateRange.Custom)
+        {
+            // Auto-apply filters when dates change in custom mode
+            await ApplyFilters();
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        isLoading = true;
+        StateHasChanged();
+        
+        try
+        {
+            await LoadStatistics();
+            SetupCharts();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ClearFilters()
+    {
+        selectedPredefinedRange = PredefinedDateRange.Custom;
+        startDate = null;
+        endDate = null;
+        
+        await ApplyFilters();
+    }
+
+    private void SetupEmployeeStatusChart()
+    {
+        if (employeeStats.EmployeesByStatus?.Count > 0)
+        {
+            employeeStatusData = new List<ITrace>
+            {
+                new Pie
+                {
+                    Labels = employeeStats.EmployeesByStatus.Keys.ToArray(),
+                    Values = employeeStats.EmployeesByStatus.Values.Select(v => (object)v).ToArray(),
+                    HoverInfo = Plotly.Blazor.Traces.PieLib.HoverInfoFlag.Label | Plotly.Blazor.Traces.PieLib.HoverInfoFlag.Percent,
+                    TextInfo = Plotly.Blazor.Traces.PieLib.TextInfoFlag.Label | Plotly.Blazor.Traces.PieLib.TextInfoFlag.Percent,
+                    Marker = new Plotly.Blazor.Traces.PieLib.Marker
+                    {
+                        Colors = new[] { "#28a745", "#ffc107", "#dc3545" }
+                    }
+                }
+            };
+
+            employeeStatusLayout = new Layout
+            {
+                Title = new Plotly.Blazor.LayoutLib.Title { Text = "Employés par Statut" },
+                ShowLegend = true,
+                Height = 400
+            };
+        }
+    }
+
+    private void SetupAdvanceStatusChart()
+    {
+        if (advanceStats.AdvancesByStatus?.Count > 0)
+        {
+            advanceStatusData = new List<ITrace>
+            {
+                new Bar
+                {
+                    X = advanceStats.AdvancesByStatus.Keys.Select(k => (object)k).ToArray(),
+                    Y = advanceStats.AdvancesByStatus.Values.Select(v => (object)v).ToArray(),
+                    Marker = new Plotly.Blazor.Traces.BarLib.Marker { Color = "#007bff" }
+                }
+            };
+
+            advanceStatusLayout = new Layout
+            {
+                Title = new Plotly.Blazor.LayoutLib.Title { Text = "Avances par Statut" },
+                XAxis = new List<Plotly.Blazor.LayoutLib.XAxis> { new Plotly.Blazor.LayoutLib.XAxis { Title = new Plotly.Blazor.LayoutLib.XAxisLib.Title { Text = "Statut" } } },
+                YAxis = new List<Plotly.Blazor.LayoutLib.YAxis> { new Plotly.Blazor.LayoutLib.YAxis { Title = new Plotly.Blazor.LayoutLib.YAxisLib.Title { Text = "Nombre" } } },
+                Height = 400
+            };
+        }
+    }
+
+    private void SetupMonthlyAdvancesChart()
+    {
+        if (advanceStats.MonthlyAdvances?.Count > 0)
+        {
+            monthlyAdvancesData = new List<ITrace>
+            {
+                new Scatter
+                {
+                    X = advanceStats.MonthlyAdvances.Keys.Select(k => (object)k).ToArray(),
+                    Y = advanceStats.MonthlyAdvances.Values.Select(v => (object)v).ToArray(),
+                    Mode = Plotly.Blazor.Traces.ScatterLib.ModeFlag.Lines | Plotly.Blazor.Traces.ScatterLib.ModeFlag.Markers,
+                    Line = new Plotly.Blazor.Traces.ScatterLib.Line { Color = "#17a2b8" },
+                    Marker = new Plotly.Blazor.Traces.ScatterLib.Marker
+                    {
+                        Color = "#17a2b8",
+                        Size = 8
+                    }
+                }
+            };
+
+            monthlyAdvancesLayout = new Layout
+            {
+                Title = new Plotly.Blazor.LayoutLib.Title { Text = "Évolution des Avances" },
+                XAxis = new List<Plotly.Blazor.LayoutLib.XAxis> { new Plotly.Blazor.LayoutLib.XAxis { Title = new Plotly.Blazor.LayoutLib.XAxisLib.Title { Text = "Mois" } } },
+                YAxis = new List<Plotly.Blazor.LayoutLib.YAxis> { new Plotly.Blazor.LayoutLib.YAxis { Title = new Plotly.Blazor.LayoutLib.YAxisLib.Title { Text = "Montant (DZD)" } } },
+                Height = 400
+            };
+        }
+    }
+
+    private void SetupPaymentTypeChart()
+    {
+        if (payrollStats.PaymentTypeDistribution?.Count > 0)
+        {
+            paymentTypeData = new List<ITrace>
+            {
+                new Pie
+                {
+                    Labels = payrollStats.PaymentTypeDistribution.Keys.ToArray(),
+                    Values = payrollStats.PaymentTypeDistribution.Values.Select(v => (object)v).ToArray(),
+                    HoverInfo = Plotly.Blazor.Traces.PieLib.HoverInfoFlag.Label | Plotly.Blazor.Traces.PieLib.HoverInfoFlag.Percent,
+                    TextInfo = Plotly.Blazor.Traces.PieLib.TextInfoFlag.Label | Plotly.Blazor.Traces.PieLib.TextInfoFlag.Percent,
+                    Marker = new Plotly.Blazor.Traces.PieLib.Marker
+                    {
+                        Colors = new[] { "#007bff", "#28a745" }
+                    }
+                }
+            };
+
+            paymentTypeLayout = new Layout
+            {
+                Title = new Plotly.Blazor.LayoutLib.Title { Text = "Types de Paiement" },
+                ShowLegend = true,
+                Height = 300
+            };
+        }
+    }
+
+    private void SetupPayrollEvolutionChart()
+    {
+        if (payrollStats.MonthlyGrossSalary?.Count > 0)
+        {
+            var grossSalaryTrace = new Scatter
+            {
+                X = payrollStats.MonthlyGrossSalary.Keys.Select(k => (object)k).ToArray(),
+                Y = payrollStats.MonthlyGrossSalary.Values.Select(v => (object)v).ToArray(),
+                Mode = Plotly.Blazor.Traces.ScatterLib.ModeFlag.Lines | Plotly.Blazor.Traces.ScatterLib.ModeFlag.Markers,
+                Line = new Plotly.Blazor.Traces.ScatterLib.Line { Color = "#007bff" },
+                Marker = new Plotly.Blazor.Traces.ScatterLib.Marker { Color = "#007bff", Size = 6 },
+                Name = "Salaire Brut"
+            };
+
+            var traces = new List<ITrace> { grossSalaryTrace };
+
+            // Ajouter la courbe du salaire net si les données sont disponibles
+            if (payrollStats.MonthlyNetSalary?.Count > 0)
+            {
+                var netSalaryTrace = new Scatter
+                {
+                    X = payrollStats.MonthlyNetSalary.Keys.Select(k => (object)k).ToArray(),
+                    Y = payrollStats.MonthlyNetSalary.Values.Select(v => (object)v).ToArray(),
+                    Mode = Plotly.Blazor.Traces.ScatterLib.ModeFlag.Lines | Plotly.Blazor.Traces.ScatterLib.ModeFlag.Markers,
+                    Line = new Plotly.Blazor.Traces.ScatterLib.Line { Color = "#28a745" },
+                    Marker = new Plotly.Blazor.Traces.ScatterLib.Marker { Color = "#28a745", Size = 6 },
+                    Name = "Salaire Net"
+                };
+                traces.Add(netSalaryTrace);
+            }
+
+            payrollEvolutionData = traces;
+
+            payrollEvolutionLayout = new Layout
+            {
+                Title = new Plotly.Blazor.LayoutLib.Title { Text = "Évolution de la Masse Salariale" },
+                XAxis = new List<Plotly.Blazor.LayoutLib.XAxis> { new Plotly.Blazor.LayoutLib.XAxis { Title = new Plotly.Blazor.LayoutLib.XAxisLib.Title { Text = "Mois" } } },
+                YAxis = new List<Plotly.Blazor.LayoutLib.YAxis> { new Plotly.Blazor.LayoutLib.YAxis { Title = new Plotly.Blazor.LayoutLib.YAxisLib.Title { Text = "Montant (DZD)" } } },
+                ShowLegend = true,
+                Height = 400
+            };
+        }
+    }
+}
+

@@ -44,6 +44,7 @@ namespace RH.Models
     public enum AttestationType
     {
         Work,
+        Terminated,
         Internship
     }
 }

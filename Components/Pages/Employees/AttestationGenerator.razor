@@ -27,6 +27,7 @@
                 <label class="form-label fw-bold">Type d'Attestation</label>
                 <select class="form-select" @bind="attestationType">
                     <option value="@AttestationType.Work">Attestation de Travail</option>
+                    <option value="@AttestationType.Terminated">Certificat de Travail</option>
                     <option value="@AttestationType.Internship">Attestation de Stage</option>
                 </select>
             </div>
@@ -141,14 +142,42 @@
 
         try
         {
+            Employee employee = await EmployeeService.GetByIdAsync(employeeId);
+            if (employee == null)
+            {
+                message = "Employé introuvable.";
+                return;
+            }
+
+            bool isTerminated = employee.DateOfTermination != null; // adjust if you use a different field
+
             if (attestationType == AttestationType.Work)
             {
-                attestationData = await AttestationService.GenerateWorkAttestationAsync(employeeId);
+                if (isTerminated)
+                {
+                    message = "L'attestation de travail ne peut être générée que pour les employés encore en poste.";
+                    return;
+                }
+
+                attestationData = await AttestationService.GenerateWorkAttestationAsync(employeeId, AttestationType.Work);
                 generatedFileName = await AttestationService.GetAttestationFileNameAsync(employeeId, AttestationType.Work);
             }
-            else
+            else if (attestationType == AttestationType.Terminated)
             {
-                if (string.IsNullOrWhiteSpace(internshipDepartment) || string.IsNullOrWhiteSpace(supervisorName) || string.IsNullOrWhiteSpace(internshipObjectives))
+                if (!isTerminated)
+                {
+                    message = "L'attestation de fin de contrat ne peut être générée que pour les employés ayant quitté l'entreprise.";
+                    return;
+                }
+
+                attestationData = await AttestationService.GenerateWorkAttestationAsync(employeeId, AttestationType.Terminated);
+                generatedFileName = await AttestationService.GetAttestationFileNameAsync(employeeId, AttestationType.Terminated);
+            }
+            else if (attestationType == AttestationType.Internship)
+            {
+                if (string.IsNullOrWhiteSpace(internshipDepartment) ||
+                    string.IsNullOrWhiteSpace(supervisorName) ||
+                    string.IsNullOrWhiteSpace(internshipObjectives))
                 {
                     message = "Veuillez remplir tous les champs pour l'attestation de stage.";
                     return;
@@ -156,6 +185,7 @@
 
                 attestationData = await AttestationService.GenerateInternshipAttestationAsync(
                     employeeId, internshipStartDate, internshipEndDate, internshipDepartment, supervisorName, internshipObjectives);
+
                 generatedFileName = await AttestationService.GetAttestationFileNameAsync(employeeId, AttestationType.Internship);
             }
 
@@ -166,6 +196,8 @@
             message = $"Erreur : {ex.Message}";
         }
     }
+
+
 
     private async Task PreviewAttestation()
     {

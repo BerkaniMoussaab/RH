@@ -1,0 +1,147 @@
+﻿@page "/stats"
+@using System.Globalization
+@using RH.Models
+@using RH.Services
+@inject IPayrollService PayrollService
+
+<PageTitle>Statistiques de Paie</PageTitle>
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <h2 class="text-3xl font-extrabold text-gray-800 mb-6">📊 Statistiques de Paie</h2>
+
+    @if (employeeStats == null)
+    {
+        <p class="text-gray-600">Chargement en cours...</p>
+    }
+    else
+    {
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-6 mb-10">
+            <StatCard Title="Employés" Value="@employeeStats.Count" Color="text-blue-700" />
+            <StatCard Title="Net Total" Value="@employeeStats.Sum(e => e.TotalNetPay).ToString("C", CultureInfo.CurrentCulture)" Color="text-green-600" />
+            <StatCard Title="Net Moyen" Value="@employeeStats.Average(e => e.TotalNetPay).ToString("C", CultureInfo.CurrentCulture)" Color="text-indigo-600" />
+            <StatCard Title="Absences" Value="@employeeStats.Sum(e => e.TotalAbsences)" Color="text-red-600" />
+            <StatCard Title="Avances" Value="@employeeStats.Sum(e => e.TotalAdvances).ToString("C", CultureInfo.CurrentCulture)" Color="text-yellow-500" />
+        </div>
+
+        <!-- Net Pay Chart -->
+        <h3 class="text-xl font-semibold mt-10 mb-4 text-gray-700">💰 Visualisation: Net Pay</h3>
+        <div class="space-y-4">
+            @if (employeeStats.Any())
+            {
+                var maxNet = employeeStats.Max(e => e.TotalNetPay);
+                foreach (var stat in employeeStats)
+                {
+                    <div class="bg-white rounded shadow p-4">
+                        <div class="flex justify-between text-sm font-medium text-gray-700 mb-2">
+                            <span>@stat.Employee?.FullName</span>
+                            <span>@stat.TotalNetPay.ToString("C", CultureInfo.CurrentCulture)</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded h-4 overflow-hidden">
+                            @if (maxNet > 0)
+                            {
+                                <div class="bg-blue-500 h-4 transition-all duration-300 ease-in-out"
+                                     style="width:@($"{(stat.TotalNetPay / maxNet) * 100:0.#}%")"></div>
+                            }
+                            else
+                            {
+                                <div class="bg-blue-500 h-4 w-0"></div>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        <!-- Absences Chart -->
+        <h3 class="text-xl font-semibold mt-12 mb-4 text-gray-700">⛔ Visualisation: Absences</h3>
+        <div class="space-y-4">
+            @if (employeeStats.Any())
+            {
+                var maxAbs = employeeStats.Max(e => e.TotalAbsences);
+                foreach (var stat in employeeStats)
+                {
+                    <div class="bg-white rounded shadow p-4">
+                        <div class="flex justify-between text-sm font-medium text-gray-700 mb-2">
+                            <span>@stat.Employee?.FullName</span>
+                            <span>@stat.TotalAbsences</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded h-4 overflow-hidden">
+                            @if (maxAbs > 0)
+                            {
+                                <div class="bg-red-500 h-4 transition-all duration-300 ease-in-out"
+                                     style="width:@($"{(decimal)stat.TotalAbsences / maxAbs * 100:0.#}%")"></div>
+                            }
+                            else
+                            {
+                                <div class="bg-red-500 h-4 w-0"></div>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        <!-- Table View -->
+        <div class="bg-white rounded-xl shadow overflow-x-auto mt-12">
+            <table class="min-w-full divide-y divide-gray-200 text-sm">
+                <thead class="bg-gray-100 text-gray-700">
+                    <tr>
+                        <th class="px-4 py-2 text-left">👤 Employé</th>
+                        <th class="px-4 py-2 text-center">💵 Net Total</th>
+                        <th class="px-4 py-2 text-center">📄 Nombre de Paies</th>
+                        <th class="px-4 py-2 text-center">💼 Salaire Moyen</th>
+                        <th class="px-4 py-2 text-center">⛔ Absences</th>
+                        <th class="px-4 py-2 text-center">💸 Avances</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    @foreach (var stat in employeeStats)
+                    {
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2">@stat.Employee?.FullName</td>
+                            <td class="px-4 py-2 text-center">@stat.TotalNetPay.ToString("C", CultureInfo.CurrentCulture)</td>
+                            <td class="px-4 py-2 text-center">@stat.PayrollCount</td>
+                            <td class="px-4 py-2 text-center">@stat.AverageSalary.ToString("C", CultureInfo.CurrentCulture)</td>
+                            <td class="px-4 py-2 text-center">@stat.TotalAbsences</td>
+                            <td class="px-4 py-2 text-center">@stat.TotalAdvances.ToString("C", CultureInfo.CurrentCulture)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<EmployeeStats> employeeStats;
+
+    protected override async Task OnInitializedAsync()
+    {
+        DateTime start = new DateTime(DateTime.Now.Year, 1, 1);
+        DateTime end = DateTime.Now;
+        var payrolls = await PayrollService.GetAllAsync(start, end);
+
+        employeeStats = payrolls
+            .GroupBy(p => p.Employee)
+            .Select(g => new EmployeeStats
+            {
+                Employee = g.Key,
+                PayrollCount = g.Count(),
+                TotalNetPay = g.Sum(p => p.NetPay),
+                AverageSalary = g.Any(p => p.BaseSalary > 0) ? g.Average(p => p.BaseSalary) : 0,
+                TotalAbsences = g.Sum(p => p.AbsenceDays),
+                TotalAdvances = g.Sum(p => p.AdvanceDeductionsAmounts)
+            }).ToList();
+    }
+
+    public class EmployeeStats
+    {
+        public Employee Employee { get; set; }
+        public int PayrollCount { get; set; }
+        public decimal TotalNetPay { get; set; }
+        public decimal AverageSalary { get; set; }
+        public int TotalAbsences { get; set; }
+        public decimal TotalAdvances { get; set; }
+    }
+}

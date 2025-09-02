@@ -83,6 +83,7 @@ builder.Services.AddScoped<IAdvanceService, AdvanceService>();
 builder.Services.AddScoped<AdvanceService>();
 builder.Services.AddScoped<PayrollService>();
 
+builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 builder.Services.AddAntiforgery(options =>
 {
     options.FormFieldName = "__RequestVerificationToken";

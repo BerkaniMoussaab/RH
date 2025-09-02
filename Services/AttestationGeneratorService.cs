@@ -14,7 +14,7 @@ namespace RH.Services
             _context = context;
         }
 
-        public async Task<AttestationData> GenerateWorkAttestationAsync(int employeeId)
+        public async Task<AttestationData> GenerateWorkAttestationAsync(int employeeId ,AttestationType type)
         {
             var employee = await _context.Employees
                 .Where(e => !e.Deleted)
@@ -27,7 +27,7 @@ namespace RH.Services
 
             return new AttestationData
             {
-                Type = AttestationType.Work,
+                Type = type,
                 Employee = employee,
                 CompanyInfo = companyInfo,
                 GeneratedDate = DateTime.Now

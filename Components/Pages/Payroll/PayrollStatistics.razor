@@ -1,0 +1,405 @@
+@using System.Globalization
+@using RH.Models
+@inject IJSRuntime JSRuntime
+<script></script>
+<div class="payroll-statistics-container">
+    <div class="statistics-header">
+        <h2 class="statistics-title">
+            <i class="fas fa-chart-bar"></i>
+            Statistiques de Paie
+        </h2>
+        @if (PayrollData?.Any() == true)
+        {
+            <div class="period-info">
+                <span class="period-label">Période:</span>
+                <span class="period-value">@GetPeriodDisplay()</span>
+            </div>
+        }
+    </div>
+
+    @if (IsLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner"></div>
+            <p>Chargement des statistiques...</p>
+        </div>
+    }
+    else if (PayrollData?.Any() != true)
+    {
+        <div class="no-data-container">
+            <i class="fas fa-exclamation-triangle"></i>
+            <h3>Aucune donnée disponible</h3>
+            <p>Aucune donnée de paie n'a été trouvée pour la période sélectionnée.</p>
+        </div>
+    }
+    else
+    {
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="summary-card total-employees">
+                <div class="card-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="card-content">
+                    <h3>@TotalEmployees</h3>
+                    <p>Employés</p>
+                </div>
+            </div>
+
+            <div class="summary-card total-net-pay">
+                <div class="card-icon">
+                    <i class="fas fa-money-bill-wave"></i>
+                </div>
+                <div class="card-content">
+                    <h3>@TotalNetPay.ToString("C", CultureInfo.GetCultureInfo("fr-FR"))</h3>
+                    <p>Salaire Net Total</p>
+                </div>
+            </div>
+
+            <div class="summary-card total-deductions">
+                <div class="card-icon">
+                    <i class="fas fa-minus-circle"></i>
+                </div>
+                <div class="card-content">
+                    <h3>@TotalDeductions.ToString("C", CultureInfo.GetCultureInfo("fr-FR"))</h3>
+                    <p>Déductions Totales</p>
+                </div>
+            </div>
+
+            <div class="summary-card average-salary">
+                <div class="card-icon">
+                    <i class="fas fa-calculator"></i>
+                </div>
+                <div class="card-content">
+                    <h3>@AverageSalary.ToString("C", CultureInfo.GetCultureInfo("fr-FR"))</h3>
+                    <p>Salaire Moyen</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section">
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3>Répartition des Salaires</h3>
+                </div>
+                <canvas id="salaryDistributionChart" width="400" height="200"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3>Évolution des Paiements</h3>
+                </div>
+                <canvas id="paymentTrendsChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Detailed Statistics -->
+        <div class="detailed-statistics">
+            <div class="statistics-section">
+                <h3>Statistiques Détaillées</h3>
+
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <label>Total Salaire de Base:</label>
+                        <span>@TotalBaseSalary.ToString("C", CultureInfo.GetCultureInfo("fr-FR"))</span>
+                    </div>
+
+                    <div class="stat-item">
+                        <label>Total Bonus:</label>
+                        <span>@TotalBonus.ToString("C", CultureInfo.GetCultureInfo("fr-FR"))</span>
+                    </div>
+
+                    <div class="stat-item">
+                        <label>Total Avances Déduites:</label>
+                        <span>@TotalAdvanceDeductions.ToString("C", CultureInfo.GetCultureInfo("fr-FR"))</span>
+                    </div>
+
+                    <div class="stat-item">
+                        <label>Total Jours d'Absence:</label>
+                        <span>@TotalAbsenceDays jours</span>
+                    </div>
+
+                    <div class="stat-item">
+                        <label>Total Déductions d'Absence:</label>
+                        <span>@TotalAbsenceDeductions.ToString("C", CultureInfo.GetCultureInfo("fr-FR"))</span>
+                    </div>
+
+                    <div class="stat-item">
+                        <label>Total Transactions:</label>
+                        <span>@TotalTransactions.ToString("C", CultureInfo.GetCultureInfo("fr-FR"))</span>
+                    </div>
+
+                    <div class="stat-item">
+                        <label>Total Espèces:</label>
+                        <span>@TotalCash.ToString("C", CultureInfo.GetCultureInfo("fr-FR"))</span>
+                    </div>
+
+                    <div class="stat-item">
+                        <label>Taux d'Absence Moyen:</label>
+                        <span>@AverageAbsenceRate.ToString("P2", CultureInfo.GetCultureInfo("fr-FR"))</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employee Breakdown Table -->
+        <div class="employee-breakdown">
+            <div class="table-header">
+                <h3>Détail par Employé</h3>
+                <div class="table-controls">
+                    <input type="text" @bind="searchTerm" @bind:event="oninput" @onkeyup="OnSearchKeyUp"
+                           class="search-input" placeholder="Rechercher un employé..." />
+
+                    <select @bind="sortBy" @bind:event="onchange" class="sort-select">
+                        <option value="name">Nom</option>
+                        <option value="netpay">Salaire Net</option>
+                        <option value="basesalary">Salaire de Base</option>
+                        <option value="absencedays">Jours d'Absence</option>
+                    </select>
+                </div>
+            </div>
+
+
+            <div class="table-container">
+                <table class="payroll-table">
+                    <thead>
+                        <tr>
+                            <th>Employé</th>
+                            <th>Salaire de Base</th>
+                            <th>Bonus</th>
+                            <th>Déductions</th>
+                            <th>Salaire Net</th>
+                            <th>Jours d'Absence</th>
+                            <th>Transaction</th>
+                            <th>Espèces</th>
+                            <th>Période</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var payroll in FilteredPayrollData)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="employee-info">
+                                        <strong>@(payroll.Employee?.FullName ?? "N/A")</strong>
+                                        <small>ID: @payroll.EmployeeId</small>
+                                    </div>
+                                </td>
+                                <td>@payroll.BaseSalary.ToString("C", CultureInfo.GetCultureInfo("fr-FR"))</td>
+                                <td>@payroll.Bonus.ToString("C", CultureInfo.GetCultureInfo("fr-FR"))</td>
+                                <td>@payroll.Deductions.ToString("C", CultureInfo.GetCultureInfo("fr-FR"))</td>
+                                <td class="net-pay">@payroll.NetPay.ToString("C", CultureInfo.GetCultureInfo("fr-FR"))</td>
+                                <td>
+                                    <span class="absence-days @(payroll.AbsenceDays > 0 ? "has-absences" : "")">
+                                        @payroll.AbsenceDays
+                                    </span>
+                                </td>
+                                <td>@payroll.Transaction.ToString("C", CultureInfo.GetCultureInfo("fr-FR"))</td>
+                                <td>@payroll.Cash.ToString("C", CultureInfo.GetCultureInfo("fr-FR"))</td>
+                                <td>
+                                    <small>@payroll.PayrollPeriodDisplay</small>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string searchTerm = string.Empty;
+    private string sortBy = "name";
+    private List<Payroll> FilteredPayrollData = new();
+    private bool chartsRendered = false;
+    private int? lastPayrollDataCount = null;
+    private Timer? searchTimer;
+
+    [Parameter] public List<Payroll>? PayrollData { get; set; }
+    [Parameter] public bool IsLoading { get; set; } = false;
+    [Parameter] public EventCallback<string> OnPeriodChanged { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Vérifier si les données ont changé
+        var currentDataCount = PayrollData?.Count ?? 0;
+        bool dataChanged = lastPayrollDataCount != currentDataCount;
+
+        if (dataChanged)
+        {
+            lastPayrollDataCount = currentDataCount;
+            chartsRendered = false; // Réinitialiser le flag si les données ont changé
+        }
+
+        FilteredPayrollData = PayrollData?.ToList() ?? new List<Payroll>();
+        await base.OnParametersSetAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Rendre les graphiques seulement si :
+        // 1. C'est le premier rendu OU les données ont changé
+        // 2. Les graphiques n'ont pas encore été rendus
+        // 3. Il y a des données à afficher
+        if (!chartsRendered && PayrollData?.Any() == true)
+        {
+            await RenderCharts();
+            chartsRendered = true; // Marquer comme rendu pour éviter les re-rendus
+        }
+    }
+
+    private async Task RenderCharts()
+    {
+        try
+        {
+            // Prepare data for salary distribution chart
+            var salaryRanges = GetSalaryDistribution();
+            await JSRuntime.InvokeVoidAsync("renderSalaryDistributionChart", salaryRanges);
+
+            // Prepare data for payment trends chart
+            var paymentTrends = GetPaymentTrends();
+            await JSRuntime.InvokeVoidAsync("renderPaymentTrendsChart", paymentTrends);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error rendering charts: {ex.Message}");
+        }
+    }
+
+    private object GetSalaryDistribution()
+    {
+        if (PayrollData?.Any() != true) return new { };
+
+        var ranges = new[]
+        {
+            new { Label = "< 1000€", Min = 0m, Max = 1000m },
+            new { Label = "1000€ - 2000€", Min = 1000m, Max = 2000m },
+            new { Label = "2000€ - 3000€", Min = 2000m, Max = 3000m },
+            new { Label = "3000€ - 4000€", Min = 3000m, Max = 4000m },
+            new { Label = "> 4000€", Min = 4000m, Max = decimal.MaxValue }
+        };
+
+        var distribution = ranges.Select(range => new
+        {
+            Label = range.Label,
+            Count = PayrollData.Count(p => p.NetPay >= range.Min && p.NetPay < range.Max)
+        }).ToArray();
+
+        return new
+        {
+            Labels = distribution.Select(d => d.Label).ToArray(),
+            Data = distribution.Select(d => d.Count).ToArray()
+        };
+    }
+
+    private object GetPaymentTrends()
+    {
+        if (PayrollData?.Any() != true) return new { };
+
+        var trends = PayrollData
+            .GroupBy(p => p.PayDate.ToString("yyyy-MM"))
+            .OrderBy(g => g.Key)
+            .Select(g => new
+            {
+                Period = g.Key,
+                TotalNetPay = g.Sum(p => p.NetPay),
+                TotalDeductions = g.Sum(p => p.Deductions),
+                EmployeeCount = g.Count()
+            })
+            .ToArray();
+
+        return new
+        {
+            Labels = trends.Select(t => t.Period).ToArray(),
+            NetPayData = trends.Select(t => (double)t.TotalNetPay).ToArray(),
+            DeductionsData = trends.Select(t => (double)t.TotalDeductions).ToArray(),
+            EmployeeCountData = trends.Select(t => t.EmployeeCount).ToArray()
+        };
+    }
+
+    private async Task OnSearchKeyUp(KeyboardEventArgs e)
+    {
+        // Annuler le timer précédent s'il existe
+        searchTimer?.Dispose();
+
+        // Créer un nouveau timer qui se déclenche après 300ms d'inactivité
+        searchTimer = new Timer(async _ =>
+        {
+            await InvokeAsync(() =>
+            {
+                FilterEmployees();
+                StateHasChanged();
+            });
+        }, null, 300, Timeout.Infinite);
+    }
+
+    private void OnSortChanged()
+    {
+        SortEmployees();
+        StateHasChanged();
+    }
+
+    private void FilterEmployees()
+    {
+        if (PayrollData?.Any() != true) return;
+
+        FilteredPayrollData = PayrollData
+            .Where(p => string.IsNullOrEmpty(searchTerm) ||
+                       (p.Employee?.FullName?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true) ||
+                       p.EmployeeId.ToString().Contains(searchTerm))
+            .ToList();
+
+        SortEmployees();
+    }
+
+    private void SortEmployees()
+    {
+        FilteredPayrollData = sortBy switch
+        {
+            "name" => FilteredPayrollData.OrderBy(p => p.Employee?.FullName ?? "").ToList(),
+            "netpay" => FilteredPayrollData.OrderByDescending(p => p.NetPay).ToList(),
+            "basesalary" => FilteredPayrollData.OrderByDescending(p => p.BaseSalary).ToList(),
+            "absencedays" => FilteredPayrollData.OrderByDescending(p => p.AbsenceDays).ToList(),
+            _ => FilteredPayrollData
+        };
+    }
+
+    private string GetPeriodDisplay()
+    {
+        if (PayrollData?.Any() != true) return "Aucune période";
+
+        var firstPayroll = PayrollData.First();
+        if (firstPayroll.PayrollStartDate.HasValue && firstPayroll.PayrollEndDate.HasValue)
+        {
+            return firstPayroll.PayrollPeriodDisplay;
+        }
+
+        var minDate = PayrollData.Min(p => p.PayDate);
+        var maxDate = PayrollData.Max(p => p.PayDate);
+
+        return $"{minDate:dd/MM/yyyy} - {maxDate:dd/MM/yyyy}";
+    }
+
+    // Calculated Properties
+    private int TotalEmployees => PayrollData?.Count ?? 0;
+    private decimal TotalNetPay => PayrollData?.Sum(p => p.NetPay) ?? 0;
+    private decimal TotalBaseSalary => PayrollData?.Sum(p => p.BaseSalary) ?? 0;
+    private decimal TotalBonus => PayrollData?.Sum(p => p.Bonus) ?? 0;
+    private decimal TotalDeductions => PayrollData?.Sum(p => p.Deductions) ?? 0;
+    private decimal TotalAdvanceDeductions => PayrollData?.Sum(p => p.AdvanceDeductionsAmounts) ?? 0;
+    private int TotalAbsenceDays => PayrollData?.Sum(p => p.AbsenceDays) ?? 0;
+    private decimal TotalAbsenceDeductions => PayrollData?.Sum(p => p.AbsenceDeduction) ?? 0;
+    private decimal TotalTransactions => PayrollData?.Sum(p => p.Transaction) ?? 0;
+    private decimal TotalCash => PayrollData?.Sum(p => p.Cash) ?? 0;
+    private decimal AverageSalary => TotalEmployees > 0 ? TotalNetPay / TotalEmployees : 0;
+    private decimal AverageAbsenceRate => PayrollData?.Any() == true ?
+        PayrollData.Average(p => p.WorkingDaysInPeriod > 0 ? (decimal)p.AbsenceDays / p.WorkingDaysInPeriod : 0) : 0;
+
+    public void Dispose()
+    {
+        searchTimer?.Dispose();
+    }
+}
+

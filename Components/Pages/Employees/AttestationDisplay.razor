@@ -54,47 +54,80 @@
 
         <!-- Attestation Title -->
         <h1 class="attestation-title">
-            @(AttestationData.Type == AttestationType.Work ? "ATTESTATION DE TRAVAIL" : "ATTESTATION DE STAGE")
+            @{
+                var title = AttestationData.Type switch
+                {
+                    AttestationType.Work => "ATTESTATION DE TRAVAIL",
+                    AttestationType.Internship => "ATTESTATION DE STAGE",
+                    AttestationType.Terminated => "CERTIFICAT DE TRAVAIL",
+                    _ => "ATTESTATION"
+                };
+            }
+            @title
         </h1>
+
 
         <!-- Attestation Content -->
         <div class="attestation-content">
             @if (AttestationData.Type == AttestationType.Work)
             {
+                // Standard Work Attestation
                 <p>Nous soussigné, Etablissement <strong>@AttestationData.CompanyInfo.Name</strong>,</p>
                 <p>Sise à <strong>@AttestationData.CompanyInfo.Address</strong>,</p>
                 <br />
-                
+
                 <p>Attestons par la présente que: <strong>Mr/Mme @AttestationData.Employee.FullName</strong>,</p>
                 <p>Né le <strong>@AttestationData.FormattedBirthDate</strong> à <strong>@AttestationData.BirthPlace</strong>,</p>
                 <br />
-                
+
                 <p>Est employé dans notre Etablissement depuis le <strong>@AttestationData.FormattedHireDate</strong> à ce jour,</p>
                 <p>En qualité de <strong>@AttestationData.JobTitle</strong>.</p>
                 <br />
-                
+
                 <p class="closing-statement">
                     <strong>EN FOI DE QUOI, LA PRESENTE ATTESTATION EST DELIVREE, SUR DEMANDE DE L'INTERESSE POUR SERVIR ET VALOIR CE QUE DE DROIT.</strong>
                 </p>
             }
-            else
+            else if (AttestationData.Type == AttestationType.Terminated)
             {
+                // Terminated Employee Certificate
                 <p>Nous soussigné, Etablissement <strong>@AttestationData.CompanyInfo.Name</strong>,</p>
                 <p>Sise à <strong>@AttestationData.CompanyInfo.Address</strong>,</p>
                 <br />
-                
+
+                <p>Certifions que <strong>Mr/Mme @AttestationData.Employee.FullName</strong>,</p>
+                <p>Né(e) le <strong>@AttestationData.FormattedBirthDate</strong> à <strong>@AttestationData.BirthPlace</strong>,</p>
+                <br />
+
+                <p>A travaillé au sein de notre établissement du <strong>@AttestationData.FormattedHireDate</strong> au <strong>@(AttestationData.Employee.DateOfTermination?.ToString("dd/MM/yyyy"))</strong>
+                    ,</p>
+                <p>En qualité de <strong>@AttestationData.JobTitle</strong>.</p>
+                <br />
+
+                <p class="closing-statement">
+                    <strong>La présente attestation est délivrée à la demande de l'intéressé(e) pour servir et valoir ce que de droit.</strong>
+                </p>
+            }
+            else
+            {
+                // Internship Attestation
+                <p>Nous soussigné, Etablissement <strong>@AttestationData.CompanyInfo.Name</strong>,</p>
+                <p>Sise à <strong>@AttestationData.CompanyInfo.Address</strong>,</p>
+                <br />
+
                 <p>Certifions que <strong>Mr/Mme @AttestationData.Employee.FullName</strong> a effectué un stage au sein de notre établissement.</p>
                 <p>Ce stage s'est déroulé du <strong>@AttestationData.FormattedInternshipStartDate</strong> au <strong>@AttestationData.FormattedInternshipEndDate</strong>,</p>
                 <p>au sein du département <strong>@AttestationData.InternshipDepartment</strong>, sous la supervision de <strong>@AttestationData.SupervisorName</strong>.</p>
                 <br />
-                
+
                 <p>Les objectifs du stage étaient : <strong>@AttestationData.InternshipObjectives</strong>.</p>
                 <br />
-                
+
                 <p class="closing-statement">
                     <strong>La présente attestation est délivrée à l'intéressé(e) pour servir et valoir ce que de droit.</strong>
                 </p>
             }
+
         </div>
 
         <!-- Signature Section -->

@@ -86,7 +86,8 @@ namespace RH.Services
             monthsElapsed = Math.Max(monthsElapsed, 0);
 
             // 2. Calculate earned leave days (2.5 days per completed month)
-            float earnedDays = monthsElapsed * (employee.JobTitle.LeavePolicy.AnnualLeaveDays/12);
+            float earnedDays = monthsElapsed * ((float)employee.JobTitle.LeavePolicy.AnnualLeaveDays / 12f);
+
 
             // 3. Calculate used paid leave days
             var approvedLeaves = await context.LeaveRequests
