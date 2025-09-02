@@ -269,7 +269,7 @@
         try
         {
             Employees = await EmployeeService.GetAllAsync() ?? new();
-           
+            Employees = Employees.Where(e => e.Status != EmployeeStatus.Terminated).ToList();
         }
         catch (Exception ex)
         {

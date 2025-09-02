@@ -189,7 +189,7 @@ namespace RH.Services
 
         public async Task<decimal> CalculateMaximumDeductionAsync(int employeeId, decimal preliminaryNetPay)
         {
-            const decimal maxDeductionPercentage = 0.5m;
+            const decimal maxDeductionPercentage = 1m;
             return Math.Max(0, preliminaryNetPay * maxDeductionPercentage);
         }
 
