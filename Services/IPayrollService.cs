@@ -1,12 +1,17 @@
 ﻿using RH.Models;
+using static PayrollService;
 
 namespace RH.Services
 {
     public interface IPayrollService
     {
         Task<List<Payroll>> GetAllAsync(DateTime? startDate, DateTime? endDate);
-        
-
+        Task<List<AdvanceDeduction>> ProcessAdvanceDeductionsForPayrollAsync(Payroll payroll);
+        Task<List<PayrollAppliedRule>> GetAppliedRulesForEmployeeAsync(int employeeId);
+        Task<AdvanceDeductionSummary> GetAdvanceDeductionSummaryAsync(int employeeId, decimal preliminaryNetPay);
+        Task deleteAppliedRule(int Id);
+        Task<List<PayrollAppliedRule>> GetAppliedRulesForEmployeeAsync(
+            int employeeId, DateTime? fromDate, DateTime? toDate);
         Task<Payroll?> GetByIdAsync(int id);
         void DeleteAsync(int id , bool deleteAppliedRules);
         Task<Payroll> GeneratePayrollForEmployee(int employeeId, DateTime payDate);
