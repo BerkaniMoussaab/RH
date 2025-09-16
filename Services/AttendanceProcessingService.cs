@@ -169,7 +169,7 @@ namespace RH.Services
                             EmployeeId = result.EmployeeId.Value,
                             RuleId = bonusRule.Id,
                             Quantity = result.TotalEarlyMinutes,
-                            Amount = result.BonusAmount,
+                            Amount = bonusRule.Amount,
                             Date = currentDate,
                             Notes = $"Bonus ponctualité - {result.TotalEarlyMinutes} minute(s) d'arrivée précoce"
                         });
@@ -189,7 +189,7 @@ namespace RH.Services
                             EmployeeId = result.EmployeeId.Value,
                             RuleId = deductionRule.Id,
                             Quantity = result.TotalLateMinutes,
-                            Amount = result.DeductionAmount,
+                            Amount = deductionRule.Amount,
                             Date = currentDate,
                             Notes = $"Déduction retard - {result.TotalLateMinutes} minute(s) de retard"
                         });

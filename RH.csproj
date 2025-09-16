@@ -1,41 +1,49 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
-	<PropertyGroup>
-		<TargetFramework>net9.0</TargetFramework>
-		<Nullable>enable</Nullable>
-		<ImplicitUsings>enable</ImplicitUsings>
-		<UserSecretsId>aspnet-RH-9cd9d02f-3945-4d60-bd9a-3f4841b37cc5</UserSecretsId>
-	</PropertyGroup>
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>aspnet-RH-9cd9d02f-3945-4d60-bd9a-3f4841b37cc5</UserSecretsId>
+  </PropertyGroup>
 
-	<ItemGroup>
-		<PackageReference Include="Blazorise.Bootstrap5" Version="1.8.0" />
-		<PackageReference Include="Blazorise.Charts" Version="1.8.0" />
-		<PackageReference Include="Blazorise.Icons.FontAwesome" Version="1.8.0" />
-		<PackageReference Include="bootstrap" Version="5.3.7" />
-		<PackageReference Include="Chart.js" Version="3.7.1" />
-		<PackageReference Include="EPPlus" Version="8.0.8" />
-		<PackageReference Include="itext" Version="9.2.0" />
-		<PackageReference Include="itext7.bouncy-castle-adapter" Version="9.2.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.13" />
-		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.13" />
+  <ItemGroup>
+    <Compile Remove="Configuration\**" />
+    <Content Remove="Configuration\**" />
+    <EmbeddedResource Remove="Configuration\**" />
+    <None Remove="Configuration\**" />
+  </ItemGroup>
 
-		<!-- EF Core packages - all at version 8.0.13 -->
-		<PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.13" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.13">
-			<PrivateAssets>all</PrivateAssets>
-		</PackageReference>
-		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.13" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.13">
-			<PrivateAssets>all</PrivateAssets>
-		</PackageReference>
-		<PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.6" />
-		<PackageReference Include="Plotly.Blazor" Version="6.0.2" />
-		<PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
-		
-	</ItemGroup>
+<ItemGroup>
+  <!-- Prevent Razor component JS/CSS from being published as static content -->
+  <None Update="**\*.razor.js" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
+  <None Update="**\*.razor.css" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
+</ItemGroup>
 
-	<ItemGroup>
-	  <Folder Include="Configuration\" />
-	</ItemGroup>
+
+
+  <ItemGroup>
+    <PackageReference Include="Blazorise.Bootstrap5" Version="1.8.0" />
+    <PackageReference Include="Blazorise.Charts" Version="1.8.0" />
+    <PackageReference Include="Blazorise.Icons.FontAwesome" Version="1.8.0" />
+    <PackageReference Include="bootstrap" Version="5.3.7" />
+    <PackageReference Include="Chart.js" Version="3.7.1" />
+    <PackageReference Include="EPPlus" Version="8.0.8" />
+    <PackageReference Include="itext" Version="9.2.0" />
+    <PackageReference Include="itext7.bouncy-castle-adapter" Version="9.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.13" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.13" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.13">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.13" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.13">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="9.0.6" />
+    <PackageReference Include="Plotly.Blazor" Version="6.0.2" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.11" />
+  </ItemGroup>
 
 </Project>

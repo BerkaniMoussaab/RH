@@ -243,7 +243,7 @@
                     }
                     else
                     {
-                        <span class="text-muted">@rule.Amount.ToString("0.##") DZD</span>
+                        <span class="text-muted">@rule.Amount.ToString("G29") DZD</span>
                     }
                 </td>
                 <td>
@@ -257,7 +257,7 @@
                     }
                 </td>
                 <td class="fw-bold text-end text-success">
-                    @rule.CalculatedAmount.ToString("0.##") DZD
+                    @rule.CalculatedAmount.ToString("G29") DZD
                 </td>
                 <td>
                     <InputText class="form-control form-control-sm" @bind-Value="rule.Notes" placeholder="Remarque..." />

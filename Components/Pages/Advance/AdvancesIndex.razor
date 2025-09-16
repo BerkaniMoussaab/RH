@@ -7,35 +7,33 @@
 
 <PageTitle>Gestion des Avances</PageTitle>
 
-<link href="css/advances.css" rel="stylesheet" />
-
-<div class="page-header bg-gradient-primary text-white py-4 shadow-sm rounded mb-4">
+<div class="page-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 1.5rem 0; box-shadow: 0 8px 16px rgba(0,0,0,0.1); border-radius: 0.75rem; margin-bottom: 2rem;">
     <div class="container">
-        <h1 class="page-title mb-1">
-            <i class="bi bi-cash-coin me-2"></i>
+        <h1 class="page-title mb-2" style="font-size: 2rem; font-weight: 700;">
+            <i class="bi bi-cash-coin me-3"></i>
             Gestion des Avances
         </h1>
-        <p class="page-subtitle text-light-emphasis">Suivez les avances et les déductions associées aux employés</p>
+        <p class="page-subtitle text-light-emphasis" style="font-size: 1.1rem; opacity: 0.9;">Suivez les avances et les déductions associées aux employés</p>
     </div>
 </div>
 
 <div class="container">
-    <div class="card shadow-sm mb-4 border-0">
-        <div class="card-body">
+    <div class="card" style="box-shadow: 0 8px 24px rgba(0,0,0,0.1); border: none; border-radius: 1rem; background: white; margin-bottom: 2rem;">
+        <div class="card-body p-4">
             <div class="row g-4">
                 <div class="col-md-4">
-                    <label for="fromDate" class="form-label">Date de début</label>
-                    <input type="date" class="form-control shadow-sm" id="fromDate" @bind="FromDate" @bind:after="FilterDeductions" />
+                    <label for="fromDate" class="form-label" style="font-weight: 600; color: #333;">Date de début</label>
+                    <input type="date" class="form-control" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 2px solid #667eea; border-radius: 0.75rem; padding: 0.75rem;" id="fromDate" @bind="FromDate" @bind:after="FilterDeductions" />
                 </div>
                 <div class="col-md-4">
-                    <label for="toDate" class="form-label">Date de fin</label>
-                    <input type="date" class="form-control shadow-sm" id="toDate" @bind="ToDate" @bind:after="FilterDeductions" />
+                    <label for="toDate" class="form-label" style="font-weight: 600; color: #333;">Date de fin</label>
+                    <input type="date" class="form-control" style="box-shadow: 0 2px 8px rgba(0,0,0,0.1); border: 2px solid #667eea; border-radius: 0.75rem; padding: 0.75rem;" id="toDate" @bind="ToDate" @bind:after="FilterDeductions" />
                 </div>
                 <div class="col-md-4">
-                    <label for="searchText" class="form-label">Rechercher</label>
-                    <div class="input-group shadow-sm">
-                        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-                        <input type="text" class="form-control" placeholder="Nom de l'employé..." @bind="SearchText" @bind:after="FilterDeductions" />
+                    <label for="searchText" class="form-label" style="font-weight: 600; color: #333;">Rechercher</label>
+                    <div class="input-group">
+                        <span class="input-group-text" style="background: white; border: 2px solid #667eea; border-right: none; border-radius: 0.75rem 0 0 0.75rem;"><i class="bi bi-search text-primary"></i></span>
+                        <input type="text" class="form-control" style="border: 2px solid #667eea; border-left: none; border-radius: 0 0.75rem 0.75rem 0; padding: 0.75rem;" placeholder="Nom de l'employé..." @bind="SearchText" @bind:after="FilterDeductions" />
                     </div>
                 </div>
             </div>
@@ -50,12 +48,12 @@
     }
     else if (!FilteredAdvances.Any())
     {
-        <div class="empty-state fade-in">
-            <div class="empty-icon">
-                <i class="bi bi-inbox"></i>
+        <div class="empty-state fade-in text-center py-5">
+            <div class="empty-icon mb-4">
+                <i class="bi bi-inbox fs-1 text-muted" style="font-size: 3rem;"></i>
             </div>
-            <h3 class="empty-title">Aucune avance trouvée</h3>
-            <p class="empty-description">
+            <h3 class="empty-title fw-bold text-muted mb-3">Aucune avance trouvée</h3>
+            <p class="empty-description text-muted" style="font-size: 1.1rem;">
                 Aucune avance n'a été enregistrée pour la période sélectionnée ou les critères de recherche.
                 <br>Modifiez vos filtres ou ajoutez une nouvelle avance.
             </p>
@@ -63,97 +61,117 @@
     }
     else
     {
-        @foreach (var advance in FilteredAdvances)
+        @* Group advances by employee *@
+        @foreach (var employeeGroup in FilteredAdvances.GroupBy(a => a.Employee?.FullName).OrderBy(g => g.Key))
         {
-            <div class="card advance-card shadow-sm mb-4 border-0 fade-in">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="rounded-circle bg-primary text-white fw-bold d-flex align-items-center justify-content-center avatar-circle">
-                            @GetInitials(advance.Employee?.FullName)
+            <div class="employee-group mb-5">
+                <div class="employee-header" style="background: white; border: 1px solid #e9ecef; border-top-left-radius: 1rem; border-top-right-radius: 1rem; padding: 1.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-bottom: none;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h2 class="employee-name fw-bold mb-1" style="color: #212529; font-size: 1.4rem;">@employeeGroup.Key</h2>
+                            <p class="text-muted mb-0" style="font-size: 1rem;">Total des avances : @employeeGroup.Sum(a => a.Amount).ToString("C")</p>
                         </div>
-                        <div class="fw-semibold">@advance.Employee?.FullName</div>
-                    </div>
-                    <span class="badge @GetStatusClass(advance.Status)">@advance.Status</span>
-                </div>
-                <div class="card-body">
-                    <div class="row g-4 mb-3">
-                        <div class="col-md-4">
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-currency-dollar fs-5 text-primary me-2"></i>
-                                <div>
-                                    <div class="fw-semibold text-muted">Montant</div>
-                                    <div class="fw-bold">@advance.Amount.ToString("C")</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-wallet2 fs-5 text-success me-2"></i>
-                                <div>
-                                    <div class="fw-semibold text-muted">Restant</div>
-                                    <div class="fw-bold">@advance.RemainingAmount.ToString("C")</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="d-flex align-items-center">
-                                <i class="bi bi-calendar-event fs-5 text-secondary me-2"></i>
-                                <div>
-                                    <div class="fw-semibold text-muted">Date</div>
-                                    <div class="fw-bold">@advance.Date.ToString("dd/MM/yyyy")</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    @if (!string.IsNullOrWhiteSpace(advance.Reason))
-                    {
-                        <div class="mb-3">
-                            <div class="fw-semibold text-muted mb-1">
-                                <i class="bi bi-chat-left-text me-1 text-info"></i>Raison
-                            </div>
-                            <div class="border-start ps-3 text-body">@advance.Reason</div>
-                        </div>
-                    }
-
-                    @if (FilteredDeductions.TryGetValue(advance.Id, out var deductions) && deductions.Any())
-                    {
-                        <div class="table-responsive mt-3">
-                            <h6 class="fw-semibold text-muted mb-2"><i class="bi bi-list-check me-1"></i> Déductions (@deductions.Count)</h6>
-                            <table class="table table-sm table-hover align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Montant Déduit</th>
-                                        <th>Bulletin</th>
-                                        <th class="text-center">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var d in deductions)
-                                    {
-                                        <tr>
-                                            <td>@d.DeductionDate.ToString("dd/MM/yyyy")</td>
-                                            <td><strong>@d.DeductedAmount.ToString("C")</strong></td>
-                                            <td>@d.PayrollId</td>
-                                            <td class="text-center">
-                                                <button class="btn btn-outline-danger btn-sm" @onclick="() => DeleteDeduction(d.Id)">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-
-                    <div class="d-flex justify-content-end mt-3">
-                        <button class="btn btn-outline-danger" @onclick="() => DeleteAdvance(advance.Id)">
-                            <i class="bi bi-trash me-1"></i> Supprimer l'avance
-                        </button>
+                        <span class="badge" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; padding: 0.75rem 1.25rem; font-size: 1rem; border-radius: 2rem; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">@employeeGroup.Count() avances</span>
                     </div>
                 </div>
+
+              
+
+                @* Sort advances by date within each employee group *@
+                @foreach (var advance in employeeGroup.OrderBy(a => a.Date))
+                {
+                    <div class="card advance-card" style="box-shadow: 0 8px 24px rgba(0,0,0,0.08); border: none; border-radius: 1rem; margin-bottom: 1.5rem; transition: all 0.3s ease; border-left: 6px solid #667eea;">
+                        <div class="card-header" style="background: white; border-bottom: 1px solid #e9ecef; padding: 1.25rem 1.75rem; border-top-left-radius: 1rem; border-top-right-radius: 1rem; position: relative;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h4 class="fw-bold mb-0" style="color: #333; font-size: 1.1rem;">@advance.Date.ToString("dd/MM/yyyy")</h4>
+                                </div>
+                                <span class="badge" style="@GetStatusClass(advance.Status)">@advance.Status</span>
+                            </div>
+                        </div>
+                        <div class="card-body p-4">
+                            <div class="row g-4 mb-4">
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center" style="padding: 1.25rem; background: #f8f9fa; border-radius: 1rem; transition: transform 0.3s ease;">
+                                        <i class="bi bi-currency-dollar fs-4 text-primary me-3" style="font-size: 1.75rem;"></i>
+                                        <div>
+                                            <div class="fw-semibold text-muted small mb-1">Montant</div>
+                                            <div class="fw-bold" style="font-size: 1.25rem;">@advance.Amount.ToString("C")</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center" style="padding: 1.25rem; background: #f8f9fa; border-radius: 1rem; transition: transform 0.3s ease;">
+                                        <i class="bi bi-wallet2 fs-4 text-success me-3" style="font-size: 1.75rem;"></i>
+                                        <div>
+                                            <div class="fw-semibold text-muted small mb-1">Restant</div>
+                                            <div class="fw-bold" style="font-size: 1.25rem;">@advance.RemainingAmount.ToString("C")</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex align-items-center" style="padding: 1.25rem; background: #f8f9fa; border-radius: 1rem; transition: transform 0.3s ease;">
+                                        <i class="bi bi-calendar-event fs-4 text-secondary me-3" style="font-size: 1.75rem;"></i>
+                                        <div>
+                                            <div class="fw-semibold text-muted small mb-1">Date</div>
+                                            <div class="fw-bold">@advance.Date.ToString("dd/MM/yyyy")</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrWhiteSpace(advance.Reason))
+                            {
+                                <div class="mb-4 p-4" style="background: #f8f9fa; border-radius: 1rem; border-left: 4px solid #667eea;">
+                                    <div class="fw-semibold text-muted mb-2 d-flex align-items-center">
+                                        <i class="bi bi-chat-left-text me-2 text-primary"></i>Raison
+                                    </div>
+                                    <div class="border-start ps-3 text-body">@advance.Reason</div>
+                                </div>
+                            }
+
+                            @if (FilteredDeductions.TryGetValue(advance.Id, out var deductions) && deductions.Any())
+                            {
+                                <div class="table-responsive mt-4 mb-4">
+                                    <h6 class="fw-semibold text-muted mb-3 d-flex align-items-center">
+                                        <i class="bi bi-list-check me-2"></i> Déductions (@deductions.Count)
+                                    </h6>
+                                    <table class="table table-hover align-middle" style="border: 1px solid #e9ecef; border-radius: 1rem; overflow: hidden; box-shadow: 0 4px 8px rgba(0,0,0,0.05);">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th style="padding: 1rem;">Date</th>
+                                                <th style="padding: 1rem;">Montant Déduit</th>
+                                                <th style="padding: 1rem;">Bulletin</th>
+                                                <th class="text-center" style="padding: 1rem;">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var d in deductions)
+                                            {
+                                                <tr style="transition: background-color 0.3s ease;">
+                                                    <td style="padding: 1rem;">@d.DeductionDate.ToString("dd/MM/yyyy")</td>
+                                                    <td style="padding: 1rem;"><strong>@d.DeductedAmount.ToString("C")</strong></td>
+                                                    <td style="padding: 1rem;">@d.PayrollId</td>
+                                                    <td class="text-center" style="padding: 1rem;">
+                                                        <button class="btn btn-outline-danger btn-sm" @onclick="() => DeleteDeduction(d.Id)" style="transition: all 0.3s ease; border-radius: 0.75rem; padding: 0.5rem 1rem;">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+
+                            <div class="d-flex justify-content-end mt-3">
+                                <button class="btn btn-outline-danger btn-sm px-4 py-2" @onclick="() => DeleteAdvance(advance.Id)" style="border-radius: 0.75rem; transition: all 0.3s ease; padding: 0.75rem 1.5rem;">
+                                    <i class="bi bi-trash me-2"></i> Supprimer l'avance
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
             </div>
         }
     }
@@ -180,6 +198,19 @@
             .Where(a => string.IsNullOrEmpty(SearchText) ||
                        (a.Employee?.FullName?.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ?? false))
             .ToList();
+
+        // Group by employee and sort advances within each group by date
+        var groupedAndSorted = FilteredAdvances
+            .GroupBy(a => a.Employee?.FullName)
+            .Select(g => new
+            {
+                Key = g.Key,
+                Advances = g.OrderBy(a => a.Date).ToList()
+            })
+            .ToList();
+
+        // Flatten back to a single list for display purposes, but maintain the grouping in UI
+        FilteredAdvances = groupedAndSorted.SelectMany(g => g.Advances).ToList();
 
         FilteredDeductions = FilteredAdvances.ToDictionary(
             a => a.Id,
@@ -226,10 +257,10 @@
 
     private string GetStatusClass(AdvanceStatus status) => status switch
     {
-        AdvanceStatus.Active => "status-active",
-        AdvanceStatus.Completed => "status-completed",
-        AdvanceStatus.Cancelled => "status-cancelled",
-        _ => "status-cancelled"
+        AdvanceStatus.Active => "background: linear-gradient(135deg, #28a745 0%, #218838 100%); color: white; padding: 0.5rem 1.25rem; font-size: 0.9rem; border-radius: 2rem;",
+        AdvanceStatus.Completed => "background: linear-gradient(135deg, #17a2b8 0%, #138496 100%); color: white; padding: 0.5rem 1.25rem; font-size: 0.9rem; border-radius: 2rem;",
+        AdvanceStatus.Cancelled => "background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; padding: 0.5rem 1.25rem; font-size: 0.9rem; border-radius: 2rem;",
+        _ => "background: linear-gradient(135deg, #6c757d 0%, #495057 100%); color: white; padding: 0.5rem 1.25rem; font-size: 0.9rem; border-radius: 2rem;"
     };
 
     private string GetInitials(string fullName)

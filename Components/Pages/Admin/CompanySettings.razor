@@ -1,203 +1,172 @@
 ﻿@page "/admin/settings"
-
-@using Microsoft.EntityFrameworkCore
-@using RH.Data
 @using RH.Models
-@inject ApplicationDbContext DbContext
-@using SixLabors.ImageSharp
-@using SixLabors.ImageSharp.Processing
+@inject RH.Services.CompanyInfoService CompanyInfoService
+
 <EditForm Model="@Company" OnValidSubmit="@HandleValidSubmit">
     <DataAnnotationsValidator />
     <ValidationSummary />
 
-    <div class="company-form-container">
-        <div class="form-header">
-            <h2>Company Information</h2>
+    <div style="max-width: 1200px; margin: 0 auto; padding: 30px; background-color: #f8fafc; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0;">
+            <h2 style="color: #1e293b; margin: 0; font-size: 1.8rem;">Informations de l'Entreprise</h2>
             @if (LogoUrl != null)
             {
-                <div class="logo-preview">
-                    <img src="@LogoUrl" alt="Company Logo" />
-                    <button type="button" class="btn-remove-logo" @onclick="RemoveLogo">Remove Logo</button>
+                <div style="text-align: center;">
+                    <img src="@LogoUrl" alt="Logo de l'entreprise" style="max-width: 150px; max-height: 150px; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);" />
+                    <button type="button" style="display: block; margin-top: 10px; background: none; border: none; color: #ef4444; cursor: pointer; font-size: 0.9rem; font-weight: 500;" @onclick="RemoveLogo">Supprimer le Logo</button>
                 </div>
             }
         </div>
 
-        <div class="form-grid">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px;">
             <!-- Company Details Section -->
-            <div class="form-section">
-                <h3>Company Details</h3>
+            <div style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);">
+                <h3 style="color: #0ea5e9; margin-top: 0; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0;">Détails de l'Entreprise</h3>
 
-                <div class="form-group">
-                    <label for="name">Company Name*</label>
-                    <InputText id="name" @bind-Value="Company.Name" class="form-control" />
-                    <ValidationMessage For="@(() => Company.Name)" />
+                <div style="margin-bottom: 20px;">
+                    <label for="name" style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155;">Nom de l'Entreprise*</label>
+                    <InputText id="name" @bind-Value="Company.Name" style="width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; transition: border-color 0.2s;" />
+                    <ValidationMessage For="@(() => Company.Name)" style="color: #ef4444; font-size: 0.85rem; margin-top: 5px;" />
                 </div>
 
-                <div class="form-group">
-                    <label for="address">Address*</label>
-                    <InputText id="address" @bind-Value="Company.Address" class="form-control" />
-                    <ValidationMessage For="@(() => Company.Address)" />
+                <div style="margin-bottom: 20px;">
+                    <label for="address" style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155;">Adresse*</label>
+                    <InputText id="address" @bind-Value="Company.Address" style="width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; transition: border-color 0.2s;" />
+                    <ValidationMessage For="@(() => Company.Address)" style="color: #ef4444; font-size: 0.85rem; margin-top: 5px;" />
                 </div>
 
-                <div class="form-group">
-                    <label for="city">City</label>
-                    <InputText id="city" @bind-Value="Company.City" class="form-control" />
+                <div style="margin-bottom: 20px;">
+                    <label for="city" style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155;">Ville</label>
+                    <InputText id="city" @bind-Value="Company.City" style="width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; transition: border-color 0.2s;" />
                 </div>
 
-                <div class="form-group">
-                    <label for="rc">RC Number*</label>
-                    <InputText id="rc" @bind-Value="Company.RC" class="form-control" />
-                    <ValidationMessage For="@(() => Company.RC)" />
+                <div style="margin-bottom: 20px;">
+                    <label for="rc" style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155;">Numéro RC*</label>
+                    <InputText id="rc" @bind-Value="Company.RC" style="width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; transition: border-color 0.2s;" />
+                    <ValidationMessage For="@(() => Company.RC)" style="color: #ef4444; font-size: 0.85rem; margin-top: 5px;" />
                 </div>
 
-                <div class="form-group">
-                    <label for="nif">NIF*</label>
-                    <InputText id="nif" @bind-Value="Company.NIF" class="form-control" />
-                    <ValidationMessage For="@(() => Company.NIF)" />
+                <div style="margin-bottom: 20px;">
+                    <label for="nif" style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155;">NIF*</label>
+                    <InputText id="nif" @bind-Value="Company.NIF" style="width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; transition: border-color 0.2s;" />
+                    <ValidationMessage For="@(() => Company.NIF)" style="color: #ef4444; font-size: 0.85rem; margin-top: 5px;" />
                 </div>
 
-                <div class="form-group">
-                    <label for="registration">Registration Number</label>
-                    <InputText id="registration" @bind-Value="Company.RegistrationNumber" class="form-control" />
+                <div style="margin-bottom: 20px;">
+                    <label for="registration" style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155;">Numéro d'Enregistrement</label>
+                    <InputText id="registration" @bind-Value="Company.RegistrationNumber" style="width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; transition: border-color 0.2s;" />
                 </div>
             </div>
 
             <!-- Contact Information Section -->
-            <div class="form-section">
-                <h3>Contact Information</h3>
+            <div style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);">
+                <h3 style="color: #0ea5e9; margin-top: 0; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0;">Informations de Contact</h3>
 
-                <div class="form-group">
-                    <label for="email">Email</label>
-                    <InputText id="email" @bind-Value="Company.Email" class="form-control" />
-                    <ValidationMessage For="@(() => Company.Email)" />
+                <div style="margin-bottom: 20px;">
+                    <label for="email" style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155;">Email</label>
+                    <InputText id="email" @bind-Value="Company.Email" style="width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; transition: border-color 0.2s;" />
+                    <ValidationMessage For="@(() => Company.Email)" style="color: #ef4444; font-size: 0.85rem; margin-top: 5px;" />
                 </div>
 
-                <div class="form-group">
-                    <label for="phone">Phone</label>
-                    <InputText id="phone" @bind-Value="Company.Phone" class="form-control" />
-                    <ValidationMessage For="@(() => Company.Phone)" />
+                <div style="margin-bottom: 20px;">
+                    <label for="phone" style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155;">Téléphone</label>
+                    <InputText id="phone" @bind-Value="Company.Phone" style="width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; transition: border-color 0.2s;" />
+                    <ValidationMessage For="@(() => Company.Phone)" style="color: #ef4444; font-size: 0.85rem; margin-top: 5px;" />
                 </div>
 
-                <div class="form-group">
-                    <label for="mobile">Mobile</label>
-                    <InputText id="mobile" @bind-Value="Company.Mobile" class="form-control" />
-                    <ValidationMessage For="@(() => Company.Mobile)" />
+                <div style="margin-bottom: 20px;">
+                    <label for="mobile" style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155;">Mobile</label>
+                    <InputText id="mobile" @bind-Value="Company.Mobile" style="width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; transition: border-color 0.2s;" />
+                    <ValidationMessage For="@(() => Company.Mobile)" style="color: #ef4444; font-size: 0.85rem; margin-top: 5px;" />
                 </div>
 
-                <div class="form-group">
-                    <label for="logo">Company Logo</label>
-                    <InputFile id="logo" OnChange="@HandleLogoUpload" accept="image/*" class="form-control" />
+                <div style="margin-bottom: 20px;">
+                    <label for="logo" style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155;">Logo de l'Entreprise</label>
+                    <InputFile id="logo" OnChange="@HandleLogoUpload" accept="image/*" style="width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; transition: border-color 0.2s;" />
                 </div>
             </div>
 
             <!-- Director Information Section -->
-            <div class="form-section">
-                <h3>Director Information</h3>
+            <div style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);">
+                <h3 style="color: #0ea5e9; margin-top: 0; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0;">Informations du Directeur</h3>
 
-                <div class="form-group">
-                    <label for="director-name">Director Name</label>
-                    <InputText id="director-name" @bind-Value="Company.DirectorName" class="form-control" />
+                <div style="margin-bottom: 20px;">
+                    <label for="director-name" style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155;">Nom du Directeur</label>
+                    <InputText id="director-name" @bind-Value="Company.DirectorName" style="width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; transition: border-color 0.2s;" />
                 </div>
 
-                <div class="form-group">
-                    <label for="director-title">Director Title</label>
-                    <InputText id="director-title" @bind-Value="Company.DirectorTitle" class="form-control" />
+                <div style="margin-bottom: 20px;">
+                    <label for="director-title" style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155;">Titre du Directeur</label>
+                    <InputText id="director-title" @bind-Value="Company.DirectorTitle" style="width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; transition: border-color 0.2s;" />
                 </div>
             </div>
 
             <!-- Work Settings Section -->
-            <div class="form-section">
-                <h3>Work Settings</h3>
+            <div style="background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);">
+                <h3 style="color: #0ea5e9; margin-top: 0; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0;">Paramètres de Travail</h3>
 
-                <div class="form-group">
-                    <label for="recovery-days">Recovery Days per Worked Day Off</label>
-                    <InputNumber id="recovery-days" @bind-Value="Company.RecoveryDaysPerWorkedDayOff" class="form-control" step="0.1" min="0" max="10" />
-                    <ValidationMessage For="@(() => Company.RecoveryDaysPerWorkedDayOff)" />
+                <div style="margin-bottom: 20px;">
+                    <label for="recovery-days" style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155;">Jours de récupération par jour de congé</label>
+                    <InputNumber id="recovery-days" @bind-Value="Company.RecoveryDaysPerWorkedDayOff" style="width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; transition: border-color 0.2s;" step="0.1" min="0" max="10" />
+                    <ValidationMessage For="@(() => Company.RecoveryDaysPerWorkedDayOff)" style="color: #ef4444; font-size: 0.85rem; margin-top: 5px;" />
                 </div>
 
-                <div class="form-group">
-                    <label for="workdays">Workdays in Month</label>
-                    <InputNumber id="workdays" @bind-Value="Company.WorKdaysInMonth" class="form-control" min="0" max="31" />
-                    <ValidationMessage For="@(() => Company.WorKdaysInMonth)" />
+                <div style="margin-bottom: 20px;">
+                    <label for="workdays" style="display: block; margin-bottom: 8px; font-weight: 600; color: #334155;">Jours de travail par mois</label>
+                    <InputNumber id="workdays" @bind-Value="Company.WorKdaysInMonth" style="width: 100%; padding: 12px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; transition: border-color 0.2s;" min="0" max="31" />
+                    <ValidationMessage For="@(() => Company.WorKdaysInMonth)" style="color: #ef4444; font-size: 0.85rem; margin-top: 5px;" />
                 </div>
             </div>
         </div>
 
-        <div class="form-actions">
-            <button type="submit" class="btn-primary">Save</button>
-            <button type="button" class="btn-secondary" @onclick="ResetForm">Reset</button>
+        <div style="margin-top: 30px; text-align: right;">
+            <button type="submit" style="background-color: #0ea5e9; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: 500; transition: background-color 0.2s;">Enregistrer</button>
+            <button type="button" style="background-color: #94a3b8; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: 500; margin-left: 12px; transition: background-color 0.2s;" @onclick="ResetForm">Réinitialiser</button>
         </div>
     </div>
 </EditForm>
 
 @code {
-    private CompanyInfo Company { get; set; } = new CompanyInfo();
+    private CompanyInfo Company { get; set; } = new();
     private string? LogoUrl { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        // Load existing company info if available
-        var existingInfo = await DbContext.CompanyInfos.FirstOrDefaultAsync();
-        if (existingInfo != null)
+        Company = await CompanyInfoService.GetAsync();
+        if (Company.LogoBytes != null && Company.LogoMimeType != null)
         {
-            Company = existingInfo;
-            if (Company.LogoBytes != null && Company.LogoMimeType != null)
-            {
-                LogoUrl = $"data:{Company.LogoMimeType};base64,{Convert.ToBase64String(Company.LogoBytes)}";
-            }
+            LogoUrl = $"data:{Company.LogoMimeType};base64,{Convert.ToBase64String(Company.LogoBytes)}";
         }
     }
 
     private async Task HandleValidSubmit()
     {
-        await DbContext.SaveChangesAsync();
-        // Show success message
+        await CompanyInfoService.SaveAsync(Company);
+
+        if (Company.LogoBytes != null && Company.LogoMimeType != null)
+        {
+            LogoUrl = $"data:{Company.LogoMimeType};base64,{Convert.ToBase64String(Company.LogoBytes)}";
+        }
     }
 
     private async Task HandleLogoUpload(InputFileChangeEventArgs e)
     {
         const int maxFileSize = 10 * 1024 * 1024; // 10MB
-        const int timeoutSeconds = 120;
-        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeoutSeconds));
 
-        try
+        var file = e.File;
+        if (file.Size > maxFileSize)
         {
-            var file = e.File;
-            using var memoryStream = new MemoryStream();
-        
-            // Create a custom timeout wrapper
-            var readTask = file.OpenReadStream(maxFileSize).CopyToAsync(memoryStream, cts.Token);
-            var timeoutTask = Task.Delay(TimeSpan.FromSeconds(timeoutSeconds), cts.Token);
-        
-            var completedTask = await Task.WhenAny(readTask, timeoutTask);
-            if (completedTask == timeoutTask)
-            {
-                throw new TimeoutException("File upload timed out");
-            }
+            Console.WriteLine("Fichier trop volumineux!");
+            return;
+        }
 
-            await readTask; // Ensure any exceptions are propagated
-        
-            // Process the uploaded file
-            Company.LogoBytes = memoryStream.ToArray();
-            Company.LogoMimeType = file.ContentType;
-        
-            // Update UI
-            StateHasChanged();
-        }
-        catch (OperationCanceledException)
-        {
-            Console.WriteLine("Upload cancelled due to timeout");
-            // Show error to user
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Upload error: {ex.Message}");
-            // Show error to user
-        }
-        finally
-        {
-            cts.Dispose();
-        }
+        using var memoryStream = new MemoryStream();
+        await file.OpenReadStream(maxFileSize).CopyToAsync(memoryStream);
+
+        Company.LogoBytes = memoryStream.ToArray();
+        Company.LogoMimeType = file.ContentType;
+
+        LogoUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(Company.LogoBytes)}";
     }
 
     private void RemoveLogo()
@@ -207,140 +176,12 @@
         LogoUrl = null;
     }
 
-    private void ResetForm()
+    private async void ResetForm()
     {
-        Company = new CompanyInfo();
-        LogoUrl = null;
+        Company = await CompanyInfoService.GetAsync();
+        LogoUrl = Company.LogoBytes != null
+            ? $"data:{Company.LogoMimeType};base64,{Convert.ToBase64String(Company.LogoBytes)}"
+            : null;
+        StateHasChanged();
     }
 }
-<style>
-    .company-form-container {
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 20px;
-        background-color: #f9f9f9;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    }
-
-    .form-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px;
-        padding-bottom: 15px;
-        border-bottom: 1px solid #eee;
-    }
-
-        .form-header h2 {
-            color: #2c3e50;
-            margin: 0;
-        }
-
-    .logo-preview {
-        text-align: center;
-    }
-
-        .logo-preview img {
-            max-width: 150px;
-            max-height: 150px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-        }
-
-    .btn-remove-logo {
-        display: block;
-        margin-top: 5px;
-        background: none;
-        border: none;
-        color: #e74c3c;
-        cursor: pointer;
-        font-size: 0.8rem;
-    }
-
-    .form-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 20px;
-    }
-
-    .form-section {
-        background: white;
-        padding: 20px;
-        border-radius: 6px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
-
-        .form-section h3 {
-            margin-top: 0;
-            color: #3498db;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
-        }
-
-    .form-group {
-        margin-bottom: 15px;
-    }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #555;
-        }
-
-    .form-control {
-        width: 100%;
-        padding: 8px 12px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 1rem;
-    }
-
-        .form-control:focus {
-            border-color: #3498db;
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
-        }
-
-    .validation-message {
-        color: #e74c3c;
-        font-size: 0.85rem;
-        margin-top: 5px;
-    }
-
-    .form-actions {
-        margin-top: 20px;
-        text-align: right;
-    }
-
-    .btn-primary {
-        background-color: #3498db;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 1rem;
-    }
-
-        .btn-primary:hover {
-            background-color: #2980b9;
-        }
-
-    .btn-secondary {
-        background-color: #95a5a6;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 1rem;
-        margin-left: 10px;
-    }
-
-        .btn-secondary:hover {
-            background-color: #7f8c8d;
-        }
-</style>
