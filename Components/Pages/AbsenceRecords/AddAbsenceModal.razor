@@ -2,7 +2,8 @@
 @inject AbsenceService AbsenceService
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
-<EditForm Model="NewAbsence" OnValidSubmit="HandleValidSubmit">
+
+<EditForm Model="AbsenceForm" OnValidSubmit="HandleValidSubmit">
     <DataAnnotationsValidator />
     <div class="modal show d-block fade" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog modal-md modal-dialog-centered">
@@ -11,10 +12,11 @@
                     <h5 class="modal-title"><i class="bi bi-calendar-x me-2"></i>Ajouter une absence</h5>
                     <button type="button" class="btn-close" @onclick="OnClose" aria-label="Close"></button>
                 </div>
+
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">Employé</label>
-                        <InputSelect class="form-select" @bind-Value="NewAbsence.EmployeeId">
+                        <InputSelect class="form-select" @bind-Value="AbsenceForm.EmployeeId">
                             <option value="">-- Choisir un employé --</option>
                             @foreach (var emp in Employees)
                             {
@@ -23,18 +25,24 @@
                         </InputSelect>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">Date</label>
-                        <InputDate class="form-control" @bind-Value="NewAbsence.Date" />
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Date début</label>
+                            <InputDate class="form-control" @bind-Value="AbsenceForm.StartDate" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Date fin</label>
+                            <InputDate class="form-control" @bind-Value="AbsenceForm.EndDate" />
+                        </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Motif de l'absence</label>
-                        <InputText class="form-control" @bind-Value="NewAbsence.Reason" />
+                        <InputText class="form-control" @bind-Value="AbsenceForm.Reason" />
                     </div>
 
                     <div class="form-check mb-3">
-                        <InputCheckbox class="form-check-input" @bind-Value="NewAbsence.Counted" />
+                        <InputCheckbox class="form-check-input" @bind-Value="AbsenceForm.Counted" />
                         <label class="form-check-label">Absence comptabilisée</label>
                     </div>
 
@@ -55,16 +63,46 @@
     [Parameter] public EventCallback OnClose { get; set; }
     [Parameter] public EventCallback OnSaved { get; set; }
 
-    private AbsenceRecord NewAbsence = new()
-        {
-            Date = DateTime.Today,
-            Counted = true // Default value (optional)
-        };
+    // Form model (not your database entity)
+    private AbsenceFormModel AbsenceForm = new()
+    {
+        StartDate = DateTime.Today,
+        EndDate = DateTime.Today,
+        Counted = true
+    };
 
     private async Task HandleValidSubmit()
     {
-        await AbsenceService.CreateAsync(NewAbsence);
+        if (AbsenceForm.EndDate < AbsenceForm.StartDate)
+        {
+            // optional: show error message or ValidationMessage
+            return;
+        }
+
+        for (var date = AbsenceForm.StartDate; date <= AbsenceForm.EndDate; date = date.AddDays(1))
+        {
+            var absence = new AbsenceRecord
+            {
+                EmployeeId = AbsenceForm.EmployeeId,
+                Date = date,
+                Reason = AbsenceForm.Reason,
+                Counted = AbsenceForm.Counted
+            };
+
+            await AbsenceService.CreateAsync(absence);
+        }
+
         await OnSaved.InvokeAsync();
         await OnClose.InvokeAsync();
+    }
+
+    // Local DTO just for the form
+    private class AbsenceFormModel
+    {
+        public int EmployeeId { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+        public string Reason { get; set; } = string.Empty;
+        public bool Counted { get; set; }
     }
 }

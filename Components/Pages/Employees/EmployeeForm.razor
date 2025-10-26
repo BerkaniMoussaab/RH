@@ -211,15 +211,11 @@
     {
         try
         {
-            // Ensure the JobTitle is properly set based on JobTitleId
+            // Ensure JobTitleId is set, but don't attach JobTitle directly
             if (Employee.JobTitleId > 0)
             {
-                // Load the JobTitle object from the selected ID
-                var selectedJobTitle = JobTitles.FirstOrDefault(j => j.Id == Employee.JobTitleId);
-                if (selectedJobTitle != null)
-                {
-                    Employee.JobTitle = selectedJobTitle;
-                }
+                // Keep only the FK, prevent EF from inserting JobTitle
+                Employee.JobTitle = null;
             }
 
             if (Employee.InscriptionDate == null)
@@ -234,6 +230,10 @@
                 await EmployeeService.UpdateAsync(Employee);
             }
 
+            // Refresh Employee with JobTitle after saving if needed
+            // (so UI can still display JobTitle.Name without reloading page)
+            Employee.JobTitle = JobTitles.FirstOrDefault(j => j.Id == Employee.JobTitleId);
+
             await OnSave.InvokeAsync(Employee);
             await Close();
 
@@ -244,6 +244,7 @@
             Console.WriteLine($"Error saving employee: {ex.Message}");
         }
     }
+
 
     private async Task AddJobTitle()
     {

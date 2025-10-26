@@ -13,7 +13,7 @@ public class AbsenceService
     public async Task<int> GetTotalAbsenceCountAsync()
     {
         using var context = _contextFactory.CreateDbContext();
-        return await context.AbsenceRecords.CountAsync();
+        return await context.AbsenceRecords.Where(a=>a.PayrollId == null).CountAsync();
     }
 
     public async Task CreateAsync(AbsenceRecord absence)
