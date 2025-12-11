@@ -28,7 +28,7 @@ namespace RH.Models
 
         [NotMapped]
         public decimal NetPay =>
-            (Employee?.BaseSalary ?? BaseSalary) + Bonus - Deductions - AdvanceDeductionsAmounts;
+            (BaseSalary) + Bonus - Deductions - AdvanceDeductionsAmounts;
 
         public ICollection<PayrollAppliedRule> AppliedRules { get; set; } = new List<PayrollAppliedRule>();
 
