@@ -18,7 +18,10 @@
         public async Task<List<Employee>> GetAllAsync()
         {
             using var context = _contextFactory.CreateDbContext();
-            return await context.Employees.Where(e=>e.Deleted == false).Include(j => j.JobTitle).ToListAsync();
+            return await context.Employees.Where(e=>e.Deleted == false)
+                .Include(e => e.JobTitle)
+                .Include(e => e.FileAttachments)
+                .ToListAsync();
         }
 
 
@@ -28,6 +31,7 @@
             using var context = _contextFactory.CreateDbContext();
             return await context.Employees.Where(p=>!p.Deleted)
                 .Include(e => e.JobTitle) // Include the related JobTitle
+                .Include(e => e.FileAttachments) // Include file attachments
                 .FirstOrDefaultAsync(e => e.Id == id); // Use FirstOrDefaultAsync instead of FindAsync
         }
 

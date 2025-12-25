@@ -1,4 +1,3 @@
-
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -100,6 +99,7 @@ void ConfigureServices(WebApplicationBuilder builder)
     builder.Services.AddScoped<IAttendanceProcessingService, AttendanceProcessingService>();
     builder.Services.AddScoped<IExcelReaderService, ExcelReaderService>();
     builder.Services.AddScoped<AdvanceService>();
+    builder.Services.AddScoped<IFileAttachmentService, FileAttachmentService>();
     // Note: Some services were registered multiple times (e.g., EmployeeService).
     // This is harmless but redundant. I've kept one registration for each.
     // If a service is registered with both its interface and class, ensure that's intended.

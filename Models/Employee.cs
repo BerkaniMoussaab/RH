@@ -36,6 +36,7 @@ namespace RH.Models
         public ICollection<LeaveRequest> LeaveRequests { get; set; } = new List<LeaveRequest>();
         public ICollection<Payroll> Payrolls { get; set; } = new List<Payroll>();
         public ICollection<PerformanceReview> PerformanceReviews { get; set; } = new List<PerformanceReview>();
+        public ICollection<FileAttachment> FileAttachments { get; set; } = new List<FileAttachment>();
 
         public float? InitialRemainingDays { get; set; }
         public DateTime? InscriptionDate { get; set; }

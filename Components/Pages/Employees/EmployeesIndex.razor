@@ -35,6 +35,7 @@
                     <th style="padding: 15px 20px; text-align: left; font-weight: 600; border-bottom: 1px solid #e2e8f0;">Email</th>
                     <th style="padding: 15px 20px; text-align: left; font-weight: 600; border-bottom: 1px solid #e2e8f0;">Statut</th>
                     <th style="padding: 15px 20px; text-align: left; font-weight: 600; border-bottom: 1px solid #e2e8f0;">Contrat</th>
+                    <th style="padding: 15px 20px; text-align: left; font-weight: 600; border-bottom: 1px solid #e2e8f0;">Fichiers</th>
                     <th style="padding: 15px 20px; text-align: left; font-weight: 600; border-bottom: 1px solid #e2e8f0;"></th>
                     <th style="padding: 15px 20px; text-align: left; font-weight: 600; border-bottom: 1px solid #e2e8f0;"></th>
                 </tr>
@@ -82,8 +83,27 @@
                                 }
                             </td>
                             <td style="padding: 15px 20px;">
+                                <span style="@(emp.FileAttachments?.Count > 0 ? "color: #3b82f6; cursor: pointer;" : "color: #94a3b8;")">
+                                    @if (emp.FileAttachments?.Count > 0)
+                                    {
+                                        <a href="@($"/employees/{emp.Id}/files")" style="color: inherit; text-decoration: none;">
+                                            @emp.FileAttachments.Count fichier(s)
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span>Aucun fichier</span>
+                                    }
+                                </span>
+                            </td>
+                            <td style="padding: 15px 20px;">
                                 <button style="background-color: #64748b; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; transition: background-color 0.2s;"
                                         @onclick="() => Edit(emp.Id)">Modifier</button>
+                            </td>
+                            <td style="padding: 15px 20px;">
+                                <a href="@($"/employees/{emp.Id}/files")" style="background-color: #0ea5e9; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; transition: background-color 0.2s; text-decoration: none; display: inline-block;">
+                                    Gérer les fichiers
+                                </a>
                             </td>
                             <td style="padding: 15px 20px;">
                                 <button style="background-color: #ef4444; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 0.9rem; transition: background-color 0.2s;"
@@ -109,6 +129,7 @@
 
 @code {
     private List<Employee> Employees = new();
+    private Dictionary<int, int> EmployeeFileCounts = new();
     private Employee SelectedEmployee = new();
     private bool IsModalOpen;
     private bool IsDownloading;
@@ -126,6 +147,13 @@
         try
         {
             Employees = await EmployeeService.GetAllAsync();
+            
+            // Load file counts for each employee
+            foreach (var emp in Employees)
+            {
+                // For now, we'll use the FileAttachments property that's already loaded
+                // In a real implementation, you might want to optimize this with a separate query
+            }
         }
         catch (Exception ex)
         {

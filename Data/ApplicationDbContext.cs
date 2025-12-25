@@ -20,6 +20,7 @@ namespace RH.Data
         public DbSet<WorkedDayOff> WorkedDaysOff { get; set; }
         public DbSet<RecoveryDay> RecoveryDays { get; set; }
         public DbSet<CompanyInfo> CompanyInfos { get; set; }
+        public DbSet<FileAttachment> FileAttachments { get; set; }
 
         public DbSet<Advance> Advances { get; set; }
         public DbSet<AdvanceDeduction> AdvanceDeductions { get; set; }
@@ -41,6 +42,14 @@ namespace RH.Data
                     }
                 }
             }
+
+            modelBuilder.Entity<Employee>(entity =>
+            {
+                entity.HasMany(e => e.FileAttachments)
+                      .WithOne(f => f.Employee)
+                      .HasForeignKey(f => f.EmployeeId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
 
             modelBuilder.Entity<JobTitle>()
                 .HasOne(jt => jt.LeavePolicy)
