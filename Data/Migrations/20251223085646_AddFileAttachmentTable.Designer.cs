@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using RH.Data;
 
@@ -11,9 +12,11 @@ using RH.Data;
 namespace RH.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251223085646_AddFileAttachmentTable")]
+    partial class AddFileAttachmentTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -34,7 +37,7 @@ namespace RH.Migrations
 
                     b.HasIndex("PayrollAdjustmentRulesId");
 
-                    b.ToTable("JobTitlePayrollAdjustmentRule", (string)null);
+                    b.ToTable("JobTitlePayrollAdjustmentRule");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -201,7 +204,7 @@ namespace RH.Migrations
 
                     b.HasIndex("EmployeeId");
 
-                    b.ToTable("MonthlyAttendanceSummaries", (string)null);
+                    b.ToTable("MonthlyAttendanceSummaries");
                 });
 
             modelBuilder.Entity("PayrollAdjustmentRule", b =>
@@ -237,7 +240,7 @@ namespace RH.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PayrollAdjustmentRules", (string)null);
+                    b.ToTable("PayrollAdjustmentRules");
                 });
 
             modelBuilder.Entity("RH.Data.ApplicationUser", b =>
@@ -333,7 +336,7 @@ namespace RH.Migrations
 
                     b.HasIndex("PayrollId");
 
-                    b.ToTable("AbsenceRecords", (string)null);
+                    b.ToTable("AbsenceRecords");
                 });
 
             modelBuilder.Entity("RH.Models.Advance", b =>
@@ -383,7 +386,7 @@ namespace RH.Migrations
                     b.HasIndex("Status")
                         .HasDatabaseName("IX_Advances_Status");
 
-                    b.ToTable("Advances", (string)null);
+                    b.ToTable("Advances");
                 });
 
             modelBuilder.Entity("RH.Models.AdvanceDeduction", b =>
@@ -418,7 +421,7 @@ namespace RH.Migrations
                     b.HasIndex("PayrollId")
                         .HasDatabaseName("IX_AdvanceDeductions_PayrollId");
 
-                    b.ToTable("AdvanceDeductions", (string)null);
+                    b.ToTable("AdvanceDeductions");
                 });
 
             modelBuilder.Entity("RH.Models.CompanyInfo", b =>
@@ -498,7 +501,7 @@ namespace RH.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CompanyInfos", (string)null);
+                    b.ToTable("CompanyInfos");
                 });
 
             modelBuilder.Entity("RH.Models.Employee", b =>
@@ -571,7 +574,7 @@ namespace RH.Migrations
 
                     b.HasIndex("JobTitleId");
 
-                    b.ToTable("Employees", (string)null);
+                    b.ToTable("Employees");
                 });
 
             modelBuilder.Entity("RH.Models.FileAttachment", b =>
@@ -607,7 +610,7 @@ namespace RH.Migrations
 
                     b.HasIndex("EmployeeId");
 
-                    b.ToTable("FileAttachments", (string)null);
+                    b.ToTable("FileAttachments");
                 });
 
             modelBuilder.Entity("RH.Models.JobTitle", b =>
@@ -635,7 +638,7 @@ namespace RH.Migrations
 
                     b.HasIndex("LeavePolicyId");
 
-                    b.ToTable("JobTitles", (string)null);
+                    b.ToTable("JobTitles");
                 });
 
             modelBuilder.Entity("RH.Models.LeavePolicy", b =>
@@ -651,7 +654,7 @@ namespace RH.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("LeavePolicies", (string)null);
+                    b.ToTable("LeavePolicies");
                 });
 
             modelBuilder.Entity("RH.Models.LeaveRequest", b =>
@@ -691,7 +694,7 @@ namespace RH.Migrations
 
                     b.HasIndex("EmployeeId");
 
-                    b.ToTable("LeaveRequests", (string)null);
+                    b.ToTable("LeaveRequests");
                 });
 
             modelBuilder.Entity("RH.Models.Payroll", b =>
@@ -759,7 +762,7 @@ namespace RH.Migrations
 
                     b.HasIndex("EmployeeId");
 
-                    b.ToTable("Payrolls", (string)null);
+                    b.ToTable("Payrolls");
                 });
 
             modelBuilder.Entity("RH.Models.PayrollAppliedRule", b =>
@@ -801,7 +804,7 @@ namespace RH.Migrations
 
                     b.HasIndex("RuleId");
 
-                    b.ToTable("PayrollAppliedRules", (string)null);
+                    b.ToTable("PayrollAppliedRules");
                 });
 
             modelBuilder.Entity("RH.Models.PerformanceReview", b =>
@@ -831,7 +834,7 @@ namespace RH.Migrations
 
                     b.HasIndex("EmployeeId");
 
-                    b.ToTable("PerformanceReviews", (string)null);
+                    b.ToTable("PerformanceReviews");
                 });
 
             modelBuilder.Entity("RH.Models.RecoveryDayUsage", b =>
@@ -861,7 +864,7 @@ namespace RH.Migrations
 
                     b.HasIndex("RecoveryDayId");
 
-                    b.ToTable("RecoveryDayUsages", (string)null);
+                    b.ToTable("RecoveryDayUsages");
                 });
 
             modelBuilder.Entity("RH.Models.WorkedDayOff", b =>
@@ -900,7 +903,7 @@ namespace RH.Migrations
 
                     b.HasIndex("EmployeeId");
 
-                    b.ToTable("WorkedDaysOff", (string)null);
+                    b.ToTable("WorkedDaysOff");
                 });
 
             modelBuilder.Entity("RecoveryDay", b =>
@@ -930,7 +933,7 @@ namespace RH.Migrations
 
                     b.HasIndex("EmployeeId");
 
-                    b.ToTable("RecoveryDays", (string)null);
+                    b.ToTable("RecoveryDays");
                 });
 
             modelBuilder.Entity("JobTitlePayrollAdjustmentRule", b =>

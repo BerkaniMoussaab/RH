@@ -58,16 +58,22 @@ public class PayrollService : IPayrollService
         return payroll;
     }
 
-    public async Task<List<Payroll>> GetAllAsync(DateTime? startDate, DateTime? endDate)
+    public async Task<List<Payroll>> GetAllAsync(
+     DateTime? startDate,
+     DateTime? endDate,
+     int? selectedEmployeeId = null)
     {
         using var context = await _contextFactory.CreateDbContextAsync();
 
         var query = context.Payrolls
             .Include(p => p.Employee)
-            .ThenInclude(e => e.JobTitle)
+                .ThenInclude(e => e.JobTitle)
             .Include(p => p.AppliedRules)
-            .ThenInclude(ar => ar.Rule)
+                .ThenInclude(ar => ar.Rule)
             .AsQueryable();
+
+        if (selectedEmployeeId.HasValue)
+            query = query.Where(p => p.EmployeeId == selectedEmployeeId.Value);
 
         if (startDate.HasValue)
             query = query.Where(p => p.PayDate >= startDate.Value);
@@ -75,7 +81,9 @@ public class PayrollService : IPayrollService
         if (endDate.HasValue)
             query = query.Where(p => p.PayDate <= endDate.Value.AddDays(1));
 
-        return await query.OrderByDescending(d => d.PayDate).ToListAsync();
+        return await query
+            .OrderByDescending(p => p.PayDate)
+            .ToListAsync();
     }
 
     public async Task<Payroll?> GetByIdAsync(int id)

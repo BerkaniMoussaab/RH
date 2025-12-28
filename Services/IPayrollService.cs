@@ -5,7 +5,8 @@ namespace RH.Services
 {
     public interface IPayrollService
     {
-        Task<List<Payroll>> GetAllAsync(DateTime? startDate, DateTime? endDate);
+        
+        Task<List<Payroll>> GetAllAsync(DateTime? startDate, DateTime? endDate,int? SelectedEmployeeId);
         Task<List<AdvanceDeduction>> ProcessAdvanceDeductionsForPayrollAsync(Payroll payroll);
         Task<List<PayrollAppliedRule>> GetAppliedRulesForEmployeeAsync(int employeeId);
         Task<AdvanceDeductionSummary> GetAdvanceDeductionSummaryAsync(int employeeId, decimal preliminaryNetPay);

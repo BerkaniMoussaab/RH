@@ -17,33 +17,51 @@
 
 <PageTitle>Fiches de paie</PageTitle>
 <div class="bg-light p-3 mb-4 rounded shadow-sm">
-    <div class="row g-3 align-items-end">
-        <div class="col-md-3">
-            <label for="startDate" class="form-label fw-semibold">Date début</label>
-            <div class="input-group">
-                <span class="input-group-text"><i class="bi bi-calendar-date"></i></span>
-                <input id="startDate" class="form-control" type="date" @bind="FilterStartDate" />
+    <div class="bg-light p-3 mb-4 rounded shadow-sm">
+        <div class="row g-3 align-items-end">
+            <!-- Existing Date Filters -->
+            <div class="col-md-2">
+                <label for="startDate" class="form-label fw-semibold">Date début</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-calendar-date"></i></span>
+                    <input id="startDate" class="form-control" type="date" @bind="FilterStartDate" />
+                </div>
             </div>
-        </div>
 
-        <div class="col-md-3">
-            <label for="endDate" class="form-label fw-semibold">Date fin</label>
-            <div class="input-group">
-                <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
-                <input id="endDate" class="form-control" type="date" @bind="FilterEndDate" />
+            <div class="col-md-2">
+                <label for="endDate" class="form-label fw-semibold">Date fin</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
+                    <input id="endDate" class="form-control" type="date" @bind="FilterEndDate" />
+                </div>
             </div>
-        </div>
 
-        <div class="col-md-3 d-grid">
-            <button class="btn btn-primary" @onclick="ApplyFilter">
-                <i class="bi bi-funnel-fill me-1"></i> Appliquer le filtre
-            </button>
-        </div>
+            <!-- New Employee Filter -->
+            <div class="col-md-3">
+                <label for="employeeFilter" class="form-label fw-semibold">Employé</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    <select id="employeeFilter" class="form-select" @bind="SelectedEmployeeId">
+                        <option value="0">Tous les employés</option>
+                        @foreach (var employee in Employees.OrderBy(e => e.FullName))
+                        {
+                            <option value="@employee.Id">@employee.FullName</option>
+                        }
+                    </select>
+                </div>
+            </div>
 
-        <div class="col-md-3 d-grid">
-            <button class="btn btn-outline-secondary" @onclick="ClearFilter">
-                <i class="bi bi-x-circle me-1"></i> Réinitialiser
-            </button>
+            <div class="col-md-2 d-grid">
+                <button class="btn btn-primary" @onclick="ApplyFilter">
+                    <i class="bi bi-funnel-fill me-1"></i> Appliquer
+                </button>
+            </div>
+
+            <div class="col-md-2 d-grid">
+                <button class="btn btn-outline-secondary" @onclick="ClearFilter">
+                    <i class="bi bi-x-circle me-1"></i> Réinitialiser
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -109,7 +127,8 @@ else
                             }
                         </td>
                         <td class="text-center">@payroll.PayDate.ToString("dd/MM/yyyy")</td>
-                        <td class="text-end">@payroll.Employee.BaseSalary.ToString("N2") DA</td>
+                        <!-- Changed from Employee.BaseSalary to payroll.BaseSalary -->
+                        <td class="text-end">@payroll.BaseSalary.ToString("N2") DA</td>
                         <td class="text-end text-success">
                             <span class="fw-semibold">+@payroll.Bonus.ToString("N2") DA</span>
                         </td>
@@ -122,66 +141,41 @@ else
                         <td class="text-end fw-bold text-primary">@payroll.NetPay.ToString("N2") DA</td>
                         <td class="text-center">
                             <button class="btn btn-sm btn-outline-secondary me-1" title="Modifier"
-                            @onclick="() => EditPayroll(payroll)">
+                                    @onclick="() => EditPayroll(payroll)">
                                 <i class="bi bi-pencil-square"></i>
                             </button>
                             <div class="position-relative d-inline-block">
                                 <button type="button"
-                                class="btn btn-sm btn-outline-danger"
-                                @onclick="() => ToggleDropdown(payroll.Id)">
+                                        class="btn btn-sm btn-outline-danger"
+                                        @onclick="() => ToggleDropdown(payroll.Id)">
                                     <i class="bi bi-trash3"></i>
                                 </button>
 
                                 @if (openedDropdownId == payroll.Id)
                                 {
                                     <ul class="dropdown-menu show end-0 mt-1 shadow"
-                                    style="position: absolute; min-width: 220px; z-index: 1055;">
+                                        style="position: absolute; min-width: 220px; z-index: 1055;">
                                         <li>
                                             <button class="dropdown-item text-danger fw-semibold"
-                                            @onclick="() => ConfirmDelete(payroll.Id, true)">
+                                                    @onclick="() => ConfirmDelete(payroll.Id, true)">
                                                 Supprimer avec règles appliquées
                                             </button>
                                         </li>
                                         <li>
                                             <button class="dropdown-item"
-                                            @onclick="() => ConfirmDelete(payroll.Id, false)">
+                                                    @onclick="() => ConfirmDelete(payroll.Id, false)">
                                                 Supprimer sans règles appliquées
                                             </button>
                                         </li>
                                     </ul>
                                 }
                             </div>
-
-
-
-
-
                         </td>
                     </tr>
                 }
             </tbody>
         </table>
     </div>
-}
-@code {
-    int? openedDropdownId = null;
-
-    private void ToggleDropdown(int payrollId)
-    {
-        if (openedDropdownId == payrollId)
-            openedDropdownId = null;
-        else
-            openedDropdownId = payrollId;
-    }
-
-    private async Task ConfirmDelete(int payrollId, bool deleteAppliedRules)
-    {
-        openedDropdownId = null;
-        PayrollService.DeleteAsync(payrollId, deleteAppliedRules);
-        // reload list if needed
-        await LoadPayrolls();
-        StateHasChanged();
-    }
 }
 
 @if (IsModalOpen)
@@ -199,13 +193,13 @@ else
                                 <h5 class="modal-title mb-1 fw-bold">
                                     <i class="bi bi-cash-coin me-2"></i>
                                     @((CurrentPayroll.Id == 0)
-                                                                ? "Ajouter une fiche de paie"
-                                                                : $"Modifier la fiche de paie (ID: {CurrentPayroll.Id})")
-                                </h5>
-                            </div>
+                                                                    ? "Ajouter une fiche de paie"
+                                                                    : $"Modifier la fiche de paie (ID: {CurrentPayroll.Id})")
+                            </h5>
                         </div>
-                        <button type="button" class="btn-close btn-close-white enhanced-close-btn" @onclick="CloseModal"></button>
                     </div>
+                    <button type="button" class="btn-close btn-close-white enhanced-close-btn" @onclick="CloseModal"></button>
+                </div>
 
                     <div class="modal-body enhanced-body">
                         <div class="row g-3">
@@ -214,7 +208,7 @@ else
                                 <div class="info-section">
                                     <div class="section-title">
                                         <i class="bi bi-person-badge text-primary me-2"></i>
-                                        <span>Informations de l\'employé et période de paie</span>
+                                        <span>Informations de l'employé et période de paie</span>
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-md-4">
@@ -224,7 +218,7 @@ else
                                                 </label>
                                                 <InputSelect class="form-select enhanced-select" @bind-Value="CurrentEmployeeId">
                                                     <option value="">-- Sélectionner un employé --</option>
-                                                    @foreach (var emp in Employees)
+                                                @foreach (var emp in Employees)
                                                     {
                                                         <option value="@emp.Id">@emp.FullName</option>
                                                     }
@@ -258,8 +252,8 @@ else
                                                                 <i class="bi bi-calendar-check me-1"></i>Date de début
                                                             </label>
                                                             <InputDate class="form-control enhanced-input"
-                                                            @bind-Value="CurrentPayroll.PayrollStartDate"
-                                                            @onchange="OnPayrollPeriodChanged" />
+                                                                       @bind-Value="CurrentPayroll.PayrollStartDate"
+                                                                       @onchange="OnPayrollPeriodChanged" />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -268,8 +262,8 @@ else
                                                                 <i class="bi bi-calendar-x me-1"></i>Date de fin
                                                             </label>
                                                             <InputDate class="form-control enhanced-input"
-                                                            @bind-Value="CurrentPayroll.PayrollEndDate"
-                                                            @onchange="OnPayrollPeriodChanged" />
+                                                                       @bind-Value="CurrentPayroll.PayrollEndDate"
+                                                                       @onchange="OnPayrollPeriodChanged" />
                                                         </div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -288,8 +282,8 @@ else
                                                     <div class="col-md-3 ">
                                                         <label class="form-label fw-semibold"> </label>
                                                         <button type="button" class="btn btn-outline-info w-100"
-                                                        @onclick="RefreshAbsencesForPeriod"
-                                                        disabled="@(!CurrentPayroll.PayrollStartDate.HasValue || !CurrentPayroll.PayrollEndDate.HasValue || CurrentPayroll.EmployeeId == 0)">
+                                                                @onclick="RefreshAbsencesForPeriod"
+                                                                disabled="@(!CurrentPayroll.PayrollStartDate.HasValue || !CurrentPayroll.PayrollEndDate.HasValue || CurrentPayroll.EmployeeId == 0)">
                                                             <i class="bi bi-arrow-clockwise me-1"></i>
                                                             Actualiser les absences
                                                         </button>
@@ -335,26 +329,48 @@ else
                                     <div class="card-body py-2">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
                                             <h6 class="mb-0 text-primary"><i class="bi bi-cash-coin me-2"></i>Salaire & Retenue</h6>
+                                            @if (CurrentPayroll.Id > 0 && CurrentPayroll.BaseSalary != CurrentPayroll.Employee?.BaseSalary)
+                                            {
+                                                <span class="badge bg-info" title="Salaire historique - ne modifie pas le salaire actuel de l'employé">
+                                                    <i class="bi bi-clock-history me-1"></i>Historique
+                                                </span>
+                                            }
                                         </div>
 
                                         <div class="row g-2">
                                             <div class="col-6">
-                                                <label class="form-label mb-1">Salaire de base</label>
+                                                <label class="form-label mb-1">
+                                                    Salaire de base
+                                                    @if (CurrentPayroll.Id > 0 && CurrentPayroll.BaseSalary != CurrentPayroll.Employee?.BaseSalary)
+                                                    {
+                                                        <span class="text-muted small ms-1">
+                                                            (vs. actuel: @CurrentPayroll.Employee?.BaseSalary.ToString("N2") DA)
+                                                        </span>
+                                                    }
+                                                </label>
                                                 <InputNumber TValue="decimal" class="form-control form-control-sm"
-                                                Value="CurrentPayroll.Employee.BaseSalary"
-                                                ValueChanged="@(value => OnBaseSalaryChanged(value, workDaysPerMonth))"
-                                                ValueExpression="@(() => CurrentPayroll.Employee.BaseSalary)" />
+                                                             Value="CurrentPayroll.BaseSalary"
+                                                             ValueChanged="@(value => OnBaseSalaryChanged(value, workDaysPerMonth))"
+                                                             ValueExpression="@(() => CurrentPayroll.BaseSalary)" />
+
+                                                @if (CurrentPayroll.Id > 0 && CurrentPayroll.BaseSalary != CurrentPayroll.Employee?.BaseSalary)
+                                                {
+                                                    <small class="text-info">
+                                                        <i class="bi bi-info-circle me-1"></i>
+                                                        Ceci est le salaire historique payé à l'époque
+                                                    </small>
+                                                }
                                             </div>
                                             <div class="col-6">
                                                 <label class="form-label mb-1 d-flex align-items-center">
                                                     Retenue / jour
                                                     <i class="bi bi-info-circle ms-1 text-muted"
-                                                    title="Calculé automatiquement à partir du salaire de base et du nombre de jours ouvrables."></i>
+                                                       title="Calculé automatiquement à partir du salaire de base et du nombre de jours ouvrables."></i>
                                                 </label>
                                                 <InputNumber TValue="decimal" class="form-control form-control-sm"
-                                                Value="CurrentPayroll.DeductionPerAbsenceDay"
-                                                ValueExpression="@(() => CurrentPayroll.DeductionPerAbsenceDay)"
-                                                Disabled />
+                                                             Value="CurrentPayroll.DeductionPerAbsenceDay"
+                                                             ValueExpression="@(() => CurrentPayroll.DeductionPerAbsenceDay)"
+                                                             Disabled />
                                             </div>
                                         </div>
                                     </div>
@@ -371,8 +387,8 @@ else
                                             <!-- Switch mode -->
                                             <div class="form-check form-switch d-flex align-items-center">
                                                 <input class="form-check-input" type="checkbox"
-                                                @onchange="OnAbsenceModeChanged"
-                                                checked="@UseManualAbsences" />
+                                                       @onchange="OnAbsenceModeChanged"
+                                                       checked="@UseManualAbsences" />
                                                 <label class="form-check-label ms-2 small text-muted">
                                                     @if (UseManualAbsences)
                                                     {
@@ -391,9 +407,9 @@ else
                                             <div class="mb-2">
                                                 <label class="form-label small">Jours d'absence (manuel)</label>
                                                 <InputNumber TValue="int" class="form-control form-control-sm"
-                                                Value="CurrentPayroll.ManualAbsenceDays"
-                                                ValueChanged="OnManualAbsenceDaysChanged"
-                                                ValueExpression="@(() => CurrentPayroll.ManualAbsenceDays)" />
+                                                             Value="CurrentPayroll.ManualAbsenceDays"
+                                                             ValueChanged="OnManualAbsenceDaysChanged"
+                                                             ValueExpression="@(() => CurrentPayroll.ManualAbsenceDays)" />
                                             </div>
                                         }
 
@@ -416,14 +432,14 @@ else
                                                                 <td>@a.Date.ToString("dd/MM/yyyy")</td>
                                                                 <td>
                                                                     <InputText class="form-control form-control-sm border-0"
-                                                                    @bind-Value="a.Reason"
-                                                                    Disabled />
+                                                                               @bind-Value="a.Reason"
+                                                                               Disabled />
                                                                 </td>
                                                                 <td class="text-center">
                                                                     <InputCheckbox class="form-check-input"
-                                                                    Value="a.Counted"
-                                                                    ValueChanged="GetCountedChangedCallback(a)"
-                                                                    ValueExpression="@(() => a.Counted)" />
+                                                                                   Value="a.Counted"
+                                                                                   ValueChanged="GetCountedChangedCallback(a)"
+                                                                                   ValueExpression="@(() => a.Counted)" />
                                                                 </td>
                                                             </tr>
                                                         }
@@ -448,7 +464,6 @@ else
                                     </div>
                                 </div>
                             </div>
-
 
                             <!-- UPDATED SECTION: Advance Payments with correct property name -->
                             <div class="col-12">
@@ -527,15 +542,14 @@ else
                                                 <i class="bi bi-cash-stack me-1"></i>Montant de déduction des avances
                                             </label>
                                             <InputNumber @bind-Value="CurrentPayroll.AdvanceDeductionsAmounts"
-                                            class="form-control"
-                                            step="0.01"
-                                            Min="0"
-                                            max="@CurrentAdvanceDeductionSummary.ActiveAdvances.Sum(a => a.RemainingAmount)"
-                                            @oninput="MarkAdvanceAsManuallySet" />
+                                                         class="form-control"
+                                                         step="0.01"
+                                                         Min="0"
+                                                         max="@CurrentAdvanceDeductionSummary.ActiveAdvances.Sum(a => a.RemainingAmount)"
+                                                         @oninput="MarkAdvanceAsManuallySet" />
 
                                             <small class="text-muted">
                                                 Maximum autorisé: @CurrentAdvanceDeductionSummary.MaximumDeductionAllowed.ToString("N2") DA
-
                                             </small>
                                         </div>
                                     }
@@ -578,9 +592,9 @@ else
                                                                         <div class="d-flex align-items-center justify-content-between">
                                                                             <div class="d-flex align-items-center flex-grow-1 me-2">
                                                                                 <InputCheckbox class="form-check-input enhanced-checkbox me-2"
-                                                                                Value="rule.IsApplied"
-                                                                                ValueChanged="val => OnPreappliedBonusRuleChanged(rule, val)"
-                                                                                ValueExpression="@(() => rule.IsApplied)" />
+                                                                                               Value="rule.IsApplied"
+                                                                                               ValueChanged="val => OnPreappliedBonusRuleChanged(rule, val)"
+                                                                                               ValueExpression="@(() => rule.IsApplied)" />
                                                                                 <label class="form-check-label mb-0 rule-label">
                                                                                     @rule.Name
                                                                                     @if (!rule.IsPercentage && rule.Amount > 0)
@@ -601,17 +615,17 @@ else
                                                                                     @if (rule.IsEditable)
                                                                                     {
                                                                                         <InputNumber TValue="decimal" class="form-control form-control-sm enhanced-input-sm"
-                                                                                        Value="rule.Amount"
-                                                                                        ValueChanged="val => OnPreappliedAmountChanged(rule, val)"
-                                                                                        ValueExpression="@(() => rule.Amount)" />
+                                                                                                     Value="rule.Amount"
+                                                                                                     ValueChanged="val => OnPreappliedAmountChanged(rule, val)"
+                                                                                                     ValueExpression="@(() => rule.Amount)" />
                                                                                     }
 
                                                                                     @if (rule.IsCountable)
                                                                                     {
                                                                                         <InputNumber TValue="decimal" class="form-control form-control-sm enhanced-input-sm"
-                                                                                        Value="rule.Quantity"
-                                                                                        ValueChanged="val => OnPreappliedQuantityChanged(rule, val)"
-                                                                                        ValueExpression="@(() => rule.Quantity)" />
+                                                                                                     Value="rule.Quantity"
+                                                                                                     ValueChanged="val => OnPreappliedQuantityChanged(rule, val)"
+                                                                                                     ValueExpression="@(() => rule.Quantity)" />
                                                                                     }
 
                                                                                     <div class="calculated-amount success">
@@ -624,10 +638,10 @@ else
                                                                         @if (rule.IsApplied)
                                                                         {
                                                                             <InputTextArea class="form-control form-control-sm mt-2"
-                                                                            placeholder="Ajouter une note..."
-                                                                            Value="@rule.note"
-                                                                            ValueChanged="val => rule.note = val"
-                                                                            ValueExpression="@(() => rule.note)" />
+                                                                                           placeholder="Ajouter une note..."
+                                                                                           Value="@rule.note"
+                                                                                           ValueChanged="val => rule.note = val"
+                                                                                           ValueExpression="@(() => rule.note)" />
                                                                         }
                                                                     </div>
                                                                 </div>
@@ -655,9 +669,9 @@ else
                                                                         <div class="d-flex align-items-center justify-content-between">
                                                                             <div class="d-flex align-items-center flex-grow-1 me-2">
                                                                                 <InputCheckbox class="form-check-input enhanced-checkbox me-2"
-                                                                                Value="rule.IsApplied"
-                                                                                ValueChanged="val => OnPreappliedDeductionRuleChanged(rule, val)"
-                                                                                ValueExpression="@(() => rule.IsApplied)" />
+                                                                                               Value="rule.IsApplied"
+                                                                                               ValueChanged="val => OnPreappliedDeductionRuleChanged(rule, val)"
+                                                                                               ValueExpression="@(() => rule.IsApplied)" />
                                                                                 <label class="form-check-label mb-0 rule-label">
                                                                                     @rule.Name
                                                                                     @if (!rule.IsPercentage && rule.Amount > 0)
@@ -678,17 +692,17 @@ else
                                                                                     @if (rule.IsEditable)
                                                                                     {
                                                                                         <InputNumber TValue="decimal" class="form-control form-control-sm enhanced-input-sm"
-                                                                                        Value="rule.Amount"
-                                                                                        ValueChanged="val => OnPreappliedAmountChanged(rule, val)"
-                                                                                        ValueExpression="@(() => rule.Amount)" />
+                                                                                                     Value="rule.Amount"
+                                                                                                     ValueChanged="val => OnPreappliedAmountChanged(rule, val)"
+                                                                                                     ValueExpression="@(() => rule.Amount)" />
                                                                                     }
 
                                                                                     @if (rule.IsCountable)
                                                                                     {
                                                                                         <InputNumber TValue="decimal" class="form-control form-control-sm enhanced-input-sm"
-                                                                                        Value="rule.Quantity"
-                                                                                        ValueChanged="val => OnPreappliedQuantityChanged(rule, val)"
-                                                                                        ValueExpression="@(() => rule.Quantity)" />
+                                                                                                     Value="rule.Quantity"
+                                                                                                     ValueChanged="val => OnPreappliedQuantityChanged(rule, val)"
+                                                                                                     ValueExpression="@(() => rule.Quantity)" />
                                                                                     }
 
                                                                                     <div class="calculated-amount danger">
@@ -701,10 +715,10 @@ else
                                                                         @if (rule.IsApplied)
                                                                         {
                                                                             <InputTextArea class="form-control form-control-sm mt-2"
-                                                                            placeholder="Ajouter une note..."
-                                                                            Value="@rule.note"
-                                                                            ValueChanged="val => rule.note = val"
-                                                                            ValueExpression="@(() => rule.note)" />
+                                                                                           placeholder="Ajouter une note..."
+                                                                                           Value="@rule.note"
+                                                                                           ValueChanged="val => rule.note = val"
+                                                                                           ValueExpression="@(() => rule.note)" />
                                                                         }
                                                                     </div>
                                                                 </div>
@@ -735,9 +749,9 @@ else
                                                     <div class="d-flex align-items-center justify-content-between">
                                                         <div class="d-flex align-items-center flex-grow-1 me-2">
                                                             <InputCheckbox class="form-check-input enhanced-checkbox me-2"
-                                                            Value="rule.IsApplied"
-                                                            ValueChanged="val => OnBonusRuleChanged(rule, val)"
-                                                            ValueExpression="@(() => rule.IsApplied)" />
+                                                                           Value="rule.IsApplied"
+                                                                           ValueChanged="val => OnBonusRuleChanged(rule, val)"
+                                                                           ValueExpression="@(() => rule.IsApplied)" />
                                                             <label class="form-check-label mb-0 rule-label">
                                                                 @rule.Name
                                                                 @if (!rule.IsPercentage && rule.Amount > 0)
@@ -761,17 +775,17 @@ else
                                                                 @if (rule.IsEditable)
                                                                 {
                                                                     <InputNumber TValue="decimal" class="form-control form-control-sm enhanced-input-sm"
-                                                                    Value="rule.Amount"
-                                                                    ValueChanged="val => OnAmountChanged(rule, val)"
-                                                                    ValueExpression="@(() => rule.Amount)" />
+                                                                                 Value="rule.Amount"
+                                                                                 ValueChanged="val => OnAmountChanged(rule, val)"
+                                                                                 ValueExpression="@(() => rule.Amount)" />
                                                                 }
 
                                                                 @if (rule.IsCountable)
                                                                 {
                                                                     <InputNumber TValue="decimal" class="form-control form-control-sm enhanced-input-sm"
-                                                                    Value="rule.Quantity"
-                                                                    ValueChanged="val => OnCountableQuantityChanged(rule, val)"
-                                                                    ValueExpression="@(() => rule.Quantity)" />
+                                                                                 Value="rule.Quantity"
+                                                                                 ValueChanged="val => OnCountableQuantityChanged(rule, val)"
+                                                                                 ValueExpression="@(() => rule.Quantity)" />
                                                                 }
 
                                                                 <div class="calculated-amount success">
@@ -789,10 +803,10 @@ else
                                                     @if (rule.IsApplied)
                                                     {
                                                         <InputTextArea class="form-control form-control-sm mt-2"
-                                                        placeholder="Ajouter une note..."
-                                                        Value="@rule.note"
-                                                        ValueChanged="val => rule.note = val"
-                                                        ValueExpression="@(() => rule.note)" />
+                                                                       placeholder="Ajouter une note..."
+                                                                       Value="@rule.note"
+                                                                       ValueChanged="val => rule.note = val"
+                                                                       ValueExpression="@(() => rule.note)" />
                                                     }
                                                 </div>
                                             </div>
@@ -818,9 +832,9 @@ else
                                                     <div class="d-flex align-items-center justify-content-between">
                                                         <div class="d-flex align-items-center flex-grow-1 me-2">
                                                             <InputCheckbox class="form-check-input enhanced-checkbox me-2"
-                                                            Value="rule.IsApplied"
-                                                            ValueChanged="val => OnDeductionRuleChanged(rule, val)"
-                                                            ValueExpression="@(() => rule.IsApplied)" />
+                                                                           Value="rule.IsApplied"
+                                                                           ValueChanged="val => OnDeductionRuleChanged(rule, val)"
+                                                                           ValueExpression="@(() => rule.IsApplied)" />
                                                             <label class="form-check-label mb-0 rule-label">
                                                                 @rule.Name
                                                                 @if (!rule.IsPercentage && rule.Amount > 0)
@@ -844,17 +858,17 @@ else
                                                                 @if (rule.IsEditable)
                                                                 {
                                                                     <InputNumber TValue="decimal" class="form-control form-control-sm enhanced-input-sm"
-                                                                    Value="rule.Amount"
-                                                                    ValueChanged="val => OnAmountChanged(rule, val)"
-                                                                    ValueExpression="@(() => rule.Amount)" />
+                                                                                 Value="rule.Amount"
+                                                                                 ValueChanged="val => OnAmountChanged(rule, val)"
+                                                                                 ValueExpression="@(() => rule.Amount)" />
                                                                 }
 
                                                                 @if (rule.IsCountable)
                                                                 {
                                                                     <InputNumber TValue="decimal" class="form-control form-control-sm enhanced-input-sm"
-                                                                    Value="rule.Quantity"
-                                                                    ValueChanged="val => OnCountableQuantityChanged(rule, val)"
-                                                                    ValueExpression="@(() => rule.Quantity)" />
+                                                                                 Value="rule.Quantity"
+                                                                                 ValueChanged="val => OnCountableQuantityChanged(rule, val)"
+                                                                                 ValueExpression="@(() => rule.Quantity)" />
                                                                 }
 
                                                                 <div class="calculated-amount danger">
@@ -872,10 +886,10 @@ else
                                                     @if (rule.IsApplied)
                                                     {
                                                         <InputTextArea class="form-control form-control-sm mt-2"
-                                                        placeholder="Ajouter une note..."
-                                                        Value="@rule.note"
-                                                        ValueChanged="val => rule.note = val"
-                                                        ValueExpression="@(() => rule.note)" />
+                                                                       placeholder="Ajouter une note..."
+                                                                       Value="@rule.note"
+                                                                       ValueChanged="val => rule.note = val"
+                                                                       ValueExpression="@(() => rule.note)" />
                                                     }
                                                 </div>
                                             </div>
@@ -931,16 +945,8 @@ else
                                     </div>
                                 </div>
                             </div>
-
-
-
-
-
-
-
                         </div>
                     </div>
-
 
                     <!-- Enhanced Footer -->
                     <div class="modal-footer enhanced-footer">
@@ -960,11 +966,8 @@ else
                 </div>
             </div>
         </div>
-
     </EditForm>
 }
-
-
 
 @if (IsPrintModalOpen)
 {
@@ -978,12 +981,12 @@ else
                 <div class="modal-body">
                     <div id="printable-area">
                         <PayrollPrint CurrentPayroll="CurrentPayroll"
-                        Employee="CurrentPayroll.Employee"
-                        Bonuses="SelectedBonusRules"
-                        Deductions="SelectedDeductionRules"
-                        Absences="EmployeeAbsences"
-                        ManualAbsences="CurrentPayroll.ManualAbsenceDays"
-                        AdvanceSummary="CurrentAdvanceDeductionSummary" />
+                                      Employee="CurrentPayroll.Employee"
+                                      Bonuses="SelectedBonusRules"
+                                      Deductions="SelectedDeductionRules"
+                                      Absences="EmployeeAbsences"
+                                      ManualAbsences="CurrentPayroll.ManualAbsenceDays"
+                                      AdvanceSummary="CurrentAdvanceDeductionSummary" />
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
@@ -999,15 +1002,75 @@ else
                         Imprimer A5
                     </button>
                 </div>
-
             </div>
         </div>
     </div>
 }
 
 @code {
+    // State variables
+    private int? openedDropdownId = null;
     private bool IsPrintModalOpen = false;
     private bool IsModalOpen = false;
+    private bool UseManualAbsences = false;
+    private bool _isAdvanceAmountManuallySet = false;
+    private int? SelectedEmployeeId { get; set; } = null;
+    private DateTime? FilterStartDate { get; set; } = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1);
+    private DateTime? FilterEndDate { get; set; } = DateTime.Today;
+    private DateTime? SelectedStartDate { get; set; }
+    private DateTime? SelectedEndDate { get; set; }
+
+    private List<Payroll> Payrolls = new();
+    private List<Employee> Employees = new();
+    private List<PayrollAdjustmentRule> AllAdjustmentRules = new();
+    private List<SelectableRule> SelectedBonusRules = new();
+    private List<SelectableRule> SelectedDeductionRules = new();
+    private List<SelectableRule> PreappliedBonusRules = new();
+    private List<SelectableRule> PreappliedDeductionRules = new();
+    public decimal PreappliedBonuses { get; set; }
+
+    private Payroll CurrentPayroll = new();
+    public int workDaysPerMonth;
+
+    private PayrollService.AdvanceDeductionSummary CurrentAdvanceDeductionSummary = new();
+    private List<AbsenceRecord> EmployeeAbsences = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Employees = await EmployeeService.GetAllAsync();
+        AllAdjustmentRules = await AdjustmentService.GetAllAsync();
+
+        var company = await CompanyService.GetAsync();
+        workDaysPerMonth = company.WorKdaysInMonth;
+
+        if (CurrentPayroll.ManualAbsenceDays != 0)
+        {
+            UseManualAbsences = true;
+        }
+
+        await LoadPayrolls();
+    }
+
+    private void ToggleDropdown(int payrollId)
+    {
+        if (openedDropdownId == payrollId)
+            openedDropdownId = null;
+        else
+            openedDropdownId = payrollId;
+    }
+
+    private async Task ConfirmDelete(int payrollId, bool deleteAppliedRules)
+    {
+        openedDropdownId = null;
+        await PayrollService.DeleteAsync(payrollId, deleteAppliedRules);
+        await LoadPayrolls();
+        StateHasChanged();
+    }
+
+    private async Task PrintPage()
+    {
+        await JSRuntime.InvokeVoidAsync("printDiv", "printable-area");
+    }
 
     private async Task ShowPrintModal()
     {
@@ -1016,85 +1079,45 @@ else
         StateHasChanged();
     }
 
-
     void ClosePrintModal()
     {
         IsPrintModalOpen = false;
         StateHasChanged();
     }
 
-    async Task Print()
-    {
-        await JSRuntime.InvokeVoidAsync("printSection", "printable-area");
-    }
-}
-
-<div id="printable-area">
-    <!-- Fiche de paie content here -->
-</div>
-
-@code {
-    private DateTime? FilterStartDate { get; set; } = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(-1);
-    private DateTime? FilterEndDate { get; set; } = DateTime.Today;
-
-    private List<Payroll> Payrolls = new();
-    private List<Employee> Employees = new();
-    private List<PayrollAdjustmentRule> AllAdjustmentRules = new();
-    private List<SelectableRule> SelectedBonusRules = new();
-    private List<SelectableRule> SelectedDeductionRules = new();
-    private List<SelectableRule> PreSelectedBonusRules = new();
-    private List<SelectableRule> PreSelectedDeductionRules = new();
-    public decimal PreappliedBonuses { get; set; }
-    // NEW: Preapplied rules lists
-    private List<SelectableRule> PreappliedBonusRules = new();
-    private List<SelectableRule> PreappliedDeductionRules = new();
-
-    private Payroll CurrentPayroll = new();
-    public int workDaysPerMonth;
-
-    // Advance payment related properties
-    private PayrollService.AdvanceDeductionSummary CurrentAdvanceDeductionSummary = new();
-    private bool _isAdvanceAmountManuallySet = false; // New flag
-
-    private DateTime? SelectedStartDate { get; set; }
-    private DateTime? SelectedEndDate { get; set; }
-
-    private bool UseManualAbsences = false;
-    private async Task PrintPage()
-    {
-        await JSRuntime.InvokeVoidAsync("printDiv", "printable-area");
-    }
-    private async Task PrintPreview()
-    {
-        var payload = new
-        {
-            Payroll = CurrentPayroll,
-            Employee = CurrentPayroll.Employee,
-            Bonuses = SelectedBonusRules,
-            Deductions = SelectedDeductionRules,
-            Absences = EmployeeAbsences,
-            AdvanceSummary = CurrentAdvanceDeductionSummary
-        };
-
-        var json = JsonSerializer.Serialize(payload);
-        await JSRuntime.InvokeVoidAsync("sessionStorage.setItem", "payroll-print-data", json);
-        await JSRuntime.InvokeVoidAsync("open", "/print-payroll", "_blank");
-    }
-
+    // ⭐ UPDATED: Now uses CurrentPayroll.BaseSalary instead of Employee.BaseSalary
     private void OnBaseSalaryChanged(decimal value, int workDays)
     {
         if (CurrentPayroll == null) return;
 
-        CurrentPayroll.Employee.BaseSalary = value;
+        Console.WriteLine($"=== OnBaseSalaryChanged ===");
+        Console.WriteLine($"Old Payroll.BaseSalary: {CurrentPayroll.BaseSalary}");
+        Console.WriteLine($"New value: {value}");
+        Console.WriteLine($"Employee.BaseSalary before: {CurrentPayroll.Employee?.BaseSalary}");
 
-        // Calculate deduction per absence day based on working days in the payroll period
+        // ⭐ ONLY update the payroll's base salary, NOT the employee's
+        CurrentPayroll.BaseSalary = value;
+
+        Console.WriteLine($"Payroll.BaseSalary after: {CurrentPayroll.BaseSalary}");
+        Console.WriteLine($"Employee.BaseSalary after: {CurrentPayroll.Employee?.BaseSalary} (unchanged)");
+
+        // Calculate deduction per absence day based on working days
         var actualWorkDays = workDays;
-
         CurrentPayroll.DeductionPerAbsenceDay = Math.Round(value / actualWorkDays, 2);
 
-        // Recalculate advance deductions when base salary changes
-        InvokeAsync(async () => await RefreshAdvanceDeductionSummary());
+        Console.WriteLine($"DeductionPerAbsenceDay: {CurrentPayroll.DeductionPerAbsenceDay} (based on {actualWorkDays} work days)");
+
+        // Recalculate all dependent values
+        InvokeAsync(async () =>
+        {
+            await RefreshAdvanceDeductionSummary();
+            RecalculateBonusesAndDeductions();
+        });
+
+        // Also recalculate now for immediate UI update
+        RecalculateBonusesAndDeductions();
     }
+
     private void ValidateAdvanceAmount()
     {
         var max = CurrentAdvanceDeductionSummary.MaximumDeductionAllowed;
@@ -1106,7 +1129,6 @@ else
         RecalculateBonusesAndDeductions();
     }
 
-
     private Task OnManualAbsenceDaysChanged(int value)
     {
         CurrentPayroll.ManualAbsenceDays = value;
@@ -1114,44 +1136,6 @@ else
         return Task.CompletedTask;
     }
 
-    // Method to handle advance deduction changes - UPDATED to use correct property
-    private void OnAdvanceDeductionChanged(decimal value)
-    {
-        _isAdvanceAmountManuallySet = true; // ✅ Mark that user has manually set it
-
-        var maxAllowed = CurrentAdvanceDeductionSummary.MaximumDeductionAllowed;
-        CurrentPayroll.AdvanceDeductionsAmounts = Math.Min(value, maxAllowed);
-
-        RecalculateBonusesAndDeductions();
-    }
-
-
-
-    // Method to refresh advance deduction summary
-    private async Task RefreshAdvanceDeductionSummary()
-    {
-        if (CurrentPayroll.EmployeeId > 0)
-        {
-            var preliminaryNetPay = CurrentPayroll.Employee.BaseSalary + CurrentPayroll.Bonus - CurrentPayroll.Deductions;
-            CurrentAdvanceDeductionSummary = await PayrollService.GetAdvanceDeductionSummaryAsync(CurrentPayroll.EmployeeId, preliminaryNetPay);
-
-            if (!_isAdvanceAmountManuallySet || CurrentPayroll.Id == 0)
-            {
-                CurrentPayroll.AdvanceDeductionsAmounts = CurrentAdvanceDeductionSummary.ProposedDeduction;
-                CurrentAdvanceDeductionSummary.MaximumDeductionAllowed = CurrentAdvanceDeductionSummary.ProposedDeduction;
-            }
-            else
-            {
-                // If manually set, ensure it doesn\'t exceed the new maximum allowed.
-                if (CurrentPayroll.AdvanceDeductionsAmounts > CurrentAdvanceDeductionSummary.MaximumDeductionAllowed)
-                {
-                    CurrentPayroll.AdvanceDeductionsAmounts = CurrentAdvanceDeductionSummary.MaximumDeductionAllowed;
-                }
-                CurrentAdvanceDeductionSummary.MaximumDeductionAllowed = CurrentAdvanceDeductionSummary.ProposedDeduction;
-            }
-            StateHasChanged();
-        }
-    }
     private void MarkAdvanceAsManuallySet(ChangeEventArgs e)
     {
         _isAdvanceAmountManuallySet = true;
@@ -1169,17 +1153,39 @@ else
         }
     }
 
+    private async Task RefreshAdvanceDeductionSummary()
+    {
+        if (CurrentPayroll.EmployeeId > 0)
+        {
+            // ⭐ UPDATED: Use CurrentPayroll.BaseSalary instead of Employee.BaseSalary
+            var preliminaryNetPay = CurrentPayroll.BaseSalary + CurrentPayroll.Bonus - CurrentPayroll.Deductions;
+            CurrentAdvanceDeductionSummary = await PayrollService.GetAdvanceDeductionSummaryAsync(CurrentPayroll.EmployeeId, preliminaryNetPay);
 
-    // New method to handle payroll period changes
+            if (!_isAdvanceAmountManuallySet || CurrentPayroll.Id == 0)
+            {
+                CurrentPayroll.AdvanceDeductionsAmounts = CurrentAdvanceDeductionSummary.ProposedDeduction;
+                CurrentAdvanceDeductionSummary.MaximumDeductionAllowed = CurrentAdvanceDeductionSummary.ProposedDeduction;
+            }
+            else
+            {
+                if (CurrentPayroll.AdvanceDeductionsAmounts > CurrentAdvanceDeductionSummary.MaximumDeductionAllowed)
+                {
+                    CurrentPayroll.AdvanceDeductionsAmounts = CurrentAdvanceDeductionSummary.MaximumDeductionAllowed;
+                }
+                CurrentAdvanceDeductionSummary.MaximumDeductionAllowed = CurrentAdvanceDeductionSummary.ProposedDeduction;
+            }
+            StateHasChanged();
+        }
+    }
+
     private async Task OnPayrollPeriodChanged()
     {
         if (CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue)
         {
-            // Recalculate deduction per absence day based on new period
-            if (CurrentPayroll.Employee.BaseSalary > 0)
+            // ⭐ UPDATED: Use CurrentPayroll.BaseSalary instead of Employee.BaseSalary
+            if (CurrentPayroll.BaseSalary > 0)
             {
-                var workingDays = workDaysPerMonth;
-                CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.Employee.BaseSalary / workDaysPerMonth, 2);
+                CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workDaysPerMonth, 2);
             }
 
             // Refresh absences for the new period
@@ -1192,7 +1198,6 @@ else
         StateHasChanged();
     }
 
-    // New method to handle predefined period selection
     private async Task OnPredefinedPeriodChanged(ChangeEventArgs e)
     {
         var selectedPeriod = e.Value?.ToString();
@@ -1223,7 +1228,6 @@ else
                 break;
 
             case "custom":
-                // Keep current values or reset to null for custom selection
                 break;
 
             default:
@@ -1236,7 +1240,6 @@ else
         }
     }
 
-    // New method to refresh absences for the selected period
     private async Task RefreshAbsencesForPeriod()
     {
         if (CurrentPayroll.PayrollStartDate.HasValue &&
@@ -1251,7 +1254,6 @@ else
         }
     }
 
-    // New method to calculate working days (excluding weekends)
     private int CalculateWorkingDays(DateTime startDate, DateTime endDate)
     {
         int workingDays = 0;
@@ -1265,7 +1267,7 @@ else
         return workingDays;
     }
 
-    // NEW: Methods to handle preapplied rules
+    // ⭐ UPDATED: Methods for preapplied rules now use CurrentPayroll.BaseSalary
     private void OnPreappliedBonusRuleChanged(SelectableRule rule, bool isApplied)
     {
         rule.IsApplied = isApplied;
@@ -1307,14 +1309,15 @@ else
         var finalQuantity = quantity ?? 1;
         rule.Quantity = finalQuantity;
 
+        // ⭐ UPDATED: Use CurrentPayroll.BaseSalary instead of Employee.BaseSalary
         if (rule.IsCountable)
         {
-            var unitAmount = rule.IsPercentage ? CurrentPayroll.Employee.BaseSalary * rule.Amount / 100 : rule.Amount;
+            var unitAmount = rule.IsPercentage ? CurrentPayroll.BaseSalary * rule.Amount / 100 : rule.Amount;
             rule.CalculatedAmount = unitAmount * finalQuantity;
         }
         else
         {
-            rule.CalculatedAmount = rule.IsPercentage ? CurrentPayroll.Employee.BaseSalary * rule.Amount / 100 : rule.Amount;
+            rule.CalculatedAmount = rule.IsPercentage ? CurrentPayroll.BaseSalary * rule.Amount / 100 : rule.Amount;
         }
 
         RecalculateBonusesAndDeductions();
@@ -1322,7 +1325,7 @@ else
 
     private void OnBonusRuleChanged(SelectableRule rule, bool isApplied)
     {
-        Console.WriteLine($"OnBonusRuleChanged: Rule \'{rule.Name}\", IsApplied changed from {rule.IsApplied} to {isApplied}");
+        Console.WriteLine($"OnBonusRuleChanged: Rule '{rule.Name}', IsApplied changed from {rule.IsApplied} to {isApplied}");
         rule.IsApplied = isApplied;
 
         if (isApplied && rule.IsCountable)
@@ -1333,12 +1336,12 @@ else
         {
             RecalculateBonusesAndDeductions();
         }
-        Console.WriteLine($"After update: Rule \'{rule.Name}\", IsApplied: {rule.IsApplied}");
+        Console.WriteLine($"After update: Rule '{rule.Name}', IsApplied: {rule.IsApplied}");
     }
 
     private void OnDeductionRuleChanged(SelectableRule rule, bool isApplied)
     {
-        Console.WriteLine($"OnDeductionRuleChanged: Rule \'{rule.Name}\", IsApplied changed from {rule.IsApplied} to {isApplied}");
+        Console.WriteLine($"OnDeductionRuleChanged: Rule '{rule.Name}', IsApplied changed from {rule.IsApplied} to {isApplied}");
         rule.IsApplied = isApplied;
 
         if (isApplied && rule.IsCountable)
@@ -1349,7 +1352,7 @@ else
         {
             RecalculateBonusesAndDeductions();
         }
-        Console.WriteLine($"After update: Rule \'{rule.Name}\", IsApplied: {rule.IsApplied}");
+        Console.WriteLine($"After update: Rule '{rule.Name}', IsApplied: {rule.IsApplied}");
     }
 
     private void OnCountedChanged(AbsenceRecord record, bool val)
@@ -1373,158 +1376,28 @@ else
         return EventCallback.Factory.Create<bool>(this, val => OnCountedChanged(record, val));
     }
 
-    private Task OnDeductionChanged(decimal val)
-    {
-        CurrentPayroll.DeductionPerAbsenceDay = val;
-        RecalculateBonusesAndDeductions();
-        return Task.CompletedTask;
-    }
-
-    private async Task ReloadAbsences()
-    {
-        if (SelectedStartDate != null && SelectedEndDate != null && CurrentPayroll?.EmployeeId != 0)
-        {
-            await LoadAbsenceDates(CurrentPayroll.EmployeeId, SelectedStartDate.Value, SelectedEndDate.Value);
-            StateHasChanged();
-        }
-    }
-
-    private async Task RecalculateBonusesAndDeductions()
-    {
-        Console.WriteLine("--- Recalculating Bonuses and Deductions ---");
-
-        // Regular Bonuses
-        var regularBonuses = SelectedBonusRules
-            .Where(r => r.IsApplied)
-            .Sum(r =>
-            {
-                decimal calculatedValue;
-                if (r.IsCountable)
-                {
-                    calculatedValue = r.Quantity * (r.IsPercentage
-                        ? CurrentPayroll.Employee.BaseSalary * r.Amount / 100
-                        : r.Amount);
-                }
-                else
-                {
-                    calculatedValue = r.IsPercentage
-                        ? CurrentPayroll.Employee.BaseSalary * r.Amount / 100
-                        : r.Amount;
-                }
-
-                Console.WriteLine($"  Bonus Rule: {r.Name}, Applied: {r.IsApplied}, Amount: {r.Amount}, IsPercentage: {r.IsPercentage}, IsCountable: {r.IsCountable}, Quantity: {r.Quantity}, CalculatedValue: {calculatedValue}");
-                return calculatedValue;
-            });
-
-        var preappliedBonuses = PreappliedBonusRules
-            .Where(r => r.IsApplied)
-            .Sum(r => r.CalculatedAmount);
-
-        CurrentPayroll.Bonus = regularBonuses + preappliedBonuses;
-        CurrentPayroll.BaseSalary = CurrentPayroll.Employee.BaseSalary;
-        PreappliedBonuses = preappliedBonuses;
-        Console.WriteLine($"Total Bonus (Regular: {regularBonuses} + Preapplied: {preappliedBonuses}): {CurrentPayroll.Bonus}");
-
-        // Absence
-        var absenceDays = UseManualAbsences ? CurrentPayroll.ManualAbsenceDays : EmployeeAbsences.Count(a => a.Counted);
-        var absenceDeduction = absenceDays * CurrentPayroll.DeductionPerAbsenceDay;
-        Console.WriteLine($"Absence Days: {absenceDays}, Deduction Per Day: {CurrentPayroll.DeductionPerAbsenceDay}, Absence Deduction: {absenceDeduction}");
-
-        // Rule-based deductions
-        var regularDeductions = SelectedDeductionRules
-            .Where(r => r.IsApplied)
-            .Sum(r =>
-            {
-                decimal calculatedValue;
-                if (r.IsCountable)
-                {
-                    calculatedValue = r.Quantity * (r.IsPercentage
-                        ? CurrentPayroll.Employee.BaseSalary * r.Amount / 100
-                        : r.Amount);
-                }
-                else
-                {
-                    calculatedValue = r.IsPercentage
-                        ? CurrentPayroll.Employee.BaseSalary * r.Amount / 100
-                        : r.Amount;
-                }
-
-                Console.WriteLine($"  Deduction Rule: {r.Name}, Applied: {r.IsApplied}, Amount: {r.Amount}, IsPercentage: {r.IsPercentage}, IsCountable: {r.IsCountable}, Quantity: {r.Quantity}, CalculatedValue: {calculatedValue}");
-                return calculatedValue;
-            });
-
-        var preappliedDeductions = PreappliedDeductionRules
-            .Where(r => r.IsApplied)
-            .Sum(r => r.CalculatedAmount);
-
-        Console.WriteLine($"Total Rule-Based Deductions (Regular: {regularDeductions} + Preapplied: {preappliedDeductions}): {regularDeductions + preappliedDeductions}");
-
-        CurrentPayroll.Deductions = regularDeductions + preappliedDeductions + absenceDeduction;
-        Console.WriteLine($"Total Deductions (Rules + Preapplied + Absences): {CurrentPayroll.Deductions}");
-
-        await RefreshAdvanceDeductionSummary();
-
-
-
-        StateHasChanged();
-        Console.WriteLine("--- Recalculation Complete, StateHasChanged called ---");
-    }
-
-
-    private int CurrentEmployeeId
-    {
-        get => CurrentPayroll.EmployeeId;
-        set
-        {
-            if (CurrentPayroll.EmployeeId != value)
-            {
-                CurrentPayroll.EmployeeId = value;
-                InvokeAsync(async () => await OnEmployeeChanged(value));
-            }
-        }
-    }
-
-    private List<AbsenceRecord> EmployeeAbsences = new();
-
-    protected override async Task OnInitializedAsync()
-    {
-        Employees = await EmployeeService.GetAllAsync();
-        AllAdjustmentRules = await AdjustmentService.GetAllAsync();
-
-        var company = await CompanyService.GetAsync(); // fetch company first
-        workDaysPerMonth =  company.WorKdaysInMonth;            // then access property safely
-
-        if (CurrentPayroll.ManualAbsenceDays != 0)
-        {
-            UseManualAbsences = true;
-        }
-
-        await LoadPayrolls();
-    }
-
     private async Task LoadPayrolls()
     {
-        Payrolls = await PayrollService.GetAllAsync(FilterStartDate, FilterEndDate);
+        Payrolls = await PayrollService.GetAllAsync(FilterStartDate, FilterEndDate, SelectedEmployeeId);
+
     }
 
-    // NEW: Method to load preapplied rules for an employee
     private async Task LoadPreappliedRules(int employeeId)
     {
         try
         {
-
-            // You\'ll need to add this method to your PayrollService
             var employee = await EmployeeService.GetByIdAsync(employeeId);
             var preappliedRules = await PayrollService.GetAppliedRulesForEmployeeAsync(employeeId);
 
+            // ⭐ UPDATED: Pass CurrentPayroll.BaseSalary instead of employee.BaseSalary
             PreappliedBonusRules = preappliedRules
                 .Where(r => r.Rule.Type == AdjustmentType.Bonus && r.PayrollId == null)
-                .Select(r => new SelectableRule(r, workDaysPerMonth, employee.BaseSalary))
+                .Select(r => new SelectableRule(r, workDaysPerMonth))
                 .ToList();
 
             PreappliedDeductionRules = preappliedRules
                 .Where(r => r.Rule.Type == AdjustmentType.Deduction)
-                .Select(r => new SelectableRule(r, workDaysPerMonth, employee.BaseSalary))
+                .Select(r => new SelectableRule(r, workDaysPerMonth))
                 .ToList();
         }
         catch (Exception ex)
@@ -1538,67 +1411,65 @@ else
     private async Task AddPayroll()
     {
         CurrentPayroll = new Payroll
-            {
-                PayDate = DateTime.Today,
-                // Set default payroll period to current month
-                PayrollStartDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1),
-                PayrollEndDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(1).AddDays(-1),
-                Employee = new Employee()
-
-            };
+        {
+            PayDate = DateTime.Today,
+            PayrollStartDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1),
+            PayrollEndDate = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1).AddMonths(1).AddDays(-1),
+            Employee = new Employee(),
+            BaseSalary = 0 // Will be set when employee is selected
+        };
 
         SelectedBonusRules.Clear();
         SelectedDeductionRules.Clear();
         PreappliedBonusRules.Clear();
         PreappliedDeductionRules.Clear();
-        CurrentAdvanceDeductionSummary = new PayrollService.AdvanceDeductionSummary(); // Reset advance summary
-        _isAdvanceAmountManuallySet = false; // Reset flag for new payroll
+        CurrentAdvanceDeductionSummary = new PayrollService.AdvanceDeductionSummary();
+        _isAdvanceAmountManuallySet = false;
 
         // Auto-apply rules with AutoApplied = true
         SelectedBonusRules = AllAdjustmentRules
             .Where(r => r.Type == AdjustmentType.Bonus && r.AutoApplied)
-            .Select(r => new SelectableRule(r, workDaysPerMonth, isApplied: true))
+            .Select(r => new SelectableRule(r, workDaysPerMonth, isApplied: true, payrollBaseSalary: 0))
             .ToList();
 
         SelectedDeductionRules = AllAdjustmentRules
             .Where(r => r.Type == AdjustmentType.Deduction && r.AutoApplied)
-            .Select(r => new SelectableRule(r, workDaysPerMonth, isApplied: true))
+            .Select(r => new SelectableRule(r, workDaysPerMonth, isApplied: true, payrollBaseSalary: 0))
             .ToList();
-
-        // if (Employees.Any())
-        // {
-        //     await OnEmployeeChanged(CurrentPayroll.EmployeeId);
-        // }
 
         IsPrintModalOpen = false;
         IsModalOpen = true;
     }
 
-    
-    
-
+    // ⭐ UPDATED: EditPayroll now preserves the historical BaseSalary
     private async Task EditPayroll(Payroll payroll)
     {
-        // Clone basic payroll data
+        Console.WriteLine($"=== EDITING PAYROLL #{payroll.Id} ===");
+
         CurrentPayroll = new Payroll
-            {
-                Id = payroll.Id,
-                EmployeeId = payroll.EmployeeId,
-                PayDate = payroll.PayDate,
-                PayrollStartDate = payroll.PayrollStartDate,
-                PayrollEndDate = payroll.PayrollEndDate,
-                BaseSalary = payroll.BaseSalary,
-                Bonus = payroll.Bonus,
-                Deductions = payroll.Deductions,
-                DeductionPerAbsenceDay = payroll.DeductionPerAbsenceDay,
-                ManualAbsenceDays = payroll.ManualAbsenceDays,
-                AbsenceDeduction = payroll.AbsenceDeduction,
-                AbsenceDays = payroll.AbsenceDays,
-                Employee = payroll.Employee,
-                Transaction = payroll.Transaction,
-                Cash = payroll.Cash,
-                AdvanceDeductionsAmounts = payroll.AdvanceDeductionsAmounts
-            };
+        {
+            Id = payroll.Id,
+            EmployeeId = payroll.EmployeeId,
+            PayDate = payroll.PayDate,
+            PayrollStartDate = payroll.PayrollStartDate,
+            PayrollEndDate = payroll.PayrollEndDate,
+            BaseSalary = payroll.BaseSalary, // ⭐ Use the historical payroll salary
+            Bonus = payroll.Bonus,
+            Deductions = payroll.Deductions,
+            DeductionPerAbsenceDay = payroll.DeductionPerAbsenceDay,
+            ManualAbsenceDays = payroll.ManualAbsenceDays,
+            AbsenceDeduction = payroll.AbsenceDeduction,
+            AbsenceDays = payroll.AbsenceDays,
+            Employee = payroll.Employee,
+            Transaction = payroll.Transaction,
+            Cash = payroll.Cash,
+            TransactionIsManual = payroll.TransactionIsManual,
+            AdvanceDeductionsAmounts = payroll.AdvanceDeductionsAmounts
+        };
+
+        Console.WriteLine($"Loaded payroll #{payroll.Id}:");
+        Console.WriteLine($"  Payroll.BaseSalary (historical): {CurrentPayroll.BaseSalary}");
+        Console.WriteLine($"  Employee.BaseSalary (current): {CurrentPayroll.Employee?.BaseSalary}");
 
         var employee = Employees.FirstOrDefault(e => e.Id == payroll.EmployeeId);
         var jobTitleId = employee?.JobTitleId;
@@ -1627,7 +1498,7 @@ else
             SelectedBonusRules.AddRange(
                 bonusRules
                     .Where(r => !usedBonusRuleIds.Contains(r.Id) && !r.AutoApplied)
-                    .Select(r => new SelectableRule(r, workDaysPerMonth, false))
+                    .Select(r => new SelectableRule(r, workDaysPerMonth, false, CurrentPayroll.BaseSalary))
             );
 
             // --- DEDUCTION RULES ---
@@ -1642,7 +1513,7 @@ else
             SelectedDeductionRules.AddRange(
                 deductionRules
                     .Where(r => !usedDeductionRuleIds.Contains(r.Id) && !r.AutoApplied)
-                    .Select(r => new SelectableRule(r, workDaysPerMonth, false))
+                    .Select(r => new SelectableRule(r, workDaysPerMonth, false, CurrentPayroll.BaseSalary))
             );
         }
         else
@@ -1659,12 +1530,16 @@ else
 
         IsPrintModalOpen = false;
         IsModalOpen = true;
+        StateHasChanged();
     }
-
-
 
     private async Task SavePayroll()
     {
+        Console.WriteLine("=== SavePayroll ===");
+        Console.WriteLine($"Payroll #{CurrentPayroll.Id}, Employee: {CurrentPayroll.EmployeeId}");
+        Console.WriteLine($"Saving with BaseSalary: {CurrentPayroll.BaseSalary}");
+        Console.WriteLine($"Employee's current salary: {CurrentPayroll.Employee?.BaseSalary}");
+
         var updatedRules = SelectedBonusRules
             .Where(r => r.IsApplied)
             .Concat(SelectedDeductionRules.Where(r => r.IsApplied))
@@ -1677,30 +1552,38 @@ else
         foreach (var rule in updatedRules)
         {
             finalAppliedRules.Add(new PayrollAppliedRule
-                {
-                    RuleId = rule.RuleId,
-                    Amount = rule.Amount,
-                    Quantity =  rule.Quantity ,
-                    EmployeeId = CurrentPayroll.EmployeeId,
-                    PayrollId = CurrentPayroll.Id,
-                    Date = rule.Date, // Optional, useful for distinguishing instances
-                    Notes = rule.note
-                });
+            {
+                RuleId = rule.RuleId,
+                Amount = rule.Amount,
+                Quantity = rule.Quantity,
+                EmployeeId = CurrentPayroll.EmployeeId,
+                PayrollId = CurrentPayroll.Id,
+                Date = rule.Date,
+                Notes = rule.note
+            });
         }
 
-        // Apply all rules — allow multiple instances of same rule
         CurrentPayroll.AppliedRules = finalAppliedRules;
 
-        CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.Employee.BaseSalary / workDaysPerMonth, 2);
+        // ⭐ UPDATED: Use CurrentPayroll.BaseSalary instead of Employee.BaseSalary
+        CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workDaysPerMonth, 2);
+
+        Console.WriteLine($"Final DeductionPerAbsenceDay: {CurrentPayroll.DeductionPerAbsenceDay}");
+        Console.WriteLine($"Before save - Payroll.BaseSalary: {CurrentPayroll.BaseSalary}");
 
         if (CurrentPayroll.Id == 0)
         {
+            Console.WriteLine("Creating new payroll...");
             CurrentPayroll = await PayrollService.CreateAsync(CurrentPayroll);
         }
         else
         {
+            Console.WriteLine("Updating existing payroll...");
             await PayrollService.UpdateAsync(CurrentPayroll);
         }
+
+        Console.WriteLine($"After save - Payroll.BaseSalary: {CurrentPayroll.BaseSalary}");
+        Console.WriteLine($"Employee.BaseSalary remains: {CurrentPayroll.Employee?.BaseSalary}");
 
         if (CurrentPayroll.AdvanceDeductionsAmounts > 0)
         {
@@ -1718,13 +1601,9 @@ else
 
         IsModalOpen = false;
         await LoadPayrolls();
+        Console.WriteLine("=== Payroll saved successfully ===");
     }
 
-}
-
-
-
-@code {
     private void OnAbsenceModeChanged(ChangeEventArgs e)
     {
         if (bool.TryParse(e.Value?.ToString(), out var result))
@@ -1741,8 +1620,11 @@ else
         StateHasChanged();
     }
 
+    // ⭐ UPDATED: OnEmployeeChanged now handles new vs existing payrolls differently
     private async Task OnEmployeeChanged(int employeeId)
     {
+        Console.WriteLine($"=== OnEmployeeChanged: employeeId={employeeId} ===");
+
         SelectedBonusRules.Clear();
         SelectedDeductionRules.Clear();
         PreappliedBonusRules.Clear();
@@ -1752,14 +1634,35 @@ else
         _isAdvanceAmountManuallySet = false;
 
         var employee = Employees.FirstOrDefault(e => e.Id == employeeId);
-        if (employee == null) return;
+        if (employee == null)
+        {
+            Console.WriteLine($"Employee {employeeId} not found");
+            return;
+        }
 
         CurrentPayroll.EmployeeId = employeeId;
         CurrentPayroll.Employee = employee;
 
         var lastPayroll = await PayrollService.GetLastPayrollForEmployeeAsync(employeeId);
-        var lastBaseSalary = lastPayroll?.Employee?.BaseSalary ?? 0;
-      
+
+        // ⭐ CRITICAL LOGIC: Different for new vs existing payrolls
+        if (CurrentPayroll.Id == 0)
+        {
+            // New payroll: Start with employee's current salary
+            CurrentPayroll.BaseSalary = employee.BaseSalary;
+            Console.WriteLine($"NEW payroll: Setting BaseSalary to employee's current salary: {CurrentPayroll.BaseSalary}");
+        }
+        else
+        {
+            // Existing payroll: KEEP the historical BaseSalary
+            Console.WriteLine($"EXISTING payroll #{CurrentPayroll.Id}: Keeping historical BaseSalary: {CurrentPayroll.BaseSalary}");
+
+            if (CurrentPayroll.BaseSalary != employee.BaseSalary)
+            {
+                Console.WriteLine($"WARNING: Historical payroll salary ({CurrentPayroll.BaseSalary}) differs from current employee salary ({employee.BaseSalary})");
+            }
+        }
+
         CurrentPayroll.Transaction = lastPayroll?.Transaction ?? 0;
 
         await LoadPreappliedRules(employeeId);
@@ -1772,18 +1675,20 @@ else
             var applicableDeductionRules = AllAdjustmentRules
                 .Where(r => r.Type == AdjustmentType.Deduction && r.JobTitles.Any(j => j.Id == jobTitleId));
 
+            // Pass CurrentPayroll.BaseSalary to SelectableRule constructors
             SelectedBonusRules = applicableBonusRules
-                .Select(rule => new SelectableRule(rule, workDaysPerMonth, rule.AutoApplied))
+                .Select(rule => new SelectableRule(rule, workDaysPerMonth, rule.AutoApplied, CurrentPayroll.BaseSalary))
                 .ToList();
 
             SelectedDeductionRules = applicableDeductionRules
-                .Select(rule => new SelectableRule(rule, workDaysPerMonth, rule.AutoApplied))
+                .Select(rule => new SelectableRule(rule, workDaysPerMonth, rule.AutoApplied, CurrentPayroll.BaseSalary))
                 .ToList();
         }
 
-        if (CurrentPayroll.Employee.BaseSalary != 0)
+        // Calculate deduction per absence day using CurrentPayroll.BaseSalary
+        if (CurrentPayroll.BaseSalary != 0)
         {
-            CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.Employee.BaseSalary / workDaysPerMonth, 2);
+            CurrentPayroll.DeductionPerAbsenceDay = Math.Round(CurrentPayroll.BaseSalary / workDaysPerMonth, 2);
         }
 
         if (CurrentPayroll.PayrollStartDate.HasValue && CurrentPayroll.PayrollEndDate.HasValue)
@@ -1796,35 +1701,112 @@ else
         StateHasChanged();
     }
 
-
-    private void OnAbsenceDeductionChanged()
+    // ⭐ UPDATED: All calculations now use CurrentPayroll.BaseSalary
+    private async Task RecalculateBonusesAndDeductions()
     {
-        RecalculateBonusesAndDeductions();
+        Console.WriteLine("=== Recalculating Bonuses and Deductions ===");
+        Console.WriteLine($"Using BaseSalary: {CurrentPayroll.BaseSalary}");
+        Console.WriteLine($"Employee.BaseSalary: {CurrentPayroll.Employee?.BaseSalary}");
+
+        // Regular Bonuses - ALL using CurrentPayroll.BaseSalary
+        var regularBonuses = SelectedBonusRules
+            .Where(r => r.IsApplied)
+            .Sum(r =>
+            {
+                decimal calculatedValue;
+                if (r.IsCountable)
+                {
+                    calculatedValue = r.Quantity * (r.IsPercentage
+                        ? CurrentPayroll.BaseSalary * r.Amount / 100
+                        : r.Amount);
+                }
+                else
+                {
+                    calculatedValue = r.IsPercentage
+                        ? CurrentPayroll.BaseSalary * r.Amount / 100
+                        : r.Amount;
+                }
+                return calculatedValue;
+            });
+
+        var preappliedBonuses = PreappliedBonusRules
+            .Where(r => r.IsApplied)
+            .Sum(r => r.CalculatedAmount);
+
+        CurrentPayroll.Bonus = regularBonuses + preappliedBonuses;
+        // CurrentPayroll.BaseSalary is already set, don't overwrite it
+        PreappliedBonuses = preappliedBonuses;
+        Console.WriteLine($"Total Bonus (Regular: {regularBonuses} + Preapplied: {preappliedBonuses}): {CurrentPayroll.Bonus}");
+
+        // Absence - using CurrentPayroll.BaseSalary for deduction calculation
+        var absenceDays = UseManualAbsences ? CurrentPayroll.ManualAbsenceDays : EmployeeAbsences.Count(a => a.Counted);
+        var absenceDeduction = absenceDays * CurrentPayroll.DeductionPerAbsenceDay;
+
+        // Rule-based deductions - ALL using CurrentPayroll.BaseSalary
+        var regularDeductions = SelectedDeductionRules
+            .Where(r => r.IsApplied)
+            .Sum(r =>
+            {
+                decimal calculatedValue;
+                if (r.IsCountable)
+                {
+                    calculatedValue = r.Quantity * (r.IsPercentage
+                        ? CurrentPayroll.BaseSalary * r.Amount / 100
+                        : r.Amount);
+                }
+                else
+                {
+                    calculatedValue = r.IsPercentage
+                        ? CurrentPayroll.BaseSalary * r.Amount / 100
+                        : r.Amount;
+                }
+                return calculatedValue;
+            });
+
+        var preappliedDeductions = PreappliedDeductionRules
+            .Where(r => r.IsApplied)
+            .Sum(r => r.CalculatedAmount);
+
+        CurrentPayroll.Deductions = regularDeductions + preappliedDeductions + absenceDeduction;
+
+        await RefreshAdvanceDeductionSummary();
+
+        // Recalculate NetPay
+        Console.WriteLine($"Net Pay calculation:");
+        Console.WriteLine($"  BaseSalary: {CurrentPayroll.BaseSalary}");
+        Console.WriteLine($"  + Bonus: {CurrentPayroll.Bonus}");
+        Console.WriteLine($"  - Deductions: {CurrentPayroll.Deductions}");
+        Console.WriteLine($"  - AdvanceDeductions: {CurrentPayroll.AdvanceDeductionsAmounts}");
+        Console.WriteLine($"  = NetPay: {CurrentPayroll.NetPay}");
+
+        StateHasChanged();
+        Console.WriteLine("=== Recalculation Complete ===");
     }
 
     private void OnCountableQuantityChanged(SelectableRule rule, decimal? quantity)
     {
-        Console.WriteLine($"OnCountableQuantityChanged: Rule \'{rule.Name}\", Old Quantity: {rule.Quantity}, New Quantity: {quantity}");
+        Console.WriteLine($"OnCountableQuantityChanged: Rule '{rule.Name}', Old Quantity: {rule.Quantity}, New Quantity: {quantity}");
         var finalQuantity = quantity ?? 1;
         rule.Quantity = finalQuantity;
 
+        // ⭐ UPDATED: Use CurrentPayroll.BaseSalary instead of Employee.BaseSalary
         if (rule.IsCountable)
         {
-            var unitAmount = rule.IsPercentage ? CurrentPayroll.Employee.BaseSalary * rule.Amount / 100 : rule.Amount;
+            var unitAmount = rule.IsPercentage ? CurrentPayroll.BaseSalary * rule.Amount / 100 : rule.Amount;
             rule.CalculatedAmount = unitAmount * finalQuantity;
         }
         else
         {
-            rule.CalculatedAmount = rule.IsPercentage ? CurrentPayroll.Employee.BaseSalary * rule.Amount / 100 : rule.Amount;
+            rule.CalculatedAmount = rule.IsPercentage ? CurrentPayroll.BaseSalary * rule.Amount / 100 : rule.Amount;
         }
-        Console.WriteLine($"  Rule \'{rule.Name}\' - Amount: {rule.Amount}, Quantity: {rule.Quantity}, CalculatedAmount: {rule.CalculatedAmount}");
+        Console.WriteLine($"  Rule '{rule.Name}' - Amount: {rule.Amount}, Quantity: {rule.Quantity}, CalculatedAmount: {rule.CalculatedAmount}");
 
         RecalculateBonusesAndDeductions();
     }
 
     private void OnAmountChanged(SelectableRule rule, decimal? newAmount)
     {
-        Console.WriteLine($"OnAmountChanged: Rule \'{rule.Name}\", Old Amount: {rule.Amount}, New Amount: {newAmount}");
+        Console.WriteLine($"OnAmountChanged: Rule '{rule.Name}', Old Amount: {rule.Amount}, New Amount: {newAmount}");
         rule.Amount = newAmount ?? 0;
 
         if (!rule.IsCountable)
@@ -1833,27 +1815,34 @@ else
         }
 
         OnCountableQuantityChanged(rule, rule.Quantity);
-        Console.WriteLine($"After OnAmountChanged: Rule \'{rule.Name}\' - Amount: {rule.Amount}, Quantity: {rule.Quantity}, CalculatedAmount: {rule.CalculatedAmount}");
+        Console.WriteLine($"After OnAmountChanged: Rule '{rule.Name}' - Amount: {rule.Amount}, Quantity: {rule.Quantity}, CalculatedAmount: {rule.CalculatedAmount}");
     }
-    private async Task ApplyTriggeredRules()
+
+    private int CurrentEmployeeId
     {
-        if (CurrentPayroll.EmployeeId == 0 ||
-            !CurrentPayroll.PayrollStartDate.HasValue ||
-            !CurrentPayroll.PayrollEndDate.HasValue)
-            return;
+        get => CurrentPayroll.EmployeeId;
+        set
+        {
+            if (CurrentPayroll.EmployeeId != value)
+            {
+                CurrentPayroll.EmployeeId = value;
+                InvokeAsync(async () => await OnEmployeeChanged(value));
+            }
+        }
+    }
 
-        var jobTitleId = Employees.FirstOrDefault(e => e.Id == CurrentPayroll.EmployeeId)?.JobTitleId;
-        if (jobTitleId == null) return;
+    private async Task ApplyFilter()
+    {
+        await LoadPayrolls();
+    }
 
-       
-
-        var workedDayOffCount = await WorkedDaysOffService.GetWorkedDayOffCountAsync(
-            CurrentPayroll.EmployeeId,
-            CurrentPayroll.PayrollStartDate.Value,
-            CurrentPayroll.PayrollEndDate.Value
-        );
-
-           }
+    private async Task ClearFilter()
+    {
+        FilterStartDate = null;
+        FilterEndDate = null;
+        SelectedEmployeeId = null; // Reset to "All employees"
+        await LoadPayrolls();
+    }
 
     public class SelectableRule
     {
@@ -1867,18 +1856,14 @@ else
         public bool IsEditable { get; set; } = false;
         public decimal CalculatedAmount { get; set; }
         public int WorkDays { get; set; }
-        private DateTime? SelectedStartDate { get; set; }
-        private DateTime? SelectedEndDate { get; set; }
-     
         public bool AutoApplied { get; set; }
         public string note { get; set; }
         public DateTime? Date { get; set; }
-       
 
         /// <summary>
-        /// Constructor for applied rule (with optional fallback base salary if Payroll is null).
+        /// Constructor for applied rule (from database)
         /// </summary>
-        public SelectableRule(PayrollAppliedRule appliedRule, int workDaysPerMonth, decimal? lastPayrollBaseSalary = null)
+        public SelectableRule(PayrollAppliedRule appliedRule, int workDaysPerMonth)
         {
             RuleId = appliedRule.RuleId;
             Name = appliedRule.Rule.Name;
@@ -1889,25 +1874,33 @@ else
             IsApplied = true;
             IsEditable = appliedRule.Rule.IsEditable;
             Quantity = appliedRule.Quantity ?? 1;
-            
             WorkDays = workDaysPerMonth;
             note = appliedRule.Notes;
             Date = appliedRule.Date;
-            
-          
-            // ✅ Safely get the base salary
-            decimal baseSalary = appliedRule.Payroll?.BaseSalary ?? lastPayrollBaseSalary ?? 0;
 
-            // ✅ Calculate amount
-            CalculatedAmount = IsCountable
-                ? (IsPercentage ? baseSalary * Amount / 100 : Amount) * Quantity
-                : (IsPercentage ? baseSalary * Amount / 100 : Amount);
+            // ⭐ CRITICAL: Use the payroll's BaseSalary, not employee's current salary
+            decimal baseSalary = appliedRule.Payroll?.BaseSalary ?? 0;
+
+            Console.WriteLine($"SelectableRule from applied rule '{Name}':");
+            Console.WriteLine($"  Payroll.BaseSalary: {baseSalary}");
+            Console.WriteLine($"  Payroll ID: {appliedRule.Payroll?.Id}");
+
+            // Calculate amount based on payroll's historical salary
+            if (IsCountable)
+            {
+                var unitAmount = IsPercentage ? baseSalary * Amount / 100 : Amount;
+                CalculatedAmount = unitAmount * Quantity;
+            }
+            else
+            {
+                CalculatedAmount = IsPercentage ? baseSalary * Amount / 100 : Amount;
+            }
         }
 
         /// <summary>
-        /// Constructor for default rules (not yet applied).
+        /// Constructor for default rules (not yet applied)
         /// </summary>
-        public SelectableRule(PayrollAdjustmentRule rule, int workDaysPerMonth, bool isApplied = false)
+        public SelectableRule(PayrollAdjustmentRule rule, int workDaysPerMonth, bool isApplied = false, decimal? payrollBaseSalary = null)
         {
             RuleId = rule.Id;
             Name = rule.Name;
@@ -1918,43 +1911,30 @@ else
             IsApplied = isApplied;
             Quantity = 1;
             WorkDays = workDaysPerMonth;
-           
             AutoApplied = rule.AutoApplied;
-            
 
-            CalculatedAmount = IsCountable
-                ? Amount * Quantity
-                : Amount;
+            // ⭐ Use the provided payroll base salary (from CurrentPayroll.BaseSalary)
+            decimal baseSalary = payrollBaseSalary ?? 0;
+
+            Console.WriteLine($"SelectableRule from adjustment rule '{Name}':");
+            Console.WriteLine($"  BaseSalary provided: {baseSalary}");
+            Console.WriteLine($"  IsPercentage: {IsPercentage}");
+            Console.WriteLine($"  IsCountable: {IsCountable}");
+
+            if (IsCountable)
+            {
+                var unitAmount = IsPercentage ? baseSalary * Amount / 100 : Amount;
+                CalculatedAmount = unitAmount * Quantity;
+            }
+            else
+            {
+                CalculatedAmount = IsPercentage ? baseSalary * Amount / 100 : Amount;
+            }
         }
     }
-
 }
 
-@code {
-    private bool ShowPrintPreview;
 
-    void ShowPrint()
-    {
-        ShowPrintPreview = true;
-    }
-
-    async Task TriggerPrint()
-    {
-        await JSRuntime.InvokeVoidAsync("window.print");
-    }
-    private async Task ApplyFilter()
-    {
-        await LoadPayrolls();
-    }
-
-    private async Task ClearFilter()
-    {
-        FilterStartDate = null;
-        FilterEndDate = null;
-
-    }
-
-}
 
 <style>
     table.table td, table.table th {
